@@ -1,13 +1,13 @@
-import {getBrands} from "@/lib/api";
-
-export default async function Home() {
-    const data = await getBrands();
+export default function Home() {
     return (
-        <main className="max-w-3xl mx-auto p-6">
-            <h1 className="text-2xl font-semibold mb-4">Sanayi – Ankara</h1>
-            <pre className="bg-gray-100 p-3 rounded text-sm overflow-auto">
-        {JSON.stringify(data, null, 2)}
-      </pre>
+        <main className="mx-auto max-w-5xl p-4 space-y-4">
+            <h1 className="text-2xl font-bold">Sanayi</h1>
+            <p className="opacity-80">Ankara'da usta/servisleri görüntüle, yorumları oku, puanla.</p>
+            <div>
+                <a href="/brands" className="rounded-xl border border-white/20 px-3 py-2 inline-block">
+                    Markaları görüntüle
+                </a>
+            </div>
         </main>
     );
 }
