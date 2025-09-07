@@ -6,7 +6,13 @@ import type {BrandDto} from "@/lib/types";
 export default function BrandCard({brand}: { brand: BrandDto }) {
     const [open, setOpen] = useState(false);
     //useState etkilesim icin gerekli. App Router'da sadece gereken parcayi use client yapariz, geri kalan server'da kalir -> performans
-    //TODO useState tam olarak nedir, ne ise yarar?
+    /*
+    *
+    *   useState nedir?
+    * React hook'u. Bir bilesenin icinde durum(state) tutar ve bu deger degistirildiginde bilesini eniden render eder.
+    * Sadece client component'larda calisir.
+    *
+    * */
     const providerCount = brand.providers?.length ?? 0;
 
     return (

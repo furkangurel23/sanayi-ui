@@ -6,7 +6,17 @@ export type ProviderMiniDto = {
     district?: string | null;
     phone?: string | null;
     lat?: number | null;
-    long?: number | null;
+    lng?: number | null;
+};
+
+export type ProviderListItem = {
+    id: number;
+    name: string;
+    city?: string | null;
+    district?: string | null;
+    phone?: string | null;
+    avgScore?: number | null;
+    ratingCount?: number | null;
 };
 
 export type BrandDto = {
@@ -21,4 +31,15 @@ export type Page<T> = {
     totalPages: number;
     size: number; // sayfa boyutu
     number: number; // current page index (0 - based)
+}
+
+export type CategoryDto = {
+    id: number;
+    name: string;
+    providers: ProviderMiniDto[];
+}
+
+export type IdName = {
+    id: number;
+    name: string;
 }
