@@ -17,6 +17,8 @@ export type ProviderListItem = {
     phone?: string | null;
     avgScore?: number | null;
     ratingCount?: number | null;
+    lat?: number | null;
+    lng?: number | null;
 };
 
 export type BrandDto = {

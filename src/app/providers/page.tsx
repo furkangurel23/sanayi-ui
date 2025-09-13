@@ -2,6 +2,7 @@ import {getBrandsAllSorted, getCategoriesAllSorted, getProviders,} from "@/lib/a
 import ProviderCard from "@/components/ProviderCard";
 import FilterBar from "@/components/FilterBar";
 import Pagination from "@/components/Pagination";
+import MapSection from "@/components/MapSection";
 
 export const metadata = {
     title: "Ustalar | Sanayi",
@@ -69,6 +70,9 @@ export default async function ProvidersPage({
             <h1 className="text-2xl font-bold">Ustalar</h1>
 
             <FilterBar brands={brands} categories={categories}/>
+
+            {/* Harita: lat/lng olan kayıtlar varsa marker çizer, yoksa Ankara'yı gösterir */}
+            <MapSection items={data.content} height={280}/>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {data.content.map((p) => (
