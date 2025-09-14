@@ -5,29 +5,22 @@ import {useRouter, useSearchParams} from "next/navigation";
 import type {ProviderListItem} from "@/lib/types";
 import ProvidersMap from "@/components/ProvidersMap";
 
-type Props = {
-    items: ProviderListItem[],
-    height?: number;
-}
+type Props = { items: ProviderListItem[]; height?: number };
+
 
 export default function MapSection({items, height = 280}: Props) {
-    const router = useRouter(); //Programatik gezinme (URL guncellemek icin)
-    const sp = useSearchParams(); // Mevcut URL query'lerini okur (client)
+    const router = useRouter();                // URL'yi programatik değiştirmek için
+    const sp = useSearchParams();              // Mevcut query string'i okumak için
 
-
-    // Listede koordinati olan kayit var mi? (Varsayilan karar icin kullanacagiz)
+    // 2) Listede koordinatı olan kayıt var mı? (Varsayılan açık/kapalı kararı)
     const anyWithCoords = useMemo(
-        () => items.some((p): p is ProviderListItem & { lat: number, lon: number } =>
-            typeof p.lat === "number" && typeof p.lng === "number"),
+        () => items.some(p => typeof p.lat === "number" && typeof p.lon === "number"),
         [items]
     );
 
-    /*
-    * Baslangic acik/kapali duruu:
-    *   - Eger URL'de ?showMap=0/1 verilmesse onu kullan
-    *   - Yoksa listede koordinat varsa "acik", yoksa "kapali" baslat.
-    * */
-
+    // 3) Başlangıç durumu:
+    //    - URL'de ?showMap=1/0 varsa onu kullan
+    //    - yoksa listede koordinat varsa "açık", yoksa "kapalı"
     const initialOpen = useMemo(() => {
         const raw = sp.get("showMap");
         if (raw === "1") return true;
@@ -37,17 +30,18 @@ export default function MapSection({items, height = 280}: Props) {
 
     const [open, setOpen] = useState<boolean>(initialOpen);
 
-    //URL degisirse (geri/ileri tusu), UI durumunu RUL ile senkron tut,
+    // 4) Geri/ileri ile URL değişirse, form state'i URL ile senkron kalsın
     useEffect(() => {
-        setOpen(initialOpen)
+        setOpen(initialOpen);
     }, [initialOpen]);
 
+    // 5) Toggle: UI state'i ve URL'yi birlikte güncelle
     const toggle = () => {
         const next = !open;
         setOpen(next);
         const params = new URLSearchParams(sp.toString());
         params.set("showMap", next ? "1" : "0");
-        router.push(`?${params.toString()}`);
+        router.push(`?${params.toString()}`); // client-side navigation
     };
 
     return (
@@ -57,7 +51,7 @@ export default function MapSection({items, height = 280}: Props) {
                 <button
                     type="button"
                     onClick={toggle}
-                    aria-pressed={open} // Erişilebilirlik: toggle state
+                    aria-pressed={open}
                     className="rounded-lg border border-white/20 px-3 py-1 text-sm hover:border-white/40"
                     title={open ? "Haritayı gizle" : "Haritayı göster"}
                 >
@@ -65,12 +59,9 @@ export default function MapSection({items, height = 280}: Props) {
                 </button>
             </div>
 
-            {/* ▼ open=false iken ProvidersMap'i hiç render etmiyoruz (unmount olur) */}
-            {/* Client bileşen; DOM'a Leaflet'i çizer */}
-
+            {/* 6) Harita sadece 'open' iken render edilir (değilse unmount) */}
             {open ? (
-                <ProvidersMap items={items}
-                              height={height}/>
+                <ProvidersMap key="open" items={items} height={height}/>
             ) : (
                 <div className="rounded-2xl border border-white/10 p-4 text-sm opacity-80">
                     Harita kapalı. “Göster”e tıklayarak açabilirsiniz.
@@ -78,5 +69,4 @@ export default function MapSection({items, height = 280}: Props) {
             )}
         </section>
     );
-
 }

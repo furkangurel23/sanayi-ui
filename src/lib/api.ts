@@ -175,6 +175,8 @@ export async function getProvidersNear(opts: {
     params.set("page", String(page0));
     params.set("size", String(size));
     const res = await fetch(`${BASE}/providers/near?` + params.toString(), {next: {revalidate: 30}});
+    console.log(`${BASE}/providers/near?` + params.toString());
+    console.log(res);
     if (!res.ok) throw new Error(`GET /providers/near failed: ${res.status} ${res.statusText}`);
     return res.json();
 }

@@ -6,7 +6,7 @@ export type ProviderMiniDto = {
     district?: string | null;
     phone?: string | null;
     lat?: number | null;
-    lng?: number | null;
+    lon?: number | null;
 };
 
 export type ProviderListItem = {
@@ -18,7 +18,7 @@ export type ProviderListItem = {
     avgScore?: number | null;
     ratingCount?: number | null;
     lat?: number | null;
-    lng?: number | null;
+    lon?: number | null;
 };
 
 export type BrandDto = {
@@ -82,4 +82,6 @@ export type NearItem = {
     avgScore?: number | null;
     ratingCount?: number | null;
     distanceKm: number;
+    lat?: number | null;
+    lon?: number | null;
 };

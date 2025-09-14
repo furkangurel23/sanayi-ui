@@ -71,7 +71,7 @@ export default async function ProvidersPage({
 
             <FilterBar brands={brands} categories={categories}/>
 
-            {/* Harita: lat/lng olan kayıtlar varsa marker çizer, yoksa Ankara'yı gösterir */}
+            {/* Harita: lat/lon olan kayıtlar varsa marker çizer, yoksa Ankara'yı gösterir */}
             <MapSection items={data.content} height={280}/>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
