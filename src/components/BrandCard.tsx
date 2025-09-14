@@ -47,7 +47,7 @@ export default function BrandCard({brand}: { brand: BrandDto }) {
                                     </div>
                                 </div>
                                 <a
-                                    href={`/provider/${p.id}`}
+                                    href={`/providers/${p.id}`}
                                     className="text-xs underline underline-offset-2"
                                 >
                                     Detay

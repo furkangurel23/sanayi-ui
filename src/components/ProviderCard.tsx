@@ -4,7 +4,7 @@ import type {ProviderListItem} from "@/lib/types";
 export default function ProviderCard({p}: { p: ProviderListItem }) {
     return (
         <a
-            href={`/provider/${p.id}`}
+            href={`/providers/${p.id}`}
             className="block rounded-2xl border border-white/10 p-4 hover:border-white/30 transition"
         >
             <div className="flex items-start justify-between gap-4">
