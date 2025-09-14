@@ -3,6 +3,7 @@ import {Geist, Geist_Mono} from "next/font/google";
 import "./globals.css";
 import React from "react";
 import Link from "next/link";
+import {NearInstantButton, NearLinkButton} from "@/components/NearButton";
 
 const geistSans = Geist({variable: "--font-geist-sans", subsets: ["latin"]});
 const geistMono = Geist_Mono({variable: "--font-geist-mono", subsets: ["latin"]});
@@ -23,9 +24,13 @@ export default function RootLayout({children}: { children: React.ReactNode }) {
                     <Link href="/brands" className="hover:underline underline-offset-4">Markalar</Link>
                     <Link href="/providers" className="hover:underline underline-offset-4">Ustalar</Link>
                 </nav>
+                <div className="ml-auto"><NearLinkButton /></div>
             </div>
         </header>
         {children}
+        <div className="fixed bottom-4 right-4 z-50 md:hidden">
+            <NearInstantButton className="rounded-full px-4 py-2 text-sm border bg-black/40 backdrop-blur hover:border-white/50" />
+        </div>
         </body>
         </html>
     );

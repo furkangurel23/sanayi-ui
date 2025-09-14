@@ -3,6 +3,7 @@ import ProviderCard from "@/components/ProviderCard";
 import FilterBar from "@/components/FilterBar";
 import Pagination from "@/components/Pagination";
 import MapSection from "@/components/MapSection";
+import {NearInstantButton} from "@/components/NearButton";
 
 export const metadata = {
     title: "Ustalar | Sanayi",
@@ -68,6 +69,7 @@ export default async function ProvidersPage({
     return (
         <main className="mx-auto max-w-5xl p-4 space-y-4">
             <h1 className="text-2xl font-bold">Ustalar</h1>
+            {/*<NearInstantButton radiusKm={10} />*/}
 
             <FilterBar brands={brands} categories={categories}/>
 
