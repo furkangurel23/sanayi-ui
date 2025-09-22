@@ -20,7 +20,11 @@ export default function ProvidersMap({items, height = 260}: Props) {
     //haritanin haziro lup olmadigini state'te tasiyoruz.
     const [mapReady, setMapReady] = useState(false);
 
-    // 1) HARİTAYI KUR
+    // RAF id’leri (init ve updates için ayrı)
+    const initRafRef = useRef<number | null>(null);
+    const updateRafRef = useRef<number | null>(null);
+
+    // 1) HARİTA KUR
     useEffect(() => {
         let cancelled = false;
 
@@ -39,8 +43,7 @@ export default function ProvidersMap({items, height = 260}: Props) {
             });
 
             L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-                attribution:
-                    '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>',
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>',
             }).addTo(map);
 
             const markerLayer = L.layerGroup().addTo(map);
@@ -48,17 +51,38 @@ export default function ProvidersMap({items, height = 260}: Props) {
             mapRef.current = map;
             markersLayerRef.current = markerLayer;
 
-            //ilk boyut hesaplamasi
-            requestAnimationFrame(() => map.invalidateSize());
-            setMapReady(true);
-        })(); // <-- ÖNEMLİ: IIFE ÇAĞRISI
+            // İlk boyut hesabı — sağlamlık kontrolleri ile
+            if (initRafRef.current) cancelAnimationFrame(initRafRef.current!!);
+            initRafRef.current = requestAnimationFrame(() => {
+                if (cancelled) return;
+                const m = mapRef.current;
+                // map hâlâ aynı mı ve pane’i var mı?
+                if (!m || (m as any)._mapPane == null) return;
+                try {
+                    m.invalidateSize();
+                } catch { /* sessiz geç */
+                }
+                initRafRef.current = null;
+            });
 
-        const onResize = () => mapRef.current?.invalidateSize();
+            setMapReady(true);
+        })();
+
+        const onResize = () => {
+            const m = mapRef.current;
+            if (!m || (m as any)._mapPane == null) return;
+            try {
+                m.invalidateSize();
+            } catch {
+            }
+        };
         window.addEventListener("resize", onResize);
 
         return () => {
             cancelled = true;
             window.removeEventListener("resize", onResize);
+            if (initRafRef.current) cancelAnimationFrame(initRafRef.current!!);
+            if (updateRafRef.current) cancelAnimationFrame(updateRafRef.current!!);
             mapRef.current?.remove();
             mapRef.current = null;
             markersLayerRef.current = null;
@@ -82,7 +106,7 @@ export default function ProvidersMap({items, height = 260}: Props) {
 
             const withCoords = items.filter(
                 (p): p is ProviderListItem & { lat: number; lon: number } =>
-                    typeof (p as any).lat === "number" && typeof (p as any).lon === "number"
+                    typeof (p as ProviderListItem).lat === "number" && typeof (p as ProviderListItem).lon === "number"
             );
 
             for (const p of withCoords) {
@@ -94,24 +118,31 @@ export default function ProvidersMap({items, height = 260}: Props) {
                             typeof p.avgScore === "number"
                                 ? `Puan: ${p.avgScore.toFixed(1)} (${p.ratingCount ?? 0} oy)`
                                 : undefined,
-                        ]
-                            .filter(Boolean)
-                            .join("<br/>")
+                        ].filter(Boolean).join("<br/>")
                     )
                     .addTo(layer);
             }
 
             if (withCoords.length > 0) {
-                const bounds = L.latLngBounds(
-                    withCoords.map((p) => [p.lat, p.lon] as [number, number])
-                );
+                const bounds = L.latLngBounds(withCoords.map((p: any) => [p.lat, p.lon] as [number, number]));
                 mapInstance.fitBounds(bounds, {padding: [20, 20]});
             } else {
                 mapInstance.setView(DEFAULT_CENTER, DEFAULT_ZOOM);
             }
 
-            //Görünürlük / yerleşim değişmişse düzelt
-            requestAnimationFrame(() => mapInstance.invalidateSize());
+            // Görünürlük/yerleşim değişmişse düzelt — güvenli RAF
+            if (updateRafRef.current) cancelAnimationFrame(updateRafRef.current!!);
+            updateRafRef.current = requestAnimationFrame(() => {
+                // component unmount ya da map.remove() olmuş olabilir
+                const m = mapRef.current;
+                if (!m || m !== mapInstance) return;          // aynı instance mı?
+                if ((m as any)._mapPane == null) return;      // pane var mı?
+                try {
+                    m.invalidateSize();
+                } catch {
+                }
+                updateRafRef.current = null;
+            });
         })();
     }, [items, mapReady]);
 
