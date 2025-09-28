@@ -8,6 +8,7 @@ import {getProviderDetail, getProviderRatings} from "@/lib/api";
 import RatingItem from "@/components/RatingItem";
 import Pagination from "@/components/Pagination";
 import ProvidersMap from "@/components/ProvidersMap";
+import MiniHistogram from "@/components/MiniHistogram";
 
 // (SEO) baslik: provider adini rumtime'da biliyoruz -> dinamik metadaa yazilabilir; simdilik sabit baslik veriyoruz.
 
@@ -47,6 +48,18 @@ export default async function ProviderDetailPage({
         sortDir: "desc",
     });
 
+    const histogramSample: PageType<RatingDto> =
+        detail.ratingCount > 0
+            ? await getProviderRatings({
+                id,
+                page: 1,
+                size: Math.min(100, detail.ratingCount),
+                sortField: "createdAt",
+                sortDir: "desc",
+            })
+            : {content: [], number: 0, size: 0, totalPages: 0, totalElements: 0} as any;
+
+
     const addressLine = [detail.address, detail.district, detail.city].filter(Boolean).join(" / ");
     const scoreLine = typeof detail.avgScore === "number" ?
         `${detail.avgScore.toFixed(1)} (${detail.ratingCount} oy)`
@@ -67,6 +80,16 @@ export default async function ProviderDetailPage({
             lon: detail.location.lon,
         }]
         : [];
+
+    const range = [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5];
+    const buckets = range.map(s => ({
+        score: s,
+        count: histogramSample.content.filter(r => r.score === s).length
+    }));
+
+    const sampleTotal = histogramSample.content.length;
+    const top3 = histogramSample.content.slice(0, 3)
+
 
     return (
         <main className="mx-auto max-w-4xl p-4 space-y-6">
@@ -105,6 +128,35 @@ export default async function ProviderDetailPage({
                 <section className="space-y-2">
                     <h2 className="text-lg font-semibold">Konum</h2>
                     <ProvidersMap items={mapItems} height={220}/>
+                </section>
+            )}
+
+            {/* İstatistikler: histogram + özet */}
+            {detail.ratingCount > 0 && (
+                <section className="space-y-2">
+                    <h2 className="text-lg font-semibold">Puan Dağılımı</h2>
+                    <div className="flex items-center gap-4">
+                        <div className="text-sm min-w-36">
+                            <div className="opacity-80">Ortalama</div>
+                            <div className="text-2xl font-bold leading-none">
+                                {typeof detail.avgScore === "number" ? detail.avgScore.toFixed(2) : "-"}
+                            </div>
+                            <div className="text-xs opacity-70">{detail.ratingCount} oy</div>
+                        </div>
+                        <div className="flex-1">
+                            <MiniHistogram buckets={buckets} total={sampleTotal}/>
+                        </div>
+                    </div>
+                </section>
+            )}
+
+            {/* Son 3 yorum (yalnızca ilk sayfada göster) */}
+            {detail.ratingCount > 0 && rPage === 1 && top3.length > 0 && (
+                <section className="space-y-3">
+                    <h2 className="text-lg font-semibold">Son 3 yorum</h2>
+                    <ul className="space-y-2">
+                        {top3.map(r => <RatingItem key={`top3-${r.id}`} r={r}/>)}
+                    </ul>
                 </section>
             )}
 
