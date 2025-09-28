@@ -11,7 +11,7 @@ type Props = {
 
 /*
 *
-* TODO sayfayi genel anlattir. useMemo nedir vs kod mantigini ogren
+*
 *
 *       Neden client? Form state'i onChange/onClick gibi tarayici etkilesimleri var.
 *       URLSearchParams kullanimi: filtereler URL'ye yazilir -> SSR sayfa bu parametrelerle yeniden veriyi ceker.

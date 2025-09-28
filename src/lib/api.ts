@@ -165,18 +165,16 @@ export async function getProvidersNear(opts: {
     page?: number;
     size?: number;
 }): Promise<Page<NearItem>> {
-    const page0 = Math.max(0, opts.page ?? 1);
+    const page0 = Math.max(0, (opts.page ?? 1) - 1);
     const size = opts.size ?? 20;
-    const radius = Math.max(100, Math.max(0, opts.radiusKm ?? 10));
+    const radius = Math.max(1, Math.max(0, opts.radiusKm ?? 10));
     const params = new URLSearchParams();
     params.set("lat", String(opts.lat));
     params.set("lon", String(opts.lon));
     params.set("radiusKm", String(radius));
     params.set("page", String(page0));
     params.set("size", String(size));
-    const res = await fetch(`${BASE}/providers/near?` + params.toString(), {next: {revalidate: 30}});
-    console.log(`${BASE}/providers/near?` + params.toString());
-    console.log(res);
+    const res = await fetch(`${BASE}/providers/near?` + params.toString(), { next: { revalidate: 30 } });
     if (!res.ok) throw new Error(`GET /providers/near failed: ${res.status} ${res.statusText}`);
     return res.json();
 }

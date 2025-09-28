@@ -32,7 +32,7 @@ export function NearInstantButton({className, radiusKm = 10, label = "Yakınımd
         if (loading) return;
         setLoading(true);
 
-        if (!("gelocation" in navigator)) {
+        if (!("geolocation" in navigator)) {
             setLoading(false);
             alert("Tarayıcınız konum desteği sunmuyor.");
             return;
@@ -46,9 +46,10 @@ export function NearInstantButton({className, radiusKm = 10, label = "Yakınımd
             return;
         }
 
-        navigator.gelocation.getCurrentPosition(
+        navigator.geolocation.getCurrentPosition(
             (pos) => {
-                const {lat, lon} = pos.coords;
+                const lat = pos.coords.latitude;
+                const lon = pos.coords.longitude
                 router.push(`/providers/near?lat=${lat}&lon=${lon}&radiusKm=${radiusKm}`);
             },
             (err) => {
