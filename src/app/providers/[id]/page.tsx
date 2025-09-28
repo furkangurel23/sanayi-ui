@@ -3,10 +3,11 @@
 *  ve yorumlarini server tarafina (SSR) ceker ve render eder.
 * */
 
-import type {Page as PageType, ProviderDetailDto, RatingDto} from "@/lib/types";
+import type {Page as PageType, ProviderDetailDto, ProviderListItem, RatingDto} from "@/lib/types";
 import {getProviderDetail, getProviderRatings} from "@/lib/api";
 import RatingItem from "@/components/RatingItem";
 import Pagination from "@/components/Pagination";
+import ProvidersMap from "@/components/ProvidersMap";
 
 // (SEO) baslik: provider adini rumtime'da biliyoruz -> dinamik metadaa yazilabilir; simdilik sabit baslik veriyoruz.
 
@@ -51,6 +52,22 @@ export default async function ProviderDetailPage({
         `${detail.avgScore.toFixed(1)} (${detail.ratingCount} oy)`
         : `${detail.ratingCount} oy`;
 
+    //Harita icin tek ogelik liste(ProvidersMap signature'ina uyacak sekilde)
+
+    const mapItems: ProviderListItem[] = detail.location
+        ? [{
+            id: detail.id,
+            name: detail.name,
+            city: detail.city ?? undefined,
+            district: detail.district ?? undefined,
+            phone: detail.phone ?? undefined,
+            avgScore: typeof detail.avgScore === "number" ? detail.avgScore : undefined,
+            ratingCount: detail.ratingCount,
+            lat: detail.location.lat,
+            lon: detail.location.lon,
+        }]
+        : [];
+
     return (
         <main className="mx-auto max-w-4xl p-4 space-y-6">
             {/* Üst başlık ve özet bilgiler */}
@@ -83,7 +100,14 @@ export default async function ProviderDetailPage({
                 </div>
             </section>
 
-            {/* (İstersen ileride buraya mini harita da koyarız: detail.location lon/lat var) */}
+            {/* Mini harita */}
+            {mapItems.length > 0 && (
+                <section className="space-y-2">
+                    <h2 className="text-lg font-semibold">Konum</h2>
+                    <ProvidersMap items={mapItems} height={220}/>
+                </section>
+            )}
+
 
             {/* Yorumlar listesi + sayfalama */}
             <section className="space-y-3">
@@ -109,6 +133,8 @@ export default async function ProviderDetailPage({
                     />
                 </div>
             </section>
+
+
         </main>
     );
 }
