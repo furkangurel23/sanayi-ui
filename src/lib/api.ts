@@ -127,6 +127,7 @@ export async function getProviders(opts: {
 export async function getProviderDetail(id: number): Promise<ProviderDetailDto> {
     const url = `${BASE}/providers/${id}`;
     const res = await fetch(url, {next: {revalidate: 300}});
+    // const res = await fetch(url, { cache: "no-store" })
     if (!res.ok) throw new Error(`GET /providers/${id} failed: ${res.status} ${res.statusText}`);
     return res.json();
 }
