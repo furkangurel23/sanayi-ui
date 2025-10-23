@@ -9,6 +9,8 @@ import RatingItem from "@/components/RatingItem";
 import Pagination from "@/components/Pagination";
 import ProvidersMap from "@/components/ProvidersMap";
 import MiniHistogram from "@/components/MiniHistogram";
+import RateForm from "@/components/RateForm";
+
 
 // (SEO) baslik: provider adini rumtime'da biliyoruz -> dinamik metadaa yazilabilir; simdilik sabit baslik veriyoruz.
 
@@ -150,6 +152,11 @@ export default async function ProviderDetailPage({
                 </section>
             )}
 
+            {/* Puan/yorum formu */}
+            <section className="space-y-3">
+                <RateForm providerId={id} />
+            </section>
+
             {/* Son 3 yorum (yalnızca ilk sayfada göster) */}
             {detail.ratingCount > 0 && rPage === 1 && top3.length > 0 && (
                 <section className="space-y-3">
@@ -159,7 +166,6 @@ export default async function ProviderDetailPage({
                     </ul>
                 </section>
             )}
-
 
             {/* Yorumlar listesi + sayfalama */}
             <section className="space-y-3">

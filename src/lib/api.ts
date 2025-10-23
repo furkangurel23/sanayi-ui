@@ -178,3 +178,37 @@ export async function getProvidersNear(opts: {
     if (!res.ok) throw new Error(`GET /providers/near failed: ${res.status} ${res.statusText}`);
     return res.json();
 }
+
+export async function postRating(opts: {
+    providerId: number;
+    score: number;
+    comment?: string;
+    anonymousId?: string | null;
+    recaptchaToken?: string | null;
+}){
+    const res = await fetch(`${BASE}/ratings/rate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        //rate limit ve anlik guncellemeler yuzunden cache istemiyoruz
+        cache: "no-store",
+        body: JSON.stringify({
+            providerId: opts.providerId,
+            score: Math.trunc(opts.score),
+            comment: opts.comment?.trim() || null,
+            anonymousId: opts.anonymousId || null,
+            recaptchaToken: opts.recaptchaToken || null
+        }),
+    });
+    if (!res.ok) {
+        const txt = await res.text();
+        throw new Error(txt || `POST /ratings/rate failed (${res.status})`);
+    }
+    /*
+    *
+    * Backendte XOR kurali zaten SecurityFacade ile düzenleniyor. login isen userId set, anonim isen anonymousId kalır.
+    * Biz her zaman anonymousId gönderebiliriz.
+    * 429 gelirse kullanıcıya çok sık denedin mesajı gönderebiliriz.
+    * */
+    return await res.json() as Promise<{id: number}>;
+}
+

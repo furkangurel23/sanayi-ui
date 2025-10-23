@@ -72,7 +72,7 @@ export type RatingDto = {
     createdAt: string;
     userDisplayName?: string | null;
     isAnonymous: boolean;
-}
+};
 
 export type NearItem = {
     id: number;
@@ -84,4 +84,31 @@ export type NearItem = {
     distanceKm: number;
     lat?: number | null;
     lon?: number | null;
+};
+
+export type AdminRatingItem = {
+    id: number;
+    providerId: number;
+    providerName: string;
+    score: number;
+    comment?: string | null;
+    createdAt: string;
+    userDisplayName?: string | null;
+    anonymousId?: string | null;
+    ip?: string | null;
+    deletedAt?: string | null;
+};
+
+export type ModerationLogItem = {
+    id: number;
+    action: string;
+    entityType: string;
+    entityId: number;
+    providerId?: number | null;
+    actorUserId?: string | null;
+    actorEmail?: string | null;
+    reason?: string | null;
+    ipAddress?: string | null;
+    details?: Record<string, any> | null;
+    createdAt: string;
 };
