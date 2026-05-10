@@ -64,28 +64,49 @@ export default function FilterBar({brands, categories}: Props) {
         setSortDir(initial.sortDir === "asc" ? "asc" : "desc");
     }, [initial]);
 
+    const normalizeScore = (value: string) => {
+        if (!value.trim()) return "";
+        const num = Number(value);
+        if (Number.isNaN(num)) return "";
+        return String(Math.max(-5, Math.min(5, num)));
+    }
+
     const apply = () => {
         const params = new URLSearchParams(sp.toString());
 
         const set = (k: string, v: string) => {
-            if (v && v.trim() !== "") params.set(k, v);
-            else params.delete(k);
+            if (v && v.trim() !== "") {
+                params.set(k, v);
+            } else {
+                params.delete(k);
+            }
         };
+
+        let nextMinScore = normalizeScore(minScore);
+        let nextMaxScore = normalizeScore(maxScore);
+
+        if (nextMinScore && nextMaxScore && Number(nextMinScore) > Number(nextMaxScore)) {
+            [nextMinScore, nextMaxScore] = [nextMaxScore, nextMinScore];
+        }
 
         set("brandId", brandId);
         set("categoryId", categoryId);
         set("city", city);
         set("district", district);
-        set("minScore", minScore);
-        set("maxScore", maxScore);
+        set("minScore", nextMinScore);
+        set("maxScore", nextMaxScore);
 
         // Çoklu sort gönder: seçilen + ikincil sıralamalar (stabil sonuç için)
         params.delete("sort");
         params.append("sort", `${sortField},${sortDir}`);
 
         // Aynı alan değilse ikincil olarak ratingCount ve id ekleyelim
-        if (sortField !== "ratingCount") params.append("sort", "ratingCount,desc");
-        if (sortField !== "id") params.append("sort", "id,asc");
+        if (sortField !== "ratingCount") {
+            params.append("sort", "ratingCount,desc");
+        }
+        if (sortField !== "id") {
+            params.append("sort", "id,asc");
+        }
 
         params.set("page", "1"); // filtre değişince başa dön
         router.push(`/providers?${params.toString()}`);
@@ -135,15 +156,15 @@ export default function FilterBar({brands, categories}: Props) {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <div className="flex gap-2">
                     <input
-                        type="number" step="0.1" min={0} max={5}
-                        placeholder="Min puan"
+                        type="number" step="0.1" min={-5} max={5}
+                        placeholder="Min puan (-5)"
                         value={minScore}
                         onChange={(e) => setMinScore(e.target.value)}
                         className="flex-1 rounded-lg border border-white/20 bg-transparent px-3 py-2"
                     />
                     <input
                         type="number" step="0.1" min={0} max={5}
-                        placeholder="Maks puan"
+                        placeholder="Maks puan (5)"
                         value={maxScore}
                         onChange={(e) => setMaxScore(e.target.value)}
                         className="flex-1 rounded-lg border border-white/20 bg-transparent px-3 py-2"

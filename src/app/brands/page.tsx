@@ -11,7 +11,7 @@ export const metadata = {
 export default async function BrandsPage({
                                              searchParams,
                                          }: {
-    searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+    searchParams: Promise<{ [_: string]: string | string[] | undefined }>;
 }) {
     const sp = await searchParams; // <- önemli
 
@@ -26,11 +26,17 @@ export default async function BrandsPage({
         <main className="mx-auto max-w-5xl p-4 space-y-4">
             <h1 className="text-2xl font-bold">Markalar</h1>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {data.content.map((b) => (
-                    <BrandCard key={b.id} brand={b}/>
-                ))}
-            </div>
+            {data.content.length === 0 ? (
+                <div className="rounded-xl border border-white/10 p-4 text-sm opacity-80">
+                    Marka bulunamadı.
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {data.content.map((b) => (
+                        <BrandCard key={b.id} brand={b}/>
+                    ))}
+                </div>
+            )}
 
             <div className="pt-4">
                 <Pagination page={(data.number ?? 0) + 1} totalPages={data.totalPages ?? 1}/>
