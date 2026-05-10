@@ -50,17 +50,6 @@ export default async function ProviderDetailPage({
         sortDir: "desc",
     });
 
-    const histogramSample: PageType<RatingDto> =
-        detail.ratingCount > 0
-            ? await getProviderRatings({
-                id,
-                page: 1,
-                size: Math.min(100, detail.ratingCount),
-                sortField: "createdAt",
-                sortDir: "desc",
-            })
-            : {content: [], number: 0, size: 0, totalPages: 0, totalElements: 0} as any;
-
 
     const addressLine = [detail.address, detail.district, detail.city].filter(Boolean).join(" / ");
     const scoreLine = typeof detail.avgScore === "number" ?
@@ -86,11 +75,11 @@ export default async function ProviderDetailPage({
     const range = [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5];
     const buckets = range.map(s => ({
         score: s,
-        count: histogramSample.content.filter(r => r.score === s).length
+        count: Number(detail.scoreHistogram?.[String(s)] ?? 0)
     }));
 
-    const sampleTotal = histogramSample.content.length;
-    const top3 = histogramSample.content.slice(0, 3)
+    const histogramTotal = buckets.reduce((sum, bucket) => sum + bucket.count, 0);
+    const top3 = detail.recentRatings ?? [];
 
 
     return (
@@ -146,7 +135,7 @@ export default async function ProviderDetailPage({
                             <div className="text-xs opacity-70">{detail.ratingCount} oy</div>
                         </div>
                         <div className="flex-1">
-                            <MiniHistogram buckets={buckets} total={sampleTotal}/>
+                            <MiniHistogram buckets={buckets} total={histogramTotal || detail.ratingCount}/>
                         </div>
                     </div>
                 </section>
@@ -157,8 +146,8 @@ export default async function ProviderDetailPage({
                 <RateForm providerId={id} />
             </section>
 
-            {/* Son 3 yorum (yalnızca ilk sayfada göster) */}
-            {detail.ratingCount > 0 && rPage === 1 && top3.length > 0 && (
+            {/* Son 3 yorum (yorum listesinin ilk sayfasıyla tekrar etmesin diye eski sayfalarda göster) */}
+            {detail.ratingCount > 0 && rPage > 1 && top3.length > 0 && (
                 <section className="space-y-3">
                     <h2 className="text-lg font-semibold">Son 3 yorum</h2>
                     <ul className="space-y-2">
@@ -196,4 +185,3 @@ export default async function ProviderDetailPage({
         </main>
     );
 }
-

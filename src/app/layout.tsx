@@ -19,7 +19,7 @@ export default function RootLayout({children}: { children: React.ReactNode }) {
         <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <header className="border-b border-white/10">
             <div className="mx-auto max-w-5xl px-4 py-3 flex items-center gap-4">
-                <a href="/" className="font-semibold">Sanayi</a>
+                <Link href="/" className="font-semibold">Sanayi</Link>
                 <nav className="text-sm opacity-80 flex items-center gap-3">
                     <Link href="/brands" className="hover:underline underline-offset-4">Markalar</Link>
                     <Link href="/providers" className="hover:underline underline-offset-4">Ustalar</Link>

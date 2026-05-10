@@ -3,7 +3,6 @@ import ProviderCard from "@/components/ProviderCard";
 import FilterBar from "@/components/FilterBar";
 import Pagination from "@/components/Pagination";
 import MapSection from "@/components/MapSection";
-import {NearInstantButton} from "@/components/NearButton";
 
 export const metadata = {
     title: "Ustalar | Sanayi",
@@ -76,11 +75,17 @@ export default async function ProvidersPage({
             {/* Harita: lat/lon olan kayıtlar varsa marker çizer, yoksa Ankara'yı gösterir */}
             <MapSection items={data.content} height={280}/>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {data.content.map((p) => (
-                    <ProviderCard key={p.id} p={p}/>
-                ))}
-            </div>
+            {data.content.length === 0 ? (
+                <div className="rounded-xl border border-white/10 p-4 text-sm opacity-80">
+                    Bu filtrelerle usta bulunamadı.
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {data.content.map((p) => (
+                        <ProviderCard key={p.id} p={p}/>
+                    ))}
+                </div>
+            )}
 
             <div className="pt-4">
                 <Pagination page={(data.number ?? 0) + 1} totalPages={data.totalPages ?? 1}/>

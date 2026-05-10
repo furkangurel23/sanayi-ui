@@ -19,11 +19,14 @@
 
 "use client";
 
-import type {AdminRatingItem, ModerationLogItem, Page} from "@/lib/types";
+import type {AdminRatingItem, ModerationLogItem, Page, SpringPage} from "@/lib/types";
+import {normalizePage} from "@/lib/page";
 
 const BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080/api";
 
-function qs(params: Record<string, any>) {
+type QueryValue = string | number | boolean | null | undefined;
+
+function qs(params: Record<string, QueryValue>) {
     const u = new URLSearchParams();
     Object.entries(params).forEach(([k, v]) => {
         if (v === undefined || v === null || v === "") return;
@@ -50,7 +53,8 @@ export async function adminListRatings(token: string, params: {
 }): Promise<Page<AdminRatingItem>> {
     const p0 = Math.max(0, (params.page ?? 1) - 1);
     const query = qs({...params, page: p0});
-    return getJson<Page<AdminRatingItem>>(`${BASE}/admin/ratings?${query}`, token);
+    const page = await getJson<SpringPage<AdminRatingItem>>(`${BASE}/admin/ratings?${query}`, token);
+    return normalizePage(page);
 }
 
 export async function adminDeleteRating(token: string, ratingId: number, reason?: string) {
@@ -67,11 +71,11 @@ export async function adminRestoreRating(token: string, ratingId: number, reason
     if (!res.ok) throw new Error(await res.text());
 }
 
-export async function adminListLogs(token: string, ratingId: number, page = 0, size = 20) {
+export async function adminListLogs(token: string, ratingId: number, page = 0, size = 20): Promise<Page<ModerationLogItem>> {
     const q = qs({entity: "RATING", page, size});
-    return getJson<Page<ModerationLogItem>>(`${BASE}/admin/logs/${ratingId}?${q}`, token);
+    const logs = await getJson<SpringPage<ModerationLogItem>>(`${BASE}/admin/logs/${ratingId}?${q}`, token);
+    return normalizePage(logs);
 }
-
 
 
 

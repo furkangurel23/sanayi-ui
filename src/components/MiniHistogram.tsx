@@ -1,5 +1,3 @@
-import React from "react";
-
 type Bucket = { score: number, count: number };
 
 export default function MiniHistogram({
@@ -8,7 +6,7 @@ export default function MiniHistogram({
                                           height = 72,
                                       }: {
     buckets: Bucket[];
-    total: Number,
+    total: number,
     height?: number;
 }) {
     const max = Math.max(1, ...buckets.map(b => b.count));
@@ -20,7 +18,6 @@ export default function MiniHistogram({
                 {buckets.map((b, i) => {
                     const h = Math.round((b.count / max) * (height - 18)); // 18px alt etiket boşluğu
                     const isPos = b.score >= 1;
-                    const isNeg = b.score <= -1;
                     const tone =
                         b.score === 0
                             ? "bg-white/40"
@@ -40,7 +37,7 @@ export default function MiniHistogram({
                 })}
             </div>
             <div className="text-[11px] opacity-70 mt-2">
-                Toplam örnek: {total} · Aralık: −5 … 5
+                Toplam oy: {total} · Aralık: -5 ... 5
             </div>
         </div>
     );

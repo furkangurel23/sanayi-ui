@@ -6,8 +6,10 @@ import {
     Page,
     ProviderDetailDto,
     ProviderListItem,
-    RatingDto
+    RatingDto,
+    SpringPage
 } from "@/lib/types";
+import {normalizePage} from "@/lib/page";
 
 const BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080/api";
 
@@ -58,8 +60,10 @@ export async function getBrands(opts: {
 
     const url = `${BASE}/brands?${params.toString()}`;
     const res = await fetch(url, {next: {revalidate: 300}});
-    if (!res.ok) throw new Error(`GET /brands failed: ${res.status} ${res.statusText}`);
-    return res.json();
+    if (!res.ok) {
+        throw new Error(`GET /brands failed: ${res.status} ${res.statusText}`);
+    }
+    return normalizePage(await res.json() as SpringPage<BrandDto>);
 }
 
 export async function getCategoriesAllSorted(): Promise<IdName[]> {
@@ -67,8 +71,10 @@ export async function getCategoriesAllSorted(): Promise<IdName[]> {
     params.append("sort", "name,asc");
     const url = `${BASE}/categories?${params.toString()}`;
     const res = await fetch(url, {next: {revalidate: 300}});
-    if (!res.ok) throw new Error(`GET /categories failed: ${res.status} ${res.statusText}`);
-    const page: Page<CategoryDto> = await res.json();
+    if (!res.ok) {
+        throw new Error(`GET /categories failed: ${res.status} ${res.statusText}`);
+    }
+    const page = normalizePage(await res.json() as SpringPage<CategoryDto>);
     return page.content.map(c => ({id: c.id, name: c.name}));
 }
 
@@ -77,8 +83,10 @@ export async function getBrandsAllSorted(): Promise<IdName[]> {
     params.append("sort", "name,asc");
     const url = `${BASE}/brands?${params.toString()}`;
     const res = await fetch(url, {next: {revalidate: 300}});
-    if (!res.ok) throw new Error(`GET /brands failed: ${res.status} ${res.statusText}`);
-    const page: Page<BrandDto> = await res.json();
+    if (!res.ok) {
+        throw new Error(`GET /brands failed: ${res.status} ${res.statusText}`);
+    }
+    const page = normalizePage(await res.json() as SpringPage<BrandDto>);
     return page.content.map(b => ({id: b.id, name: b.name}));
 }
 
@@ -112,7 +120,7 @@ export async function getProviders(opts: {
             {field: "avgScore", dir: "desc" as const},
             {field: "ratingCount", dir: "desc" as const},
             {field: "id", dir: "asc" as const},
-        ];
+    ];
 
     for (const s of sorts) {
         params.append("sort", `${s.field},${s.dir}`);
@@ -120,15 +128,18 @@ export async function getProviders(opts: {
 
     const url = `${BASE}/providers?${params.toString()}`;
     const res = await fetch(url, {next: {revalidate: 60}}); // liste daha sık güncellensin
-    if (!res.ok) throw new Error(`GET /providers failed: ${res.status} ${res.statusText}`);
-    return res.json();
+    if (!res.ok) {
+        throw new Error(`GET /providers failed: ${res.status} ${res.statusText}`);
+    }
+    return normalizePage(await res.json() as SpringPage<ProviderListItem>);
 }
 
 export async function getProviderDetail(id: number): Promise<ProviderDetailDto> {
     const url = `${BASE}/providers/${id}`;
-    const res = await fetch(url, {next: {revalidate: 300}});
-    // const res = await fetch(url, { cache: "no-store" })
-    if (!res.ok) throw new Error(`GET /providers/${id} failed: ${res.status} ${res.statusText}`);
+    const res = await fetch(url, {cache: "no-store"});
+    if (!res.ok) {
+        throw new Error(`GET /providers/${id} failed: ${res.status} ${res.statusText}`);
+    }
     return res.json();
 }
 
@@ -150,13 +161,11 @@ export async function getProviderRatings(opts: {
     params.append("sort", `${field},${dir}`);
 
     const url = `${BASE}/providers/${opts.id}/ratings?` + params.toString();
-    /*
-    * Yorum listesi daha dinamiktir -> daha kisa revalidate ya da tamamen no-store dusunebilirdik.
-    * Burada 60s seciyoruz: hizli guncelleme + cache avantaji.
-    * */
-    const res = await fetch(url, {next: {revalidate: 60}});
-    if (!res.ok) throw new Error(`GET /providers/${opts.id}/ratings failed: ${res.status} ${res.statusText}`);
-    return res.json();
+    const res = await fetch(url, {cache: "no-store"});
+    if (!res.ok) {
+        throw new Error(`GET /providers/${opts.id}/ratings failed: ${res.status} ${res.statusText}`);
+    }
+    return normalizePage(await res.json() as SpringPage<RatingDto>);
 }
 
 export async function getProvidersNear(opts: {
@@ -176,8 +185,10 @@ export async function getProvidersNear(opts: {
     params.set("page", String(page0));
     params.set("size", String(size));
     const res = await fetch(`${BASE}/providers/near?` + params.toString(), { next: { revalidate: 30 } });
-    if (!res.ok) throw new Error(`GET /providers/near failed: ${res.status} ${res.statusText}`);
-    return res.json();
+    if (!res.ok) {
+        throw new Error(`GET /providers/near failed: ${res.status} ${res.statusText}`);
+    }
+    return normalizePage(await res.json() as SpringPage<NearItem>);
 }
 
 export async function postRating(opts: {
@@ -212,4 +223,3 @@ export async function postRating(opts: {
     * */
     return await res.json() as Promise<{id: number}>;
 }
-

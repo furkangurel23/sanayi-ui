@@ -6,11 +6,16 @@ import type {ProviderListItem} from "@/lib/types";
 // Runtime'a girmeyen type-only importlar. runtime'a girmez.
 type LeafletMap = import("leaflet").Map;
 type LeafletLayerGroup = import("leaflet").LayerGroup;
+type LeafletMapWithPane = LeafletMap & {_mapPane?: HTMLElement | null};
 
 const DEFAULT_CENTER: [number, number] = [39.925533, 32.866287]; // Ankara
 const DEFAULT_ZOOM = 11;
 
 type Props = { items: ProviderListItem[]; height?: number };
+
+function hasMapPane(map: LeafletMap | null): map is LeafletMap & {_mapPane: HTMLElement} {
+    return Boolean(map && (map as LeafletMapWithPane)._mapPane);
+}
 
 export default function ProvidersMap({items, height = 260}: Props) {
     const mapDivRef = useRef<HTMLDivElement>(null!);
@@ -52,12 +57,12 @@ export default function ProvidersMap({items, height = 260}: Props) {
             markersLayerRef.current = markerLayer;
 
             // İlk boyut hesabı — sağlamlık kontrolleri ile
-            if (initRafRef.current) cancelAnimationFrame(initRafRef.current!!);
+            if (initRafRef.current !== null) cancelAnimationFrame(initRafRef.current);
             initRafRef.current = requestAnimationFrame(() => {
                 if (cancelled) return;
                 const m = mapRef.current;
                 // map hâlâ aynı mı ve pane’i var mı?
-                if (!m || (m as any)._mapPane == null) return;
+                if (!hasMapPane(m)) return;
                 try {
                     m.invalidateSize();
                 } catch { /* sessiz geç */
@@ -70,7 +75,7 @@ export default function ProvidersMap({items, height = 260}: Props) {
 
         const onResize = () => {
             const m = mapRef.current;
-            if (!m || (m as any)._mapPane == null) return;
+            if (!hasMapPane(m)) return;
             try {
                 m.invalidateSize();
             } catch {
@@ -81,8 +86,8 @@ export default function ProvidersMap({items, height = 260}: Props) {
         return () => {
             cancelled = true;
             window.removeEventListener("resize", onResize);
-            if (initRafRef.current) cancelAnimationFrame(initRafRef.current!!);
-            if (updateRafRef.current) cancelAnimationFrame(updateRafRef.current!!);
+            if (initRafRef.current !== null) cancelAnimationFrame(initRafRef.current);
+            if (updateRafRef.current !== null) cancelAnimationFrame(updateRafRef.current);
             mapRef.current?.remove();
             mapRef.current = null;
             markersLayerRef.current = null;
@@ -106,7 +111,7 @@ export default function ProvidersMap({items, height = 260}: Props) {
 
             const withCoords = items.filter(
                 (p): p is ProviderListItem & { lat: number; lon: number } =>
-                    typeof (p as ProviderListItem).lat === "number" && typeof (p as ProviderListItem).lon === "number"
+                    typeof p.lat === "number" && typeof p.lon === "number"
             );
 
             for (const p of withCoords) {
@@ -124,19 +129,19 @@ export default function ProvidersMap({items, height = 260}: Props) {
             }
 
             if (withCoords.length > 0) {
-                const bounds = L.latLngBounds(withCoords.map((p: any) => [p.lat, p.lon] as [number, number]));
+                const bounds = L.latLngBounds(withCoords.map((p) => [p.lat, p.lon] as [number, number]));
                 mapInstance.fitBounds(bounds, {padding: [20, 20]});
             } else {
                 mapInstance.setView(DEFAULT_CENTER, DEFAULT_ZOOM);
             }
 
             // Görünürlük/yerleşim değişmişse düzelt — güvenli RAF
-            if (updateRafRef.current) cancelAnimationFrame(updateRafRef.current!!);
+            if (updateRafRef.current !== null) cancelAnimationFrame(updateRafRef.current);
             updateRafRef.current = requestAnimationFrame(() => {
                 // component unmount ya da map.remove() olmuş olabilir
                 const m = mapRef.current;
                 if (!m || m !== mapInstance) return;          // aynı instance mı?
-                if ((m as any)._mapPane == null) return;      // pane var mı?
+                if (!hasMapPane(m)) return;                   // pane var mı?
                 try {
                     m.invalidateSize();
                 } catch {

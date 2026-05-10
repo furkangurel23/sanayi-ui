@@ -35,6 +35,20 @@ export type Page<T> = {
     number: number; // current page index (0 - based)
 };
 
+export type SpringPage<T> = {
+    content?: T[];
+    totalElements?: number;
+    totalPages?: number;
+    size?: number;
+    number?: number;
+    page?: {
+        size?: number;
+        number?: number;
+        totalElements?: number;
+        totalPages?: number;
+    };
+};
+
 export type CategoryDto = {
     id: number;
     name: string;
@@ -63,6 +77,8 @@ export type ProviderDetailDto = {
     ratingCount: number;
     brands: IdName[];
     categories: IdName[];
+    recentRatings?: RatingDto[];
+    scoreHistogram?: Record<string, number>;
 };
 
 export type RatingDto = {
@@ -71,7 +87,8 @@ export type RatingDto = {
     comment?: string | null;
     createdAt: string;
     userDisplayName?: string | null;
-    isAnonymous: boolean;
+    anonymous?: boolean;
+    isAnonymous?: boolean;
 };
 
 export type NearItem = {
@@ -105,10 +122,10 @@ export type ModerationLogItem = {
     entityType: string;
     entityId: number;
     providerId?: number | null;
-    actorUserId?: string | null;
+    actorUserId?: number | null;
     actorEmail?: string | null;
     reason?: string | null;
     ipAddress?: string | null;
-    details?: Record<string, any> | null;
+    details?: Record<string, unknown> | null;
     createdAt: string;
 };

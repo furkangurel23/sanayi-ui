@@ -2,7 +2,7 @@
 
 import {adminDeleteRating, adminListLogs, adminListRatings, adminRestoreRating} from "@/lib/adminApi";
 
-import {useEffect, useMemo, useState} from "react";
+import {Suspense, useEffect, useMemo, useState} from "react";
 import {useRouter, useSearchParams} from "next/navigation";
 import type {AdminRatingItem, ModerationLogItem, Page} from "@/lib/types";
 
@@ -25,7 +25,7 @@ function useAdminToken() {
         *  bir ayar gibi tututoyurz.
         *
         * Güvenlik uyarısı: localStorage gizli bilgi için ideal bir yer değildilr. XSS olursa token'ı çalarlar. uzun vadede:
-        *   - HttoOnly cookie ile token bırakmak,
+        *   - HttpOnly cookie ile token bırakmak,
         *   - veya Next tarafında Route Handler / server action ile API'yi proxy'leyip client'a token göstermek daha güvenli.
         * Alternatiflar: sessionSTorage(sekme bazlı, kapanınca silinir), IndexedDB (daha büük ve asenkron), cookie (HttpOnly olabilir, ama CORSF/SCRF konuları var)
         *
@@ -50,7 +50,11 @@ function formatDate(iso: string) {
     }
 }
 
-export default function AdminRatingsPage() {
+function errorMessage(error: unknown, fallback: string) {
+    return error instanceof Error && error.message ? error.message : fallback;
+}
+
+function AdminRatingsContent() {
     const {token, setToken} = useAdminToken();
     const router = useRouter();
     const sp = useSearchParams();
@@ -113,15 +117,17 @@ export default function AdminRatingsPage() {
                 size,
             });
             setData(res);
-        } catch (e: any) {
-            setErr(e?.message || "Liste alınamadı.");
+        } catch (error: unknown) {
+            setErr(errorMessage(error, "Liste alınamadı."));
         } finally {
             setLoading(false);
         }
     }
 
+    // İlk yüklemede token gelince listeyi çek; filtrelerde Uygula butonu belirleyici kalsın.
     useEffect(() => {
         fetchList(1);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [token]);
 
 
@@ -164,8 +170,8 @@ export default function AdminRatingsPage() {
                     }
                     : d
             );
-        } catch (e: any) {
-            alert(e?.message || "Silme başarısız.");
+        } catch (error: unknown) {
+            alert(errorMessage(error, "Silme başarısız."));
         }
     }
 
@@ -183,8 +189,8 @@ export default function AdminRatingsPage() {
                     }
                     : d
             );
-        } catch (e: any) {
-            alert(e?.message || "Geri alma başarısız.");
+        } catch (error: unknown) {
+            alert(errorMessage(error, "Geri alma başarısız."));
         }
     }
 
@@ -195,8 +201,8 @@ export default function AdminRatingsPage() {
         try {
             const res = await adminListLogs(token, ratingId, 0, 20);
             setLogs(res);
-        } catch (e: any) {
-            alert(e?.message || "Loglar alınamadı.");
+        } catch (error: unknown) {
+            alert(errorMessage(error, "Loglar alınamadı."));
         } finally {
             setLogsLoading(false);
         }
@@ -459,4 +465,12 @@ export default function AdminRatingsPage() {
             )}
         </main>
     );
-};
+}
+
+export default function AdminRatingsPage() {
+    return (
+        <Suspense fallback={<main className="mx-auto max-w-6xl p-4 text-sm opacity-70">Yükleniyor...</main>}>
+            <AdminRatingsContent/>
+        </Suspense>
+    );
+}

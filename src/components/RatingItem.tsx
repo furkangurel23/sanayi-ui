@@ -3,15 +3,15 @@ import type {RatingDto} from "@/lib/types";
 function formatDate(iso: string) {
     try {
         return new Date(iso).toLocaleDateString("tr-TR");
-    } catch (e) {
+    } catch {
         return iso;
     }
 }
 
 export default function RatingItem({r}: { r: RatingDto }) {
-    //Basit yildiz metni (ileride gercek ikonlarla degistiririz)
-    const scoreText = `${r.score} / 5`;
-    const who = r.isAnonymous ? "Anonim" : (r.userDisplayName || "User");
+    const scoreText = `${r.score} puan`;
+    const isAnonymous = r.anonymous ?? r.isAnonymous ?? false;
+    const who = isAnonymous ? "Anonim" : (r.userDisplayName || "Kullanıcı");
 
     return (
         <li className="rounded-xl border border-white/10 p-3">
