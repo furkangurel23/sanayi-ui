@@ -1,63 +1,88 @@
 "use client";
 
 /*
-* Kullanıcı detay sayfasında yorum puan girebilecek. reCAPTCHA varsa token alacağız, yoksa boş geçeceğiz.
-* Anonim kimlik için küçük bir localStorage değeri tutacağız.
-* */
+ * PUAN/YORUM FORMU — Client Component.
+ *
+ * Neden "use client"?
+ *  - useState/useEffect/useRef hook'ları ve onClick/onSubmit olayları yalnızca
+ *    tarayıcıda çalışır. App Router'da dosyalar varsayılan Server Component'tir;
+ *    ilk satırdaki "use client" bu dosyayı client bundle'ına alır.
+ *
+ * İş kuralları:
+ *  - Üye (JWT var): sınırsız yorum; reCAPTCHA gerekmez; her gönderim yeni kayıt.
+ *  - Anonim: localStorage'daki kalıcı anonymousId ile usta başına TEK oy
+ *    (ikinci gönderim mevcut oyu günceller); prod'da reCAPTCHA zorunlu.
+ *
+ * Hata standardı:
+ *  - postRating başarısız olursa ApiError fırlatır; err.code'a göre dallanır,
+ *    err.message backend'den gelen hazır Türkçe metindir (messages.properties).
+ */
 
 import React, {useEffect, useMemo, useRef, useState} from "react";
+import Link from "next/link";
 import {useRouter} from "next/navigation";
 import {postRating} from "@/lib/api";
+import {useAuth} from "@/lib/useAuth";
+import {ensureFreshToken} from "@/lib/auth";
+import {ApiError, errorMessage} from "@/lib/apiError";
 import ReCAPTCHA from "react-google-recaptcha";
 
-type Props = {
-    providerId: number;
-}
+// -5..+5 puan dizisi. Array.from yerine sabit liste: okunaklı ve tip güvenli.
+const SCORES = [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5];
 
-export default function RateForm({providerId}: Props) {
+export default function RateForm({providerId}: { providerId: number }) {
     const router = useRouter();
-    const [score, setScore] = useState<number>(0);
-    const [comment, setComment] = useState<string>("");
-    const [loading, setLoading] = useState<boolean>(false);
+    // useAuth: login/logout olduğunda bu bileşen otomatik yeniden render olur.
+    const user = useAuth();
+
+    // useState<number | null>: "hiç seçilmedi" durumunu 0'dan ayırmak için null kullanıyoruz
+    // (0 geçerli bir puan!). TypeScript union tipi tam bunu ifade eder.
+    const [score, setScore] = useState<number | null>(null);
+    const [comment, setComment] = useState("");
+    const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [okMsg, setOkMsg] = useState<string | null>(null);
 
+    // reCAPTCHA yalnızca anonim kullanıcıya gösterilir (üye için gereksiz sürtünme).
     const siteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || "";
-    const showCaptcha = Boolean(siteKey);
-
+    const showCaptcha = Boolean(siteKey) && !user;
+    // useRef: render'lar arasında YAŞAYAN ama değişince render TETİKLEMEYEN kutu.
+    // Burada reCAPTCHA bileşeninin imperatif API'sine (reset) erişmek için kullanılır.
     const captchaRef = useRef<ReCAPTCHA | null>(null);
+    const [captchaToken, setCaptchaToken] = useState<string | null>(null);
 
-    //Anononim id'yi bir kez üret, localStorage'ta sakla.
+    // Anonim kimlik: ilk ziyarette üret, localStorage'da kalıcı sakla.
+    // Backend bu id ile "usta başına tek anonim oy" kuralını uygular.
     const [anonId, setAnonId] = useState<string | null>(null);
     useEffect(() => {
+        // useEffect(cb, []) -> yalnızca ilk mount'ta çalışır (dependency dizisi boş).
+        // localStorage'a SSR'da erişilemez; effect ise sadece tarayıcıda koşar — güvenli yer burası.
         try {
             const k = "sanayiAnonId";
             const existing = localStorage.getItem(k);
             if (existing) setAnonId(existing);
             else {
+                // crypto.randomUUID modern tarayıcılarda var; ?. ve ?? ile eski tarayıcıya düşüş yolu bırakıyoruz.
                 const gen = (globalThis.crypto?.randomUUID?.() ?? `anon-${Date.now()}-${Math.random()}`);
                 localStorage.setItem(k, gen);
                 setAnonId(gen);
             }
         } catch {
-            setAnonId(null);
+            setAnonId(null); // localStorage kapalıysa (gizli sekme vb.) anonim oy yine denenebilir
         }
     }, []);
 
-    const [captchaToken, setCaptchaToken] = useState<string | null>(null);
-
+    // useMemo: bağımlılıklar değişmedikçe hesaplamayı tekrarlama (gereksiz iş önlenir).
     const disabled = useMemo(() => {
-        if (loading) return true;
-        if (Number.isNaN(score) || score < -5 || score > 5) return true;
+        if (loading || score === null) return true;
         return comment.length > 500;
     }, [loading, score, comment.length]);
 
     async function onSubmit(e: React.FormEvent) {
-        e.preventDefault();
+        e.preventDefault(); // formun klasik sayfa yenilemesini engelle (SPA davranışı)
         setError(null);
         setOkMsg(null);
-
-        if (disabled) return;
+        if (disabled || score === null) return;
         setLoading(true);
 
         try {
@@ -65,28 +90,38 @@ export default function RateForm({providerId}: Props) {
                 providerId,
                 score,
                 comment: comment || undefined,
-                anonymousId: anonId,
+                anonymousId: user ? null : anonId, // üye isek anonim kimlik GÖNDERİLMEZ
                 recaptchaToken: showCaptcha ? captchaToken || undefined : undefined,
+                token: await ensureFreshToken(), // JWT varsa (tazelenmiş) Authorization header'ına gider
             });
 
-            setOkMsg("Teşekkürler, oyunuz kaydedildi.");
+            setOkMsg("Teşekkürler, değerlendirmen kaydedildi.");
             setComment("");
-            setScore(0);
+            setScore(null);
             setCaptchaToken(null);
             captchaRef.current?.reset?.();
-            //SSR sayfayi tazele: yeni yorumu gor
+            // router.refresh(): Server Component'ları yeniden çalıştırır ->
+            // yeni yorum listede/histogramda hemen görünür (tam sayfa yenileme YOK).
             router.refresh();
-        } catch (error: unknown) {
-            const msg = error instanceof Error ? error.message : String(error);
-            // Backend’in 409/429 friendly mesajları varsa kullanıcıya göster
-            if (msg.includes("Bu sağlayıcıyı zaten oyladınız")) {
-                setError("Bu sağlayıcıyı zaten oylamışsınız.");
-            } else if (msg.includes("Too many requests") || msg.includes("RATE_LIMIT")) {
-                setError("Çok sık denediniz. Lütfen 1 dakika sonra tekrar deneyin.");
-            } else if (msg.includes("recaptcha") || msg.includes("reCAPTCHA")) {
-                setError("reCAPTCHA doğrulaması başarısız.");
+        } catch (err: unknown) {
+            // instanceof ApiError: backend'in code alanına göre ÖZEL davranış;
+            // diğer her durumda backend'in hazır Türkçe mesajı gösterilir.
+            if (err instanceof ApiError) {
+                switch (err.code) {
+                    case "error.rating.duplicate-anon":
+                    case "error.rating.duplicate-user":
+                        setError(`${err.message} Yeni yorumlar için üye olabilirsin.`);
+                        break;
+                    case "error.recaptcha.missing":
+                    case "error.recaptcha.failed":
+                        setError("reCAPTCHA doğrulaması gerekli. Kutucuğu işaretleyip tekrar dene.");
+                        break;
+                    default:
+                        // fieldErrors varsa (400 validation) satır satır ekle.
+                        setError([err.message, ...err.fieldErrorLines()].join(" · "));
+                }
             } else {
-                setError("Kaydedilemedi. Biraz sonra tekrar deneyin.");
+                setError(errorMessage(err, "Kaydedilemedi. Biraz sonra tekrar deneyin."));
             }
         } finally {
             setLoading(false);
@@ -94,76 +129,87 @@ export default function RateForm({providerId}: Props) {
     }
 
     return (
-        <form onSubmit={onSubmit} className="rounded-2xl border border-white/10 p-3 space-y-3">
-            <div className="text-lg font-semibold">Puan ver</div>
+        <form onSubmit={onSubmit} className="card stack">
+            <div className="row-between">
+                <h2 className="section-title">Değerlendir</h2>
+                {!user && (
+                    <span className="text-xs faint">
+                        Anonim tek oy hakkı · <Link href="/login" className="btn btn-ghost btn-sm"
+                                                     style={{display: "inline-flex"}}>Giriş yap</Link>
+                    </span>
+                )}
+            </div>
 
-            <div className="flex items-center gap-2">
-                <label className="text-sm w-28">Puan (-5..5)</label>
-                <input
-                    type="number"
-                    step={1}
-                    min={-5}
-                    max={5}
-                    value={score}
-                    onChange={e => setScore(Math.max(-5, Math.min(5, Number(e.target.value) || 0)))}
-                    className="w-24 rounded-lg border border-white/20 bg-transparent px-2 py-1 text-sm"
+            {/* role="radiogroup" + aria-checked: ekran okuyucular için "tek seçimli grup" semantiği */}
+            <div className="field">
+                <span className="field-label">Puanın (-5 çok kötü · +5 mükemmel)</span>
+                <div className="score-picker" role="radiogroup" aria-label="Puan seç">
+                    {SCORES.map(s => (
+                        <button
+                            key={s}
+                            type="button" // önemli: default "submit"tir, formu göndermesin!
+                            role="radio"
+                            aria-checked={score === s}
+                            className="score-pick"
+                            // data-* attribute'ları: CSS'te [data-selected="true"] ile stillenir
+                            data-selected={score === s}
+                            data-tone={s === 0 ? "zero" : s > 0 ? "pos" : "neg"}
+                            onClick={() => setScore(s)}
+                        >
+                            {s > 0 ? `+${s}` : s}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            <div className="field">
+                <span className="field-label">Yorum (opsiyonel)</span>
+                {/* Controlled component: value=state, onChange=state güncelle.
+                    React'te form elemanının "tek doğruluk kaynağı" state olur. */}
+                <textarea
+                    className="textarea"
+                    placeholder="Deneyimini anlat: işçilik, fiyat, süre..."
+                    value={comment}
+                    onChange={e => setComment(e.target.value)}
+                    maxLength={500}
+                    rows={3}
                 />
+                <span className="field-hint">{comment.length}/500</span>
             </div>
 
-            <div>
-        <textarea
-            placeholder="Yorum (opsiyonel, en fazla 500 karakter)"
-            value={comment}
-            onChange={e => setComment(e.target.value)}
-            maxLength={500}
-            rows={3}
-            className="w-full rounded-lg border border-white/20 bg-transparent px-3 py-2 text-sm"
-        />
-                <div className="text-[11px] opacity-60 mt-1">{comment.length}/500</div>
-            </div>
-
-            {showCaptcha ? (
-                <div>
+            {showCaptcha && (
+                <div className="field">
                     <ReCAPTCHA
                         ref={captchaRef}
                         sitekey={siteKey}
                         onChange={val => setCaptchaToken(val)}
-                        theme="dark"
                     />
-                    <div className="text-[11px] opacity-60 mt-1">Anonim oylar için doğrulama gerekebilir.</div>
-                </div>
-            ) : (
-                <div className="text-[11px] opacity-60">
-                    reCAPTCHA yapılandırılmadı. Prod’da <code>NEXT_PUBLIC_RECAPTCHA_SITE_KEY</code> ver.
+                    <span className="field-hint">Anonim oylar için doğrulama gerekir.</span>
                 </div>
             )}
 
-            {error && <div className="text-sm text-rose-400">{error}</div>}
-            {okMsg && <div className="text-sm text-emerald-400">{okMsg}</div>}
+            {/* Koşullu render: error null ise hiç DOM üretilmez ({x && <jsx>} kalıbı) */}
+            {error && <div className="alert alert-error">{error}</div>}
+            {okMsg && <div className="alert alert-success">{okMsg}</div>}
 
-            <div className="flex gap-2">
-                <button
-                    type="submit"
-                    disabled={disabled}
-                    className="rounded-lg border border-white/30 px-3 py-2 text-sm disabled:opacity-50"
-                >
-                    {loading ? "Gönderiliyor..." : "Gönder"}
+            <div className="row">
+                <button type="submit" disabled={disabled} className="btn btn-primary">
+                    {loading ? "Gönderiliyor…" : "Gönder"}
                 </button>
                 <button
                     type="button"
                     disabled={loading}
+                    className="btn btn-ghost"
                     onClick={() => {
-                        setScore(0);
+                        setScore(null);
                         setComment("");
                         setError(null);
                         setOkMsg(null);
                     }}
-                    className="rounded-lg border border-white/10 px-3 py-2 text-sm disabled:opacity-50"
                 >
                     Temizle
                 </button>
             </div>
         </form>
     );
-
 }

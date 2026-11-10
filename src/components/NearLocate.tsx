@@ -1,19 +1,24 @@
-"use client"; //geolocation kullanacagiz. tarayi API'lari
+"use client";
+
+/*
+ * KONUM ALICI — tarayıcı Geolocation API'si.
+ *
+ * navigator.geolocation.getCurrentPosition(basari, hata, ayarlar):
+ *  - Kullanıcıdan izin ister (HTTPS veya localhost şartı!).
+ *  - Başarıda koordinatları URL'e yazarız -> Server Component sayfa
+ *    /providers/near?lat=..&lon=.. ile veriyi sunucuda çeker (SSR).
+ * Yani "konum al" client işi, "yakınımdakileri listele" server işi — görev ayrımı net.
+ *
+ * Next 16 deseni: başlangıç yarıçapı SERVER sayfadan prop gelir (useSearchParams
+ * gerekmez -> Suspense zorunluluğu da yok); URL'e yazma tıklama anında yapılır.
+ */
 
 import {useState} from "react";
-import {useRouter, useSearchParams} from "next/navigation";
+import {useRouter} from "next/navigation";
 
-export default function NearLocate() {
+export default function NearLocate({initialRadiusKm = 10}: { initialRadiusKm?: number }) {
     const router = useRouter();
-    const sp = useSearchParams();
-
-    //URL'de radius varsa onu baslangic degeri yap; yoksa 10 km.
-
-    const [radius, setRadius] = useState<number>(() => {
-        const r = Number(sp.get("radiusKm") ?? "10");
-        return Number.isFinite(r) ? r : 10;
-    });
-
+    const [radius, setRadius] = useState<number>(initialRadiusKm);
     const [loading, setLoading] = useState(false);
     const [err, setErr] = useState<string | null>(null);
 
@@ -29,16 +34,12 @@ export default function NearLocate() {
 
         navigator.geolocation.getCurrentPosition(
             (pos) => {
-                const lat = pos.coords.latitude;
-                const lon = pos.coords.longitude;
-
-                const params = new URLSearchParams(sp.toString());
-                params.set("lat", String(lat));
-                params.set("lon", String(lon));
+                // Tıklama anında mevcut query korunur, konum + yarıçap eklenir.
+                const params = new URLSearchParams(window.location.search);
+                params.set("lat", String(pos.coords.latitude));
+                params.set("lon", String(pos.coords.longitude));
                 params.set("radiusKm", String(radius));
                 params.set("page", "1");
-
-                //Client-side navigation: SSR sayfa yeni parametrelerle yeniden fetch eder
                 router.push(`/providers/near?${params.toString()}`);
                 setLoading(false);
             },
@@ -51,32 +52,33 @@ export default function NearLocate() {
     };
 
     return (
-        <div className="rounded-2xl border border-white/10 p-4 space-y-3">
-            <p className="text-sm opacity-80">
-                Yakınınızdaki ustaları görmek için konumunuza izin verin.
-            </p>
+        <div className="card stack">
+            <p className="card-sub">Yakınındaki ustaları görmek için konumuna izin ver.</p>
 
-            <div className="flex items-center gap-2">
-                <label className="text-sm w-28">Yarıçap (km)</label>
-                <input
-                    type="number"
-                    min={1}
-                    max={100}
-                    value={radius}
-                    onChange={(e) => setRadius(Math.max(1, Math.min(100, Number(e.target.value) || 1)))}
-                    className="w-24 rounded-lg border border-white/20 bg-transparent px-2 py-1 text-sm"
-                />
+            <div className="row" style={{flexWrap: "wrap"}}>
+                <label className="field" style={{width: "9rem"}}>
+                    <span className="field-label">Yarıçap (km)</span>
+                    <input
+                        className="input"
+                        type="number"
+                        min={1}
+                        max={100}
+                        value={radius}
+                        onChange={(e) => setRadius(Math.max(1, Math.min(100, Number(e.target.value) || 1)))}
+                    />
+                </label>
                 <button
                     type="button"
                     onClick={locate}
                     disabled={loading}
-                    className="rounded-lg border border-white/20 px-3 py-1 text-sm disabled:opacity-50"
+                    className="btn btn-primary"
+                    style={{alignSelf: "flex-end"}}
                 >
-                    {loading ? "Alınıyor..." : "Konumumu al"}
+                    {loading ? "Alınıyor…" : "📍 Konumumu al"}
                 </button>
             </div>
 
-            {err && <div className="text-sm text-red-400">{err}</div>}
+            {err && <div className="alert alert-error">{err}</div>}
         </div>
     );
 }

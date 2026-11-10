@@ -1,58 +1,62 @@
 "use client";
 
+/*
+ * MARKA KARTI — açılır/kapanır usta listesi.
+ *
+ * Yalnızca bu bileşen "use client" (useState için); listeyi basan sayfa Server
+ * Component kalır. App Router felsefesi: etkileşimi mümkün olan EN KÜÇÜK parçaya indir,
+ * gerisi server'da kalsın -> daha küçük JS bundle, daha hızlı sayfa.
+ *
+ * Erişilebilirlik: aria-expanded + aria-controls, ekran okuyucuya "bu buton
+ * şu bölgeyi açıp kapatır" bilgisini verir.
+ */
+
 import {useState} from "react";
+import Link from "next/link";
 import type {BrandDto} from "@/lib/types";
+import BrandLogo from "@/components/BrandLogo";
 
 export default function BrandCard({brand}: { brand: BrandDto }) {
     const [open, setOpen] = useState(false);
-    //useState etkilesim icin gerekli. App Router'da sadece gereken parcayi use client yapariz, geri kalan server'da kalir -> performans
-    /*
-    *
-    *   useState nedir?
-    * React hook'u. Bir bilesenin icinde durum(state) tutar ve bu deger degistirildiginde bilesini eniden render eder.
-    * Sadece client component'larda calisir.
-    *
-    * */
     const providerCount = brand.providers?.length ?? 0;
 
     return (
-        <div className="rounded-2xl border p-4 shadow-sm bg-white/5 border-white/10">
-            <div className="flex items-center justify-between gap-4">
-                <div>
-                    <h3 className="text-lg font-semibold">{brand.name}</h3>
-                    <p className="text-sm opacity-80">{providerCount} usta / servis</p>
+        <div className="card">
+            <div className="row-between" style={{flexWrap: "nowrap"}}>
+                <div className="row" style={{minWidth: 0}}>
+                    <BrandLogo name={brand.name} size={46}/>
+                    <div style={{minWidth: 0}}>
+                        <h3 className="card-title truncate">{brand.name}</h3>
+                        <p className="card-sub">{providerCount} usta / servis</p>
+                    </div>
                 </div>
-                <button
-                    onClick={() => setOpen((v) => !v)}
-                    className="text-sm rounded-xl px-3 py-1 border border-white/20 hover:border-white/40"
-                    aria-expanded={open}
-                    aria-controls={`brand-${brand.id}-providers`}
-                >
-                    {open ? "Gizle" : "Göster"}
-                </button>
+                <div className="row" style={{flexShrink: 0}}>
+                    <Link href={`/chat/${brand.id}`} className="btn btn-ghost btn-sm">Sohbet</Link>
+                    {providerCount > 0 && (
+                        <button
+                            onClick={() => setOpen(v => !v)}
+                            className="btn btn-outline btn-sm"
+                            aria-expanded={open}
+                            aria-controls={`brand-${brand.id}-providers`}
+                        >
+                            {open ? "Gizle" : "Ustalar"}
+                        </button>
+                    )}
+                </div>
             </div>
 
             {open && providerCount > 0 && (
-                <ul
-                    id={`brand-${brand.id}-providers`}
-                    className="mt-3 space-y-2 max-h-72 overflow-auto pr-1"
-                >
+                <ul id={`brand-${brand.id}-providers`} className="stack-sm"
+                    style={{marginTop: "1rem", maxHeight: "18rem", overflow: "auto"}}>
                     {brand.providers.map((p) => (
-                        <li key={p.id} className="rounded-lg border border-white/10 p-2">
-                            <div className="flex items-center justify-between gap-3">
-                                <div>
-                                    <div className="font-medium">{p.name}</div>
-                                    <div className="text-xs opacity-70">
-                                        {[p.district, p.city].filter(Boolean).join(" / ")}
-                                    </div>
-                                </div>
-                                <a
-                                    href={`/providers/${p.id}`}
-                                    className="text-xs underline underline-offset-2"
-                                >
-                                    Detay
-                                </a>
-                            </div>
+                        <li key={p.id}>
+                            <Link href={`/providers/${p.id}`} className="row-between nav-link"
+                                  style={{width: "100%"}}>
+                                <span className="truncate">{p.name}</span>
+                                <span className="text-xs faint" style={{flexShrink: 0}}>
+                                    {[p.district, p.city].filter(Boolean).join(", ")}
+                                </span>
+                            </Link>
                         </li>
                     ))}
                 </ul>

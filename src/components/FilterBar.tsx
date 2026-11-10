@@ -1,202 +1,208 @@
 "use client";
 
-import {useRouter, useSearchParams} from "next/navigation";
+/*
+ * FİLTRE ÇUBUĞU v2 — "URL'e yaz, server yeniden çeksin" deseni, 2026 görünümü.
+ *
+ * VERİ AKIŞI (Next 16'ya en uygun kalıp — useSearchParams YOK):
+ *  - Başlangıç değerleri SERVER sayfadan prop olarak gelir (server zaten
+ *    searchParams'ı okuyor; client'ta hook ile tekrar okumak hem gereksiz
+ *    hem de Suspense zorunluluğu doğuruyor).
+ *  - Değişiklikler TIKLAMA/SEÇİM ANINDA window.location.search'ten mevcut
+ *    query kopyalanarak URL'e yazılır -> router.push -> server yeni veriyle render.
+ *  - Geri/ileri senkronu: sayfa bileşene URL'den türetilmiş bir `key` verir;
+ *    URL değişince bileşen REMOUNT olur, state yeni initial'lardan başlar
+ *    (React'in resmî "key ile state resetleme" kalıbı — useEffect senkronundan temiz).
+ *
+ * UX kararları (modern filtre deseni):
+ *  - Select/segment değişince filtre ANINDA uygulanır ("Uygula" butonu yok —
+ *    tıklama sayısı azalır). Metin alanları Enter veya odak kaybında uygulanır.
+ *  - Puan filtresi min/max sayı kutusu yerine SEGMENTED hızlı seçimler:
+ *    Tümü / 3+ / 1+ / Eksili — kullanıcıların %95'inin gerçek ihtiyacı bu.
+ *  - Aktif filtre varsa "Temizle" görünür; yokken UI sade kalır.
+ */
+
+import {useRouter} from "next/navigation";
 import type {IdName} from "@/lib/types";
-import {useEffect, useMemo, useState} from "react";
+import {useState} from "react";
+
+export type FilterInitial = {
+    brandId: string;
+    categoryId: string;
+    city: string;
+    district: string;
+    minScore: string;
+    maxScore: string;
+    sortField: string;
+    sortDir: "asc" | "desc";
+};
 
 type Props = {
     brands: IdName[];
     categories: IdName[];
+    initial: FilterInitial;
 };
 
-/*
-*
-*
-*
-*       Neden client? Form state'i onChange/onClick gibi tarayici etkilesimleri var.
-*       URLSearchParams kullanimi: filtereler URL'ye yazilir -> SSR sayfa bu parametrelerle yeniden veriyi ceker.
-*
-* */
+/** Puan hızlı seçimleri: id -> URL'e yazılacak min/max değerleri. */
+const SCORE_PRESETS = [
+    {id: "all", label: "Tümü", min: "", max: ""},
+    {id: "3plus", label: "3+", min: "3", max: ""},
+    {id: "1plus", label: "1+", min: "1", max: ""},
+    {id: "neg", label: "Eksili", min: "", max: "0"},
+] as const;
 
 const SORT_FIELDS = [
     {value: "avgScore", label: "Puan"},
-    {value: "ratingCount", label: "Oy sayısı"},
+    {value: "ratingCount", label: "Oy"},
     {value: "name", label: "İsim"},
-    {value: "city", label: "Şehir"},
-    {value: "district", label: "İlçe"},
-    // Not: Kategori adına göre sort backend'de join gerektirir; şu an root alanlarla sınırlı
-];
+] as const;
 
-export default function FilterBar({brands, categories}: Props) {
+export default function FilterBar({brands, categories, initial}: Props) {
     const router = useRouter();
-    const sp = useSearchParams();
 
-    const initial = useMemo(() => ({
-        brandId: sp.get("brandId") ?? "",
-        categoryId: sp.get("categoryId") ?? "",
-        city: sp.get("city") ?? "",
-        district: sp.get("district") ?? "",
-        minScore: sp.get("minScore") ?? "",
-        maxScore: sp.get("maxScore") ?? "",
-        sortField: sp.getAll("sort")[0]?.split(",")[0] || sp.get("sortField") || "avgScore",
-        sortDir: sp.getAll("sort")[0]?.split(",")[1] || sp.get("sortDir") || "desc",
-    }), [sp]);
-
-    const [brandId, setBrandId] = useState(initial.brandId);
-    const [categoryId, setCategoryId] = useState(initial.categoryId);
+    // Metin alanları "controlled" kalır (yazarken URL'i bombalamamak için);
+    // select/segment'ler ise değişir değişmez URL'e gider.
     const [city, setCity] = useState(initial.city);
     const [district, setDistrict] = useState(initial.district);
-    const [minScore, setMinScore] = useState(initial.minScore);
-    const [maxScore, setMaxScore] = useState(initial.maxScore);
-    const [sortField, setSortField] = useState(initial.sortField);
-    const [sortDir, setSortDir] = useState<"asc" | "desc">(
-        initial.sortDir === "asc" ? "asc" : "desc"
-    );
 
-    useEffect(() => {
-        setBrandId(initial.brandId);
-        setCategoryId(initial.categoryId);
-        setCity(initial.city);
-        setDistrict(initial.district);
-        setMinScore(initial.minScore);
-        setMaxScore(initial.maxScore);
-        setSortField(initial.sortField);
-        setSortDir(initial.sortDir === "asc" ? "asc" : "desc");
-    }, [initial]);
-
-    const normalizeScore = (value: string) => {
-        if (!value.trim()) return "";
-        const num = Number(value);
-        if (Number.isNaN(num)) return "";
-        return String(Math.max(-5, Math.min(5, num)));
-    }
-
-    const apply = () => {
-        const params = new URLSearchParams(sp.toString());
-
-        const set = (k: string, v: string) => {
-            if (v && v.trim() !== "") {
-                params.set(k, v);
-            } else {
-                params.delete(k);
-            }
-        };
-
-        let nextMinScore = normalizeScore(minScore);
-        let nextMaxScore = normalizeScore(maxScore);
-
-        if (nextMinScore && nextMaxScore && Number(nextMinScore) > Number(nextMaxScore)) {
-            [nextMinScore, nextMaxScore] = [nextMaxScore, nextMinScore];
+    /** Mevcut query'yi koruyarak verilen anahtarları günceller ve yönlendirir. */
+    const applyPatch = (patch: Record<string, string>) => {
+        const params = new URLSearchParams(window.location.search);
+        for (const [k, v] of Object.entries(patch)) {
+            if (v && v.trim() !== "") params.set(k, v);
+            else params.delete(k);
         }
-
-        set("brandId", brandId);
-        set("categoryId", categoryId);
-        set("city", city);
-        set("district", district);
-        set("minScore", nextMinScore);
-        set("maxScore", nextMaxScore);
-
-        // Çoklu sort gönder: seçilen + ikincil sıralamalar (stabil sonuç için)
-        params.delete("sort");
-        params.append("sort", `${sortField},${sortDir}`);
-
-        // Aynı alan değilse ikincil olarak ratingCount ve id ekleyelim
-        if (sortField !== "ratingCount") {
-            params.append("sort", "ratingCount,desc");
-        }
-        if (sortField !== "id") {
-            params.append("sort", "id,asc");
-        }
-
-        params.set("page", "1"); // filtre değişince başa dön
+        params.set("page", "1"); // filtre değişince ilk sayfaya dön
         router.push(`/providers?${params.toString()}`);
     };
 
-    const clearAll = () => {
-        router.push("/providers");
+    const applySort = (field: string, dir: "asc" | "desc") => {
+        const params = new URLSearchParams(window.location.search);
+        // Spring formatı: sort=alan,yon (+ stabil ikincil sıralamalar)
+        params.delete("sort");
+        params.append("sort", `${field},${dir}`);
+        if (field !== "ratingCount") params.append("sort", "ratingCount,desc");
+        if (field !== "id") params.append("sort", "id,asc");
+        params.set("page", "1");
+        router.push(`/providers?${params.toString()}`);
     };
 
+    // Aktif puan preset'i initial'daki min/max'ten türetilir (state tutmaya gerek yok).
+    const activePreset = SCORE_PRESETS.find(p => p.min === initial.minScore && p.max === initial.maxScore)?.id ?? null;
+
+    const hasActiveFilter = Boolean(
+        initial.brandId || initial.categoryId || initial.city || initial.district ||
+        initial.minScore || initial.maxScore
+    );
+
     return (
-        <div className="rounded-2xl border border-white/10 p-3 flex flex-col gap-3">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <select
-                    value={brandId}
-                    onChange={(e) => setBrandId(e.target.value)}
-                    className="rounded-lg border border-white/20 bg-transparent px-3 py-2"
-                >
-                    <option value="">Marka (tümü)</option>
-                    {brands.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-                </select>
+        <div className="toolbar">
+            <div className="toolbar-row">
+                {/* Marka */}
+                <label className="toolbar-field">
+                    <span className="toolbar-label">Marka</span>
+                    <select
+                        className="select"
+                        defaultValue={initial.brandId}
+                        onChange={e => applyPatch({brandId: e.target.value})}
+                    >
+                        <option value="">Tümü</option>
+                        {brands.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                    </select>
+                </label>
 
-                <select
-                    value={categoryId}
-                    onChange={(e) => setCategoryId(e.target.value)}
-                    className="rounded-lg border border-white/20 bg-transparent px-3 py-2"
-                >
-                    <option value="">Kategori (tümü)</option>
-                    {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                </select>
+                {/* Kategori */}
+                <label className="toolbar-field">
+                    <span className="toolbar-label">Kategori</span>
+                    <select
+                        className="select"
+                        defaultValue={initial.categoryId}
+                        onChange={e => applyPatch({categoryId: e.target.value})}
+                    >
+                        <option value="">Tümü</option>
+                        {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    </select>
+                </label>
 
-                <div className="flex gap-2">
-                    <input
-                        placeholder="Şehir"
-                        value={city}
-                        onChange={(e) => setCity(e.target.value)}
-                        className="flex-1 rounded-lg border border-white/20 bg-transparent px-3 py-2"
-                    />
-                    <input
-                        placeholder="İlçe"
-                        value={district}
-                        onChange={(e) => setDistrict(e.target.value)}
-                        className="flex-1 rounded-lg border border-white/20 bg-transparent px-3 py-2"
-                    />
+                {/* Konum: Enter veya odak kaybında uygulanır */}
+                <div className="toolbar-field">
+                    <span className="toolbar-label">Konum</span>
+                    <div className="row" style={{gap: "0.4rem"}}>
+                        <input
+                            className="input" placeholder="Şehir" value={city}
+                            onChange={e => setCity(e.target.value)}
+                            onBlur={() => city !== initial.city && applyPatch({city})}
+                            onKeyDown={e => e.key === "Enter" && applyPatch({city})}
+                        />
+                        <input
+                            className="input" placeholder="İlçe" value={district}
+                            onChange={e => setDistrict(e.target.value)}
+                            onBlur={() => district !== initial.district && applyPatch({district})}
+                            onKeyDown={e => e.key === "Enter" && applyPatch({district})}
+                        />
+                    </div>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <div className="flex gap-2">
-                    <input
-                        type="number" step="0.1" min={-5} max={5}
-                        placeholder="Min puan (-5)"
-                        value={minScore}
-                        onChange={(e) => setMinScore(e.target.value)}
-                        className="flex-1 rounded-lg border border-white/20 bg-transparent px-3 py-2"
-                    />
-                    <input
-                        type="number" step="0.1" min={0} max={5}
-                        placeholder="Maks puan (5)"
-                        value={maxScore}
-                        onChange={(e) => setMaxScore(e.target.value)}
-                        className="flex-1 rounded-lg border border-white/20 bg-transparent px-3 py-2"
-                    />
+            <div className="toolbar-row toolbar-row-bottom">
+                {/* Puan: segmented hızlı seçim */}
+                <div className="toolbar-field">
+                    <span className="toolbar-label">Puan</span>
+                    <div className="seg" role="radiogroup" aria-label="Puan filtresi">
+                        {SCORE_PRESETS.map(p => (
+                            <button
+                                key={p.id}
+                                type="button"
+                                role="radio"
+                                aria-checked={activePreset === p.id}
+                                data-active={activePreset === p.id}
+                                onClick={() => applyPatch({minScore: p.min, maxScore: p.max})}
+                            >
+                                {p.label}
+                            </button>
+                        ))}
+                    </div>
                 </div>
 
-                <div className="flex gap-2">
-                    <select
-                        value={sortField}
-                        onChange={(e) => setSortField(e.target.value)}
-                        className="flex-1 rounded-lg border border-white/20 bg-transparent px-3 py-2"
-                    >
-                        {SORT_FIELDS.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
-                    </select>
-                    <select
-                        value={sortDir}
-                        onChange={(e) => setSortDir(e.target.value as "asc" | "desc")}
-                        className="w-28 rounded-lg border border-white/20 bg-transparent px-3 py-2"
-                    >
-                        <option value="desc">Desc</option>
-                        <option value="asc">Asc</option>
-                    </select>
+                {/* Sıralama: segmented alan + yön düğmesi */}
+                <div className="toolbar-field">
+                    <span className="toolbar-label">Sıralama</span>
+                    <div className="row" style={{gap: "0.4rem"}}>
+                        <div className="seg" role="radiogroup" aria-label="Sıralama alanı">
+                            {SORT_FIELDS.map(s => (
+                                <button
+                                    key={s.value}
+                                    type="button"
+                                    role="radio"
+                                    aria-checked={initial.sortField === s.value}
+                                    data-active={initial.sortField === s.value}
+                                    onClick={() => applySort(s.value, initial.sortDir)}
+                                >
+                                    {s.label}
+                                </button>
+                            ))}
+                        </div>
+                        <button
+                            type="button"
+                            className="btn btn-outline btn-icon"
+                            title={initial.sortDir === "desc" ? "Azalan (tıkla: artan)" : "Artan (tıkla: azalan)"}
+                            aria-label="Sıralama yönünü değiştir"
+                            onClick={() => applySort(initial.sortField, initial.sortDir === "desc" ? "asc" : "desc")}
+                        >
+                            {initial.sortDir === "desc" ? "↓" : "↑"}
+                        </button>
+                    </div>
                 </div>
 
-                <div className="flex gap-2">
-                    <button onClick={apply} className="rounded-lg border border-white/30 px-3 py-2">
-                        Uygula
+                {/* Temizle: yalnızca aktif filtre varken görünür */}
+                {hasActiveFilter && (
+                    <button
+                        type="button"
+                        className="btn btn-ghost btn-sm toolbar-clear"
+                        onClick={() => router.push("/providers")}
+                    >
+                        ✕ Temizle
                     </button>
-                    <button onClick={clearAll} className="rounded-lg border border-white/10 px-3 py-2">
-                        Temizle
-                    </button>
-                </div>
+                )}
             </div>
         </div>
     );

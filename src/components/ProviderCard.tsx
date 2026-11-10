@@ -1,33 +1,23 @@
-// src/components/ProviderCard.tsx
+/*
+ * USTA KARTI — Server Component. Kartın tamamı <Link> (tıklanabilir alan büyük olsun).
+ * next/link: client-side navigasyon + görünürlükte otomatik prefetch -> anında geçiş hissi.
+ */
 import type {ProviderListItem} from "@/lib/types";
 import Link from "next/link";
+import ScoreBadge from "@/components/ScoreBadge";
 
 export default function ProviderCard({p}: { p: ProviderListItem }) {
-    const averageScore = typeof p.avgScore === "number" ? p.avgScore : null;
-    const location = [p.city, p.district].filter(Boolean).join(" / ");
-
-    const scoreTone = averageScore === null ? "text-white/60" : averageScore < 0 ? "text-rose-300" : averageScore === 0 ? "text-white/80" : "text-emerald-300";
+    const location = [p.district, p.city].filter(Boolean).join(", ");
 
     return (
-        <Link
-            href={`/providers/${p.id}`}
-            className="block rounded-xl border border-white/10 p-4 transition hover:border-white/30 hover:bg-white/[0.03]"
-        >
-            <div className="flex items-start justify-between gap-4">
-                <div className="min-w-0">
-                    <div className="truncate text-base font-semibold">{p.name}</div>
-                    <div className="mt-1 text-xs opacity-70">
-                        {location || "Konum bilgisi yok"}
-                    </div>
-                    {p.phone && <div className="mt-1 text-xs opacity-70">{p.phone}</div>}
+        <Link href={`/providers/${p.id}`} className="card card-hover">
+            <div className="row-between" style={{alignItems: "flex-start", flexWrap: "nowrap"}}>
+                <div className="stack-sm" style={{gap: "0.2rem", minWidth: 0}}>
+                    <div className="card-title truncate">{p.name}</div>
+                    <div className="card-sub truncate">{location || "Konum bilgisi yok"}</div>
+                    {p.phone && <div className="text-xs faint">{p.phone}</div>}
                 </div>
-
-                <div className="shrink-0 text-right">
-                    <div className={`text-lg font-bold ${scoreTone}`}>
-                        {averageScore?.toFixed(1) ?? "-"}
-                    </div>
-                    <div className="text-[11px] opacity-70">{p.ratingCount ?? 0} oy</div>
-                </div>
+                <ScoreBadge score={p.avgScore} count={p.ratingCount}/>
             </div>
         </Link>
     );

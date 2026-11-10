@@ -1,16 +1,13 @@
 export default function Loading() {
     return (
-        <main className="mx-auto max-w-5xl p-4 space-y-3">
-            <div className="h-7 w-40 rounded bg-white/10 animate-pulse"/>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <main className="container page">
+            <div className="skeleton" style={{height: 32, width: "12rem"}}/>
+            <div className="skeleton" style={{height: 180}}/>
+            <div className="grid-2">
                 {Array.from({length: 6}).map((_, i) => (
-                    <div key={i} className="h-28 rounded-2xl border border-white/10 bg-white/5 animate-pulse"/>
+                    <div key={i} className="skeleton" style={{height: 96}}/>
                 ))}
             </div>
         </main>
     );
 }
-/*
-* loading.tsx otoamtik gosterilir (route seviyesinde skeleton UI)
-* skeleton UI nedir?
-* */

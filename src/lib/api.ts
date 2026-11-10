@@ -10,6 +10,7 @@ import {
     SpringPage
 } from "@/lib/types";
 import {normalizePage} from "@/lib/page";
+import {toApiError} from "@/lib/apiError";
 
 const BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080/api";
 
@@ -197,10 +198,15 @@ export async function postRating(opts: {
     comment?: string;
     anonymousId?: string | null;
     recaptchaToken?: string | null;
+    /** Üye kullanıcı JWT'si; verilirse backend userId'yi token'dan alır */
+    token?: string | null;
 }){
     const res = await fetch(`${BASE}/ratings/rate`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+            "Content-Type": "application/json",
+            ...(opts.token ? {Authorization: `Bearer ${opts.token}`} : {}),
+        },
         //rate limit ve anlik guncellemeler yuzunden cache istemiyoruz
         cache: "no-store",
         body: JSON.stringify({
@@ -212,14 +218,14 @@ export async function postRating(opts: {
         }),
     });
     if (!res.ok) {
-        const txt = await res.text();
-        throw new Error(txt || `POST /ratings/rate failed (${res.status})`);
+        // Backend'in standart ErrorResponse gövdesi ApiError'a çevrilir;
+        // RateForm err.code'a bakarak kullanıcıya doğru mesajı gösterir.
+        throw await toApiError(res);
     }
     /*
-    *
-    * Backendte XOR kurali zaten SecurityFacade ile düzenleniyor. login isen userId set, anonim isen anonymousId kalır.
-    * Biz her zaman anonymousId gönderebiliriz.
-    * 429 gelirse kullanıcıya çok sık denedin mesajı gönderebiliriz.
-    * */
+    * Backend'te XOR kuralı SecurityFacade ile düzenleniyor: login isen userId set edilir,
+    * anonim isen anonymousId kalır. Bu yüzden client her zaman anonymousId gönderebilir.
+    * 429 gelirse (rate limit) kullanıcıya "çok sık denedin" mesajı gösteririz.
+    */
     return await res.json() as Promise<{id: number}>;
 }

@@ -1,26 +1,19 @@
 /*
-*
-* Neden farklı bir ts dosyası?
-*
-* Kısa cevap: admin ekranı client-side çalışıyor ve Bearer token'ı localStorage'dan okuyor. src/lib/api.ts ise Server Component/SSR odaklı yazıldı(revalidate, cache davranışları vs.
-* Bu iki dünya aynı dosyada karışınca ya güvenlikten taviz veriyorsun ya da Next'in cache/SSR semantiğini bozuyorsun. O yüzden admin çağrılarını token'lı, no-store, tamament client güvenli
-* bir yere koyuyoruz.
-*
-* Bir tık daha açarsak.
-* api.ts içindeki çağrılar SSR/ISR uyumlu: next: { revalidate } kullanıyor, cookie/headers otomatik taşıma beklentisi var.
-*
-* Admin moderasyon sayfası ClientComponent: localStorage'dan token alıyorsun, Authorization: Bearer ekliyorsun. Bunu api.ts'ye taşırsan:
-*   Dosyayı use client yapman gerekir, bu da tüm ssr odaklı fonksiyonları client bundle'a taşır. hoş değil.
-* Ya da use client koymazsan, localStorage erişemezsin ve Authorization'e set edemezsin.
-*
-* Kısaca: SSR/public API çağrılarını api.ts'e client-only ve token'li admin çağrılarını ayrı bir modülde tutmak en temiz yaklaşım.
-*
-* */
+ * ADMIN API katmanı — client-only, token'lı (Bearer), no-store.
+ *
+ * Neden ayrı dosya? api.ts SSR/ISR (cache, revalidate) odaklıdır; admin çağrıları
+ * ise tarayıcıdan JWT ile yapılır ve asla cache'lenmemelidir. İki dünyayı ayırmak
+ * hem Next cache semantiğini hem de güvenliği temiz tutar.
+ *
+ * Hata standardı: başarısız yanıt toApiError ile ApiError'a çevrilip fırlatılır;
+ * ekran err.code'a bakar, err.message'ı gösterir (proje geneli sözleşme).
+ */
 
 "use client";
 
-import type {AdminRatingItem, ModerationLogItem, Page, SpringPage} from "@/lib/types";
+import type {AdminRatingItem, AdminUserItem, ModerationLogItem, Page, ProviderListItem, SpringPage} from "@/lib/types";
 import {normalizePage} from "@/lib/page";
+import {toApiError} from "@/lib/apiError";
 
 const BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080/api";
 
@@ -35,15 +28,20 @@ function qs(params: Record<string, QueryValue>) {
     return u.toString();
 }
 
+/** Token'lı GET; hata olursa ApiError fırlatır. */
 async function getJson<T>(url: string, token: string): Promise<T> {
-    const res = await fetch(url, {
-        headers: {Authorization: `Bearer ${token}`},
-        cache: "no-store",
-    });
-    if (!res.ok) throw new Error(await res.text());
+    const res = await fetch(url, {headers: {Authorization: `Bearer ${token}`}, cache: "no-store"});
+    if (!res.ok) throw await toApiError(res);
     return res.json();
 }
 
+/** Token'lı DELETE/POST (gövdesiz) yardımcıcısı. */
+async function mutate(method: "DELETE" | "POST", url: string, token: string): Promise<void> {
+    const res = await fetch(url, {method, headers: {Authorization: `Bearer ${token}`}, cache: "no-store"});
+    if (!res.ok) throw await toApiError(res);
+}
+
+// ---------------- YORUMLAR ----------------
 export async function adminListRatings(token: string, params: {
     providerId?: string | number;
     q?: string;
@@ -53,31 +51,51 @@ export async function adminListRatings(token: string, params: {
 }): Promise<Page<AdminRatingItem>> {
     const p0 = Math.max(0, (params.page ?? 1) - 1);
     const query = qs({...params, page: p0});
-    const page = await getJson<SpringPage<AdminRatingItem>>(`${BASE}/admin/ratings?${query}`, token);
-    return normalizePage(page);
+    return normalizePage(await getJson<SpringPage<AdminRatingItem>>(`${BASE}/admin/ratings?${query}`, token));
 }
 
-export async function adminDeleteRating(token: string, ratingId: number, reason?: string) {
+export function adminDeleteRating(token: string, ratingId: number, reason?: string) {
     const q = qs({reason});
-    const url = `${BASE}/admin/ratings/${ratingId}${q ? "?" + q : ""}`;
-    const res = await fetch(url, {method: "DELETE", headers: {Authorization: `Bearer ${token}`}, cache: "no-store"});
-    if (!res.ok) throw new Error(await res.text());
+    return mutate("DELETE", `${BASE}/admin/ratings/${ratingId}${q ? "?" + q : ""}`, token);
 }
 
-export async function adminRestoreRating(token: string, ratingId: number, reason?: string) {
+export function adminRestoreRating(token: string, ratingId: number, reason?: string) {
     const q = qs({reason});
-    const url = `${BASE}/admin/ratings/${ratingId}/restore${q ? "?" + q : ""}`;
-    const res = await fetch(url, {method: "POST", headers: {Authorization: `Bearer ${token}`}, cache: "no-store"});
-    if (!res.ok) throw new Error(await res.text());
+    return mutate("POST", `${BASE}/admin/ratings/${ratingId}/restore${q ? "?" + q : ""}`, token);
 }
 
 export async function adminListLogs(token: string, ratingId: number, page = 0, size = 20): Promise<Page<ModerationLogItem>> {
     const q = qs({entity: "RATING", page, size});
-    const logs = await getJson<SpringPage<ModerationLogItem>>(`${BASE}/admin/logs/${ratingId}?${q}`, token);
-    return normalizePage(logs);
+    return normalizePage(await getJson<SpringPage<ModerationLogItem>>(`${BASE}/admin/logs/${ratingId}?${q}`, token));
 }
 
+// ---------------- DÜKKANLAR ----------------
+// Not: Listeleme için genel /api/providers ucunu kullanıyoruz (admin token gerekmez,
+// public zaten), silme ise admin token ister.
+export async function adminListProviders(token: string, params: {
+    q?: string; city?: string; district?: string; page?: number; size?: number;
+}): Promise<Page<ProviderListItem>> {
+    const p0 = Math.max(0, (params.page ?? 1) - 1);
+    const query = qs({q: params.q, city: params.city, district: params.district, page: p0, size: params.size ?? 20});
+    // sort=name,asc -> admin listesi alfabetik okunsun
+    return normalizePage(await getJson<SpringPage<ProviderListItem>>(`${BASE}/providers?${query}&sort=name,asc`, token));
+}
 
+export function adminDeleteProvider(token: string, providerId: number, reason?: string) {
+    const q = qs({reason});
+    return mutate("DELETE", `${BASE}/admin/providers/${providerId}${q ? "?" + q : ""}`, token);
+}
 
+// ---------------- KULLANICILAR ----------------
+export async function adminListUsers(token: string, params: {
+    q?: string; page?: number; size?: number;
+}): Promise<Page<AdminUserItem>> {
+    const p0 = Math.max(0, (params.page ?? 1) - 1);
+    const query = qs({q: params.q, page: p0, size: params.size ?? 20});
+    return normalizePage(await getJson<SpringPage<AdminUserItem>>(`${BASE}/admin/users?${query}`, token));
+}
 
-
+export function adminDeleteUser(token: string, userId: number, reason?: string) {
+    const q = qs({reason});
+    return mutate("DELETE", `${BASE}/admin/users/${userId}${q ? "?" + q : ""}`, token);
+}

@@ -1,70 +1,63 @@
 "use client";
 
-import {useEffect, useMemo, useState} from "react";
-import {useRouter, useSearchParams} from "next/navigation";
+/*
+ * HARİTA BÖLÜMÜ — aç/kapa durumu URL ile senkron (?showMap=1/0).
+ *
+ * Neden URL'de? Kullanıcı filtre değiştirip sayfa yeniden çekildiğinde veya linki
+ * paylaştığında harita tercihi korunsun.
+ *
+ * Next 16 deseni (useSearchParams'SIZ):
+ *  - Başlangıç değeri (initialOpen) SERVER sayfadan prop olarak gelir — server
+ *    zaten searchParams'ı okuyor, client'ta tekrar okumaya gerek yok.
+ *  - URL'e yazma işi TIKLAMA ANINDA window.location.search'ten yapılır
+ *    (event handler yalnızca tarayıcıda çalışır, güvenlidir).
+ *  - Geri/ileri senkronu: URL değişince server sayfa yeni initialOpen ile render
+ *    eder; sayfa bileşene `key={String(open)}` verdiği için bileşen REMOUNT olur
+ *    ve state yeni değerden başlar (React'in "key ile resetleme" kalıbı).
+ *
+ * Performans: harita SADECE open iken render edilir (kapalıyken unmount) —
+ * leaflet gibi ağır bir kütüphane boşuna çalışmaz.
+ */
+
+import {useState} from "react";
+import {useRouter} from "next/navigation";
 import type {ProviderListItem} from "@/lib/types";
 import ProvidersMap from "@/components/ProvidersMap";
 
-type Props = { items: ProviderListItem[]; height?: number };
+type Props = { items: ProviderListItem[]; height?: number; initialOpen?: boolean };
 
+export default function MapSection({items, height = 280, initialOpen}: Props) {
+    const router = useRouter();
 
-export default function MapSection({items, height = 280}: Props) {
-    const router = useRouter();                // URL'yi programatik değiştirmek için
-    const sp = useSearchParams();              // Mevcut query string'i okumak için
+    // initialOpen verilmemişse: koordinatı olan kayıt varsa açık başla.
+    const anyWithCoords = items.some(p => typeof p.lat === "number" && typeof p.lon === "number");
+    const [open, setOpen] = useState<boolean>(initialOpen ?? anyWithCoords);
 
-    // 2) Listede koordinatı olan kayıt var mı? (Varsayılan açık/kapalı kararı)
-    const anyWithCoords = useMemo(
-        () => items.some(p => typeof p.lat === "number" && typeof p.lon === "number"),
-        [items]
-    );
-
-    // 3) Başlangıç durumu:
-    //    - URL'de ?showMap=1/0 varsa onu kullan
-    //    - yoksa listede koordinat varsa "açık", yoksa "kapalı"
-    const initialOpen = useMemo(() => {
-        const raw = sp.get("showMap");
-        if (raw === "1") return true;
-        if (raw === "0") return false;
-        return anyWithCoords;
-    }, [sp, anyWithCoords]);
-
-    const [open, setOpen] = useState<boolean>(initialOpen);
-
-    // 4) Geri/ileri ile URL değişirse, form state'i URL ile senkron kalsın
-    useEffect(() => {
-        setOpen(initialOpen);
-    }, [initialOpen]);
-
-    // 5) Toggle: UI state'i ve URL'yi birlikte güncelle
     const toggle = () => {
         const next = !open;
-        setOpen(next);
-        const params = new URLSearchParams(sp.toString());
+        setOpen(next); // anında görsel tepki (optimistic)
+        // Tıklama anında mevcut query korunarak sadece showMap güncellenir.
+        const params = new URLSearchParams(window.location.search);
         params.set("showMap", next ? "1" : "0");
-        router.push(`?${params.toString()}`); // client-side navigation
+        router.push(`?${params.toString()}`);
     };
 
     return (
-        <section className="space-y-2">
-            <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold">Harita</h2>
-                <button
-                    type="button"
-                    onClick={toggle}
-                    aria-pressed={open}
-                    className="rounded-lg border border-white/20 px-3 py-1 text-sm hover:border-white/40"
-                    title={open ? "Haritayı gizle" : "Haritayı göster"}
-                >
+        <section className="stack-sm">
+            <div className="row-between">
+                <h2 className="section-title">Harita</h2>
+                <button type="button" onClick={toggle} aria-pressed={open} className="btn btn-outline btn-sm">
                     {open ? "Gizle" : "Göster"}
                 </button>
             </div>
 
-            {/* 6) Harita sadece 'open' iken render edilir (değilse unmount) */}
             {open ? (
-                <ProvidersMap key="open" items={items} height={height}/>
+                <div className="map-frame">
+                    <ProvidersMap items={items} height={height}/>
+                </div>
             ) : (
-                <div className="rounded-2xl border border-white/10 p-4 text-sm opacity-80">
-                    Harita kapalı. “Göster”e tıklayarak açabilirsiniz.
+                <div className="empty-state" style={{padding: "1.25rem"}}>
+                    Harita kapalı. &ldquo;Göster&rdquo;e tıklayarak açabilirsiniz.
                 </div>
             )}
         </section>

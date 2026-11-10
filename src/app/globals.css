@@ -1,30 +1,678 @@
-@import "tailwindcss";
 @import "leaflet/dist/leaflet.css";
 @import "leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility.css";
 
+/* ============================================================
+   SANAYİ DESIGN SYSTEM — el yazımı, kütüphanesiz (2026)
+   Renkler OKLCH; açık/koyu tema data-theme + system fallback.
+   ============================================================ */
+
 :root {
-    --background: #ffffff;
-    --foreground: #171717;
+    /* — ölçek — */
+    --radius-sm: 8px;
+    --radius: 12px;
+    --radius-lg: 18px;
+    --radius-full: 999px;
+    --container: 72rem;
+    --header-h: 60px;
+
+    /* — tipografi —
+       Not: --font-geist-sans/mono next/font tarafından body class'ında tanımlanır;
+       :root'ta çözülemediği için font-family'ler kullanım yerinde (body/.mono) kurulur. */
+    --text-xs: 0.75rem;
+    --text-sm: 0.875rem;
+    --text-base: 1rem;
+    --text-lg: clamp(1.05rem, 1rem + 0.3vw, 1.2rem);
+    --text-xl: clamp(1.25rem, 1.1rem + 0.7vw, 1.5rem);
+    --text-2xl: clamp(1.5rem, 1.2rem + 1.4vw, 2rem);
+    --text-hero: clamp(2rem, 1.4rem + 3vw, 3.4rem);
+
+    /* — hareket — */
+    --ease: cubic-bezier(0.22, 1, 0.36, 1);
+    --dur: 180ms;
+
+    /* — AÇIK TEMA — */
+    --bg: oklch(0.985 0.004 85);
+    --bg-elev: oklch(1 0 0);
+    --bg-sunken: oklch(0.955 0.006 85);
+    --fg: oklch(0.22 0.012 75);
+    --fg-muted: oklch(0.45 0.014 75);
+    --fg-faint: oklch(0.60 0.012 75);
+    --border: oklch(0.88 0.008 85);
+    --border-strong: oklch(0.78 0.01 85);
+
+    /* AÇIK TEMA vurgusu: grafit/çelik — koyu metal düğmeler, beyaz metin */
+    --accent: oklch(0.38 0.012 250);
+    --accent-strong: oklch(0.28 0.012 250);
+    --accent-fg: oklch(0.98 0.002 250);
+    --accent-soft: oklch(0.90 0.008 250);
+
+    --pos: oklch(0.62 0.15 155);
+    --pos-soft: oklch(0.93 0.05 155);
+    --neg: oklch(0.60 0.19 20);
+    --neg-soft: oklch(0.94 0.04 20);
+    --neutral-soft: oklch(0.92 0.005 85);
+
+    --ring: oklch(0.55 0.015 250 / 0.45);
+    --shadow-sm: 0 1px 2px oklch(0.2 0.01 75 / 0.06);
+    --shadow: 0 1px 3px oklch(0.2 0.01 75 / 0.07), 0 8px 24px -12px oklch(0.2 0.01 75 / 0.14);
+    --shadow-lg: 0 2px 6px oklch(0.2 0.01 75 / 0.08), 0 24px 48px -16px oklch(0.2 0.01 75 / 0.22);
+    --header-bg: oklch(0.985 0.004 85 / 0.82);
+
+    color-scheme: light;
 }
 
-@theme inline {
-    --color-background: var(--background);
-    --color-foreground: var(--foreground);
-    --font-sans: var(--font-geist-sans);
-    --font-mono: var(--font-geist-mono);
+:root[data-theme="dark"] {
+    --bg: oklch(0.17 0.01 75);
+    --bg-elev: oklch(0.21 0.012 75);
+    --bg-sunken: oklch(0.14 0.008 75);
+    --fg: oklch(0.93 0.006 85);
+    --fg-muted: oklch(0.72 0.01 80);
+    --fg-faint: oklch(0.56 0.01 80);
+    --border: oklch(0.30 0.012 75);
+    --border-strong: oklch(0.40 0.014 75);
+
+    /* KOYU TEMA vurgusu: GÜMÜŞ/KROM — açık metalik yüzey, koyu metin.
+       Gradient (açıktan koyuya) btn-primary'de krom hissi verir; sanayi = metal. */
+    --accent: oklch(0.87 0.006 250);
+    --accent-strong: oklch(0.70 0.010 250);
+    --accent-fg: oklch(0.17 0.008 250);
+    --accent-soft: oklch(0.33 0.008 250);
+
+    --pos: oklch(0.72 0.14 155);
+    --pos-soft: oklch(0.30 0.05 155);
+    --neg: oklch(0.68 0.17 22);
+    --neg-soft: oklch(0.30 0.05 20);
+    --neutral-soft: oklch(0.28 0.008 75);
+
+    --ring: oklch(0.87 0.006 250 / 0.35);
+    --shadow-sm: 0 1px 2px oklch(0 0 0 / 0.3);
+    --shadow: 0 1px 3px oklch(0 0 0 / 0.35), 0 8px 24px -12px oklch(0 0 0 / 0.5);
+    --shadow-lg: 0 2px 6px oklch(0 0 0 / 0.4), 0 24px 48px -16px oklch(0 0 0 / 0.6);
+    --header-bg: oklch(0.17 0.01 75 / 0.8);
+
+    color-scheme: dark;
 }
 
-@media (prefers-color-scheme: dark) {
-    :root {
-        --background: #0a0a0a;
-        --foreground: #ededed;
-    }
-}
-
+/* ---------- reset ---------- */
+*, *::before, *::after { box-sizing: border-box; }
+* { margin: 0; }
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
 body {
-    background: var(--background);
-    color: var(--foreground);
-    font-family: Arial, Helvetica, sans-serif;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+    font-size: var(--text-base);
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+}
+img, video, svg { display: block; max-width: 100%; }
+input, button, textarea, select { font: inherit; color: inherit; }
+a { color: inherit; text-decoration: none; }
+ul, ol { list-style: none; padding: 0; }
+h1, h2, h3, h4 { line-height: 1.2; text-wrap: balance; font-weight: 650; }
+
+:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
 }
 
-/* Leaflet CSS'leri: Next'te global CSS sadece layout/globals'tan import edilir */
+::selection { background: var(--accent-soft); }
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+    html { scroll-behavior: auto; }
+}
+
+/* ---------- layout ---------- */
+.container {
+    width: 100%;
+    max-width: var(--container);
+    margin-inline: auto;
+    padding-inline: clamp(1rem, 3vw, 2rem);
+}
+.page { padding-block: clamp(1.25rem, 3vw, 2.5rem); display: grid; gap: 1.5rem; flex: 1; }
+.stack-sm { display: grid; gap: 0.5rem; }
+.stack { display: grid; gap: 1rem; }
+.stack-lg { display: grid; gap: 1.5rem; }
+.row { display: flex; align-items: center; gap: 0.75rem; }
+.row-between { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap; }
+.grid-2 { display: grid; grid-template-columns: 1fr; gap: 1rem; }
+.grid-3 { display: grid; grid-template-columns: 1fr; gap: 1rem; }
+@media (min-width: 680px) {
+    .grid-2 { grid-template-columns: repeat(2, 1fr); }
+    .grid-3 { grid-template-columns: repeat(2, 1fr); }
+}
+@media (min-width: 1024px) {
+    .grid-3 { grid-template-columns: repeat(3, 1fr); }
+}
+
+/* ---------- header ---------- */
+.site-header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    height: var(--header-h);
+    background: var(--header-bg);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--border);
+}
+.site-header .container { height: 100%; display: flex; align-items: center; gap: 1.25rem; }
+.logo {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    font-weight: 750; font-size: 1.12rem; letter-spacing: -0.02em;
+}
+.logo-mark {
+    width: 28px; height: 28px; border-radius: 8px;
+    background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+    display: inline-flex; align-items: center; justify-content: center;
+    color: var(--accent-fg); font-size: 15px; font-weight: 800;
+}
+.main-nav { display: flex; align-items: center; gap: 0.25rem; }
+.nav-link {
+    padding: 0.4rem 0.75rem;
+    border-radius: var(--radius-sm);
+    font-size: var(--text-sm);
+    color: var(--fg-muted);
+    transition: color var(--dur) var(--ease), background var(--dur) var(--ease);
+}
+.nav-link:hover { color: var(--fg); background: var(--neutral-soft); }
+.nav-link[data-active="true"] { color: var(--fg); background: var(--neutral-soft); font-weight: 550; }
+.header-actions { margin-left: auto; display: flex; align-items: center; gap: 0.5rem; }
+
+@media (max-width: 720px) {
+    .main-nav { display: none; }
+    .main-nav[data-open="true"] {
+        display: flex; flex-direction: column; align-items: stretch;
+        position: fixed; inset: var(--header-h) 0 auto 0;
+        background: var(--bg-elev);
+        border-bottom: 1px solid var(--border);
+        padding: 0.75rem;
+        box-shadow: var(--shadow-lg);
+    }
+    .nav-burger { display: inline-flex !important; }
+}
+.nav-burger { display: none; }
+
+/* ---------- footer ---------- */
+.site-footer {
+    margin-top: auto;
+    border-top: 1px solid var(--border);
+    padding-block: 1.5rem;
+    color: var(--fg-faint);
+    font-size: var(--text-sm);
+}
+
+/* ---------- buttons ---------- */
+.btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+    padding: 0.55rem 1rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid transparent;
+    font-size: var(--text-sm);
+    font-weight: 550;
+    cursor: pointer;
+    white-space: nowrap;
+    background: transparent;
+    transition: background var(--dur) var(--ease), border-color var(--dur) var(--ease),
+                color var(--dur) var(--ease), transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+    user-select: none;
+}
+.btn:active { transform: translateY(1px); }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+.btn-primary {
+    /* 2026 dokunuşu: düz renk yerine hafif dikey gradient + hover'da turuncu parıltı */
+    background: linear-gradient(180deg, var(--accent), var(--accent-strong));
+    color: var(--accent-fg);
+    box-shadow: var(--shadow-sm);
+}
+.btn-primary:hover:not(:disabled) {
+    background: linear-gradient(180deg, var(--accent-strong), var(--accent-strong));
+    box-shadow: 0 0 0 1px var(--accent), 0 4px 16px -4px var(--ring);
+}
+
+.btn-outline { border-color: var(--border-strong); color: var(--fg); }
+.btn-outline:hover:not(:disabled) { border-color: var(--fg-faint); background: var(--neutral-soft); }
+
+.btn-ghost { color: var(--fg-muted); }
+.btn-ghost:hover:not(:disabled) { background: var(--neutral-soft); color: var(--fg); }
+
+.btn-danger { background: var(--neg); color: white; }
+.btn-sm { padding: 0.35rem 0.7rem; font-size: var(--text-xs); }
+.btn-lg { padding: 0.75rem 1.5rem; font-size: var(--text-base); border-radius: var(--radius); }
+.btn-icon { padding: 0.5rem; border-radius: var(--radius-sm); }
+
+/* ---------- cards ---------- */
+.card {
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.1rem 1.25rem;
+    box-shadow: var(--shadow-sm);
+}
+.card-hover {
+    transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease), transform var(--dur) var(--ease);
+}
+.card-hover:hover {
+    /* hover'da kenarlıkta turuncu bir "ışıma" — marka kimliği her etkileşimde hissedilsin */
+    border-color: color-mix(in oklch, var(--accent) 45%, var(--border));
+    box-shadow: var(--shadow), 0 0 24px -12px var(--ring);
+    transform: translateY(-2px);
+}
+.card-title { font-size: var(--text-lg); font-weight: 650; letter-spacing: -0.01em; }
+.card-sub { font-size: var(--text-sm); color: var(--fg-muted); }
+
+/* ---------- forms ---------- */
+.field { display: grid; gap: 0.35rem; }
+.field-label { font-size: var(--text-sm); font-weight: 550; color: var(--fg-muted); }
+.input, .select, .textarea {
+    width: 100%;
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 0.55rem 0.8rem;
+    font-size: var(--text-sm);
+    color: var(--fg);
+    transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+}
+.input::placeholder, .textarea::placeholder { color: var(--fg-faint); }
+.input:focus, .select:focus, .textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--ring);
+}
+/* Tarayıcının varsayılan (çirkin) select okunu kaldırıp kendi ince ok ikonumuzu koyuyoruz.
+   appearance:none nativ görünümü sıfırlar; ok, data-URI SVG olarak background'a çizilir. */
+.select {
+    appearance: none;
+    -webkit-appearance: none;
+    padding-right: 2.2rem;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23918d85' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.7rem center;
+    cursor: pointer;
+}
+.select:hover { border-color: var(--border-strong); }
+.textarea { resize: vertical; min-height: 90px; }
+.field-hint { font-size: var(--text-xs); color: var(--fg-faint); }
+.field-error { font-size: var(--text-sm); color: var(--neg); }
+
+/* ---------- filtre toolbar'ı (2026 görünümü) ---------- */
+.toolbar {
+    /* Yarı saydam zemin + blur = "buzlu cam" (glassmorphism); ince gradient üst çizgi
+       kimlik rengini belli belirsiz hissettirir. */
+    display: grid;
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background:
+        linear-gradient(var(--bg-elev), var(--bg-elev)) padding-box,
+        linear-gradient(120deg, color-mix(in oklch, var(--accent) 45%, var(--border)), var(--border) 40%) border-box;
+    border-color: transparent;
+    box-shadow: var(--shadow-sm);
+}
+.toolbar-row {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.9rem;
+    align-items: end;
+}
+@media (min-width: 760px) {
+    .toolbar-row { grid-template-columns: repeat(3, 1fr); }
+    .toolbar-row-bottom { grid-template-columns: auto auto 1fr; }
+}
+.toolbar-field { display: grid; gap: 0.3rem; min-width: 0; }
+.toolbar-label {
+    font-size: var(--text-xs);
+    font-weight: 650;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--fg-faint);
+}
+.toolbar-clear { justify-self: end; align-self: end; color: var(--neg); }
+
+/* Segmented control: tek gövdede birbirine yapışık seçenekler; aktif olan
+   turuncu gradient "hap" olur. Radyo grubunun modern görünümlü hali. */
+.seg {
+    display: inline-flex;
+    padding: 3px;
+    gap: 2px;
+    background: var(--bg-sunken);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-full);
+    width: fit-content;
+}
+/* Segment öğeleri hem <button> hem <a> olabilir (sekme navigasyonu için <a>) */
+.seg > button,
+.seg > a {
+    border: 0;
+    background: transparent;
+    color: var(--fg-muted);
+    font-size: var(--text-sm);
+    font-weight: 550;
+    padding: 0.4rem 1rem;
+    border-radius: var(--radius-full);
+    cursor: pointer;
+    transition: background var(--dur) var(--ease), color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+    white-space: nowrap;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+}
+.seg > button:hover,
+.seg > a:hover { color: var(--fg); }
+.seg > button[data-active="true"],
+.seg > a[data-active="true"] {
+    background: linear-gradient(180deg, var(--accent), var(--accent-strong));
+    color: var(--accent-fg);
+    box-shadow: 0 1px 6px -1px var(--ring);
+}
+
+/* ---------- kategori rail'i (çok sayıda chip için) ----------
+   ÖNCEKİ SORUN: grid-auto-flow:column tüm sütunları en geniş chip'e eşitliyordu ->
+   "Fren" ile "Hibrit ve Elektrikli Araç" AYNI genişlikte görünüyordu.
+   ÇÖZÜM: flex column-wrap. Her chip İÇERİĞİ kadar yer kaplar (width:fit-content),
+   iki satıra sığar, taşınca yatay kaydırılır. Böylece chip'ler doğal, farklı
+   genişliklerde durur — "hap" hissi geri gelir. */
+.chip-rail {
+    display: flex;
+    flex-flow: column wrap;      /* dikey akış + sarma = sütun sütun 2 satır */
+    align-content: flex-start;   /* sütunları sola yasla (ortalanmasın) */
+    gap: 0.55rem;
+    height: 5.4rem;              /* 2 satır chip + gap; sabit yükseklik wrap'i tetikler */
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 0.25rem 0.25rem 0.5rem;
+    scrollbar-width: none;       /* Firefox */
+    -webkit-mask-image: linear-gradient(90deg, black 90%, transparent);
+    mask-image: linear-gradient(90deg, black 90%, transparent);
+}
+.chip-rail::-webkit-scrollbar { display: none; } /* Chrome/Safari */
+.chip-rail .chip {
+    width: fit-content;          /* İÇERİĞE göre daral — eşit genişlik SORUNU çözülür */
+    font-size: var(--text-sm);
+    padding: 0.5rem 1.05rem;
+    white-space: nowrap;         /* "Hibrit ve Elektrikli Araç" tek satır kalsın */
+    transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease),
+                transform var(--dur) var(--ease);
+}
+.chip-rail .chip:hover {
+    border-color: var(--border-strong);
+    background: var(--accent-soft);
+    transform: translateY(-1px);
+}
+
+/* ---------- chips & badges ---------- */
+.chip {
+    display: inline-flex; align-items: center; gap: 0.3rem;
+    padding: 0.2rem 0.65rem;
+    border-radius: var(--radius-full);
+    background: var(--neutral-soft);
+    border: 1px solid var(--border);
+    font-size: var(--text-xs);
+    font-weight: 500;
+    color: var(--fg-muted);
+}
+.chip-accent { background: var(--accent-soft); color: var(--fg); border-color: transparent; }
+
+.score-badge {
+    display: inline-flex; flex-direction: column; align-items: center; justify-content: center;
+    min-width: 3.4rem;
+    padding: 0.4rem 0.6rem;
+    border-radius: var(--radius);
+    font-weight: 750;
+    font-size: 1.15rem;
+    line-height: 1;
+    letter-spacing: -0.02em;
+}
+.score-badge small { font-size: 0.65rem; font-weight: 500; margin-top: 0.25rem; opacity: 0.85; }
+.score-pos { background: var(--pos-soft); color: var(--pos); }
+.score-neg { background: var(--neg-soft); color: var(--neg); }
+.score-zero { background: var(--neutral-soft); color: var(--fg-muted); }
+
+/* ---------- hero ---------- */
+.hero {
+    position: relative;
+    padding-block: clamp(3rem, 8vw, 6rem);
+    text-align: center;
+    overflow: hidden;
+}
+.hero::before {
+    content: "";
+    position: absolute; inset: 0;
+    /* Katman 1-2: turuncu + soğuk mavi ışık lekeleri. Katman 3-4: incecik "teknik çizim"
+       grid dokusu (1px çizgiler) — sanayi/atölye kimliğine gönderme, 2026'nın sevilen deseni. */
+    background:
+        radial-gradient(600px 300px at 20% 0%, var(--accent-soft), transparent 70%),
+        radial-gradient(500px 260px at 85% 10%, oklch(0.7 0.1 240 / 0.15), transparent 70%),
+        linear-gradient(var(--border) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: auto, auto, 44px 44px, 44px 44px;
+    /* Grid'i kenarlara doğru erit: içerik merkezinde temiz kalsın */
+    mask-image: radial-gradient(80% 90% at 50% 20%, black 40%, transparent 100%);
+    -webkit-mask-image: radial-gradient(80% 90% at 50% 20%, black 40%, transparent 100%);
+    opacity: 0.85;
+    pointer-events: none;
+}
+.hero > * { position: relative; }
+.hero h1 { font-size: var(--text-hero); letter-spacing: -0.03em; font-weight: 800; }
+.hero p { color: var(--fg-muted); font-size: var(--text-lg); max-width: 40rem; margin-inline: auto; }
+.hero-actions { display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap; margin-top: 1.5rem; }
+
+.section-title { font-size: var(--text-xl); letter-spacing: -0.02em; }
+.eyebrow {
+    font-size: var(--text-xs); font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--accent);
+}
+
+/* ---------- skeleton / empty ---------- */
+.skeleton {
+    border-radius: var(--radius);
+    background: linear-gradient(100deg, var(--neutral-soft) 40%, var(--bg-elev) 50%, var(--neutral-soft) 60%);
+    background-size: 200% 100%;
+    animation: shimmer 1.4s infinite linear;
+}
+@keyframes shimmer { to { background-position: -200% 0; } }
+
+.empty-state {
+    border: 1px dashed var(--border-strong);
+    border-radius: var(--radius-lg);
+    padding: 2.5rem 1.5rem;
+    text-align: center;
+    color: var(--fg-muted);
+    font-size: var(--text-sm);
+    display: grid;
+    gap: 0.5rem;
+    justify-items: center;
+}
+
+/* ---------- alerts ---------- */
+.alert { border-radius: var(--radius); padding: 0.7rem 1rem; font-size: var(--text-sm); border: 1px solid transparent; }
+.alert-error { background: var(--neg-soft); color: var(--neg); }
+.alert-success { background: var(--pos-soft); color: var(--pos); }
+.alert-info { background: var(--neutral-soft); color: var(--fg-muted); }
+
+/* ---------- score picker (RateForm) ---------- */
+.score-picker { display: flex; gap: 0.25rem; flex-wrap: wrap; }
+.score-pick {
+    width: 2.4rem; height: 2.4rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: var(--bg-elev);
+    font-weight: 650;
+    font-size: var(--text-sm);
+    cursor: pointer;
+    transition: all var(--dur) var(--ease);
+}
+.score-pick:hover { border-color: var(--border-strong); transform: translateY(-1px); }
+.score-pick[data-selected="true"][data-tone="pos"] { background: var(--pos); border-color: var(--pos); color: white; }
+.score-pick[data-selected="true"][data-tone="neg"] { background: var(--neg); border-color: var(--neg); color: white; }
+.score-pick[data-selected="true"][data-tone="zero"] { background: var(--fg-muted); border-color: var(--fg-muted); color: var(--bg); }
+
+/* ---------- histogram ---------- */
+.histogram { display: flex; align-items: flex-end; gap: 4px; }
+.histogram-bar {
+    flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;
+    font-size: 10px; color: var(--fg-faint);
+}
+.histogram-bar > i {
+    display: block; width: 100%; border-radius: 4px 4px 2px 2px; min-height: 4px;
+    transition: height 300ms var(--ease);
+}
+.histogram-bar > i[data-tone="pos"] { background: var(--pos); opacity: 0.8; }
+.histogram-bar > i[data-tone="neg"] { background: var(--neg); opacity: 0.8; }
+.histogram-bar > i[data-tone="zero"] { background: var(--fg-faint); opacity: 0.6; }
+
+/* ---------- chat ---------- */
+.chat-shell {
+    display: flex; flex-direction: column;
+    height: calc(100dvh - var(--header-h) - 2rem);
+    max-height: 820px;
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+}
+.chat-head {
+    display: flex; align-items: center; gap: 0.75rem;
+    padding: 0.9rem 1.25rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-elev);
+}
+.chat-body {
+    flex: 1; overflow-y: auto;
+    padding: 1.25rem;
+    display: flex; flex-direction: column; gap: 0.9rem;
+    background: var(--bg-sunken);
+    overscroll-behavior: contain;
+}
+.chat-msg { display: flex; gap: 0.65rem; max-width: min(78%, 34rem); }
+.chat-msg.own { align-self: flex-end; flex-direction: row-reverse; }
+.chat-avatar {
+    width: 34px; height: 34px; flex-shrink: 0;
+    border-radius: var(--radius-full);
+    display: flex; align-items: center; justify-content: center;
+    background: var(--accent-soft);
+    color: var(--fg);
+    font-size: var(--text-xs); font-weight: 700;
+}
+.chat-bubble {
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: var(--radius) var(--radius) var(--radius) 4px;
+    padding: 0.55rem 0.85rem;
+    font-size: var(--text-sm);
+    display: grid; gap: 0.3rem;
+    box-shadow: var(--shadow-sm);
+    overflow-wrap: anywhere;
+}
+.chat-msg.own .chat-bubble {
+    background: var(--accent-soft);
+    border-color: transparent;
+    border-radius: var(--radius) var(--radius) 4px var(--radius);
+}
+.chat-meta { display: flex; align-items: baseline; gap: 0.5rem; }
+.chat-author { font-weight: 650; font-size: var(--text-xs); }
+.chat-time { font-size: 0.65rem; color: var(--fg-faint); }
+.chat-bubble a { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
+.chat-attachment img, .chat-attachment video {
+    border-radius: var(--radius-sm);
+    max-height: 320px;
+    width: auto; max-width: 100%;
+}
+.chat-composer {
+    display: flex; align-items: flex-end; gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    border-top: 1px solid var(--border);
+    background: var(--bg-elev);
+}
+.chat-composer textarea {
+    flex: 1;
+    min-height: 42px; max-height: 140px;
+    resize: none;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    border-radius: var(--radius);
+    padding: 0.55rem 0.9rem;
+    font-size: var(--text-sm);
+}
+.chat-composer textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--ring); }
+.chat-day-divider {
+    align-self: center;
+    font-size: var(--text-xs);
+    color: var(--fg-faint);
+    background: var(--neutral-soft);
+    border-radius: var(--radius-full);
+    padding: 0.15rem 0.75rem;
+}
+.chat-pending { opacity: 0.6; }
+
+/* ---------- marka logosu ---------- */
+.brand-logo {
+    display: inline-flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    border-radius: var(--radius);
+    overflow: hidden;
+}
+/* RENKLİ logo kutusu: logolar orijinal renklerinde (BMW mavi, Toyota kırmızı).
+   Çoğu logo beyaz/şeffaf zeminlidir; koyu temada kaybolmasın diye AÇIK bir
+   logo-pedi veriyoruz (her iki temada da beyazımsı). Renklere DOKUNULMAZ. */
+.brand-logo-img {
+    background: #f4f5f7;
+    border: 1px solid var(--border);
+}
+.brand-logo-mono {
+    font-weight: 800;
+    font-size: 0.9rem;
+    letter-spacing: -0.02em;
+    color: var(--fg-muted);
+    background: linear-gradient(135deg, var(--accent-soft), var(--neutral-soft));
+}
+
+/* room card */
+.room-card {
+    display: flex; align-items: center; gap: 1rem;
+    padding: 1rem 1.25rem;
+}
+.room-avatar {
+    width: 46px; height: 46px;
+    border-radius: var(--radius);
+    background: linear-gradient(135deg, var(--accent-soft), var(--neutral-soft));
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 1.1rem; color: var(--fg);
+    flex-shrink: 0;
+}
+
+/* ---------- misc ---------- */
+.divider { border: 0; border-top: 1px solid var(--border); }
+.muted { color: var(--fg-muted); }
+.faint { color: var(--fg-faint); }
+.text-sm { font-size: var(--text-sm); }
+.text-xs { font-size: var(--text-xs); }
+.mono { font-family: var(--font-geist-mono), ui-monospace, monospace; }
+.truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.map-frame {
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    border: 1px solid var(--border);
+}
+.map-frame .leaflet-container { font-family: inherit; }
+
+/* auth card */
+.auth-wrap { display: grid; place-items: center; padding-block: clamp(2rem, 6vw, 5rem); flex: 1; }
+.auth-card { width: 100%; max-width: 26rem; display: grid; gap: 1.25rem; padding: 2rem; }
+.auth-card h1 { font-size: var(--text-2xl); letter-spacing: -0.02em; }
+
+/* table (admin) */
+.table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--bg-elev); }
+table.data { width: 100%; border-collapse: collapse; font-size: var(--text-sm); }
+table.data th, table.data td { text-align: left; padding: 0.6rem 0.9rem; border-bottom: 1px solid var(--border); }
+table.data th { color: var(--fg-muted); font-weight: 600; font-size: var(--text-xs); text-transform: uppercase; letter-spacing: 0.04em; }
+table.data tr:last-child td { border-bottom: 0; }

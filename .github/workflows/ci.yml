@@ -1,0 +1,33 @@
+# Frontend CI — her push/PR'da lint + production build.
+# Build başarısı, tip hatası/kırık import olmadığının en güçlü kanıtıdır (Next tip kontrolü yapar).
+name: frontend-ci
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"     # Next 16 min Node 20
+          cache: npm
+
+      # npm ci: package-lock.json'a birebir sadık, deterministik kurulum (CI standardı).
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+        env:
+          # Build sırasında backend'e gidilmez (sayfalar dinamik); yine de default veriyoruz.
+          NEXT_PUBLIC_API_URL: http://localhost:8080/api

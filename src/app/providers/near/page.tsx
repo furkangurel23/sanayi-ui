@@ -1,11 +1,20 @@
+/*
+ * YAKINIMDAKİLER — iki modlu sayfa:
+ *  1) URL'de lat/lon YOK -> veri çekilmez, sadece NearLocate (konum izni) gösterilir.
+ *  2) lat/lon VAR -> PostGIS destekli /providers/near ucu SUNUCUDA çağrılır,
+ *     sonuçlar mesafeleriyle listelenir.
+ * "Konum alma" client'ın, "mesafe hesabı" veritabanının işi — her iş doğru katmanda.
+ */
+import Link from "next/link";
 import {getProvidersNear} from "@/lib/api";
 import type {NearItem, Page as PageType, ProviderListItem} from "@/lib/types";
 import MapSection from "@/components/MapSection";
 import Pagination from "@/components/Pagination";
 import NearLocate from "@/components/NearLocate";
+import ScoreBadge from "@/components/ScoreBadge";
 
 export const metadata = {
-    title: "Yakınımdaki Ustalar | Sanayi",
+    title: "Yakınımdaki Ustalar",
 };
 
 export default async function ProvidersNearPage({
@@ -15,33 +24,30 @@ export default async function ProvidersNearPage({
 }) {
     const sp = await searchParams;
 
-    const lat = sp.lat ? Number(sp.lat) : null!;
-    const lon = sp.lon ? Number(sp.lon) : null!;
+    const lat = sp.lat ? Number(sp.lat) : null;
+    const lon = sp.lon ? Number(sp.lon) : null;
     const radiusKm = sp.radiusKm ? Number(sp.radiusKm) : 10;
     const page = Number(sp.page ?? "1");
     const size = Number(sp.size ?? "20");
-    //lat/lon yoksa "konum al" bolumunu goster, veri cekme.
-    if (!Number.isFinite(lat as number) || !Number.isFinite(lon as number)) {
+
+    if (lat === null || lon === null || !Number.isFinite(lat) || !Number.isFinite(lon)) {
         return (
-            <main className="mx-auto max-w-5xl p-4 space-y-4">
-                <h1 className="text-2xl font-bold">Yakınımdaki Ustalar</h1>
-                <NearLocate/>
-                <p className="text-sm opacity-70">
-                    Konumunu paylaştıktan sonra bu sayfa, belirlediğin yarıçap içindeki işletmeleri listeler.
-                </p>
+            <main className="container page" style={{maxWidth: "44rem"}}>
+                <div className="stack-sm">
+                    <span className="eyebrow">Konum</span>
+                    <h1 className="section-title" style={{fontSize: "var(--text-2xl)"}}>Yakınımdaki ustalar</h1>
+                    <p className="muted text-sm">
+                        Konumunu paylaştıktan sonra belirlediğin yarıçap içindeki ustaları mesafeleriyle listeleriz.
+                    </p>
+                </div>
+                {/* Yarıçap server'dan prop iner — client'ta useSearchParams'a gerek yok. */}
+                <NearLocate initialRadiusKm={radiusKm}/>
             </main>
         );
     }
-    //lat/lon mevcutsa listeleri server'da cek
-    const data: PageType<NearItem> = await getProvidersNear({
-        lat: lat as number,
-        lon: lon as number,
-        radiusKm,
-        page,
-        size
-    });
 
-    // Harita için, nearItem -> ProviderLıstItem şeklinde dönüştür (lat/lon varsa marker çizer)
+    const data: PageType<NearItem> = await getProvidersNear({lat, lon, radiusKm, page, size});
+
     const forMap: ProviderListItem[] = data.content.map((n) => ({
         id: n.id,
         name: n.name,
@@ -54,54 +60,45 @@ export default async function ProvidersNearPage({
         lon: n.lon ?? undefined,
     }));
 
-    /*
-    * Önemli Next.js noktaları:
-    *   Konum yoksa SSR veri çekmeyip sadece client NearLocate gösteriyoruz.
-    *   Konum varsa SSR ile getProvidersNear → hızlı ilk yükleme.
-    *   MapSection client tarafında aç/kapa + URL senkronu korur.
-    * */
-
     return (
-        <main className="mx-auto max-w-5xl p-4 space-y-4">
-            <h1 className="text-2xl font-bold">Yakınımdaki Ustalar</h1>
-
-            {/* Bilgi satırı */}
-            <div className="text-sm opacity-80">
-                Merkez: {lat.toFixed(5)}, {lon.toFixed(5)} &middot; Yarıçap: {radiusKm} km
+        <main className="container page">
+            <div className="row-between">
+                <div className="stack-sm">
+                    <span className="eyebrow">Konum</span>
+                    <h1 className="section-title" style={{fontSize: "var(--text-2xl)"}}>Yakınımdaki ustalar</h1>
+                </div>
+                <span className="chip">Yarıçap: {radiusKm} km · {data.totalElements} sonuç</span>
             </div>
 
-            {/* Harita: lat/lng yoksa boş görünür; varsa marker'lar çıkar */}
             <MapSection items={forMap} height={280}/>
 
-            {/* Liste */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {data.content.map((n) => (
-                    <a
-                        key={n.id}
-                        href={`/providers/${n.id}`}
-                        className="rounded-2xl border border-white/10 p-4 hover:border-white/30 transition"
-                    >
-                        <div className="flex items-start justify-between gap-4">
-                            <div>
-                                <div className="font-semibold">{n.name}</div>
-                                <div className="text-xs opacity-70">
-                                    {[n.district, n.city].filter(Boolean).join(" / ")}
+            {data.content.length === 0 ? (
+                <div className="empty-state">
+                    <b>Bu yarıçapta usta bulunamadı.</b>
+                    <span>Yarıçapı büyütmeyi dene.</span>
+                </div>
+            ) : (
+                <div className="grid-2">
+                    {data.content.map((n) => (
+                        <Link key={n.id} href={`/providers/${n.id}`} className="card card-hover">
+                            <div className="row-between" style={{alignItems: "flex-start", flexWrap: "nowrap"}}>
+                                <div className="stack-sm" style={{gap: "0.2rem", minWidth: 0}}>
+                                    <div className="card-title truncate">{n.name}</div>
+                                    <div className="card-sub truncate">
+                                        {[n.district, n.city].filter(Boolean).join(", ")}
+                                    </div>
+                                    <span className="chip" style={{width: "fit-content"}}>
+                                        {n.distanceKm.toFixed(1)} km uzakta
+                                    </span>
                                 </div>
-                                <div className="text-xs opacity-70 mt-1">
-                                    {typeof n.avgScore === "number"
-                                        ? `Puan: ${n.avgScore.toFixed(1)} (${n.ratingCount ?? 0} oy)`
-                                        : `${n.ratingCount ?? 0} oy`}
-                                </div>
+                                <ScoreBadge score={n.avgScore} count={n.ratingCount}/>
                             </div>
-                            <div className="text-sm font-semibold">{n.distanceKm.toFixed(1)} km</div>
-                        </div>
-                    </a>
-                ))}
-            </div>
+                        </Link>
+                    ))}
+                </div>
+            )}
 
-            <div className="pt-4">
-                <Pagination page={(data.number ?? 0) + 1} totalPages={data.totalPages ?? 1}/>
-            </div>
+            <Pagination page={(data.number ?? 0) + 1} totalPages={data.totalPages ?? 1}/>
         </main>
     );
 }

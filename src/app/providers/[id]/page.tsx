@@ -1,24 +1,31 @@
 /*
-* Bu sayfa, URL'deki /providers/[id] parametresine gore provider detayini
-*  ve yorumlarini server tarafina (SSR) ceker ve render eder.
-* */
-
+ * USTA DETAY SAYFASI — Server Component (SSR).
+ *
+ * generateMetadata: sekme başlığını usta adıyla dinamik kurar (SEO).
+ * İki ayrı veri çekimi: detay (cache'li) + yorum sayfası (no-store, her zaman taze).
+ * scoreHistogram Record<string, number> gelir; -5..+5 dizisine map'lenerek
+ * eksik skorlar 0 ile doldurulur (histogram her zaman 11 çubuk).
+ */
 import type {Page as PageType, ProviderDetailDto, ProviderListItem, RatingDto} from "@/lib/types";
 import {getProviderDetail, getProviderRatings} from "@/lib/api";
+import Link from "next/link";
 import RatingItem from "@/components/RatingItem";
 import Pagination from "@/components/Pagination";
 import ProvidersMap from "@/components/ProvidersMap";
 import MiniHistogram from "@/components/MiniHistogram";
 import RateForm from "@/components/RateForm";
+import ScoreBadge from "@/components/ScoreBadge";
 
+export async function generateMetadata({params}: { params: Promise<{ id: string }> }) {
+    const {id} = await params;
+    try {
+        const detail = await getProviderDetail(Number(id));
+        return {title: detail.name};
+    } catch {
+        return {title: "Usta Detayı"};
+    }
+}
 
-// (SEO) baslik: provider adini rumtime'da biliyoruz -> dinamik metadaa yazilabilir; simdilik sabit baslik veriyoruz.
-
-export const metadata = {
-    title: "Usta Detayı | Sanayi",
-};
-
-//Next 15: params/searchParams Promise -> tipleri boyle yazariz.
 export default async function ProviderDetailPage({
                                                      params,
                                                      searchParams,
@@ -34,29 +41,15 @@ export default async function ProviderDetailPage({
         throw new Error(`Geçersiz usta id: ${p.id}`);
     }
 
-    //Yorumlar icin ayri sayfalama (1-based)
     const rPage = Number(sp.page ?? "1");
     const rSize = Number(sp.size ?? "10");
 
-    // --Veri cek: Detay + Yorumlar
-    // Tip karmasasi yasamamak icin iki adimda: performans sikintisi yok (detay cacheli)
-
     const detail: ProviderDetailDto = await getProviderDetail(id);
     const ratingsPage: PageType<RatingDto> = await getProviderRatings({
-        id,
-        page: rPage,
-        size: rSize,
-        sortField: "createdAt",
-        sortDir: "desc",
+        id, page: rPage, size: rSize, sortField: "createdAt", sortDir: "desc",
     });
 
-
-    const addressLine = [detail.address, detail.district, detail.city].filter(Boolean).join(" / ");
-    const scoreLine = typeof detail.avgScore === "number" ?
-        `${detail.avgScore.toFixed(1)} (${detail.ratingCount} oy)`
-        : `${detail.ratingCount} oy`;
-
-    //Harita icin tek ogelik liste(ProvidersMap signature'ina uyacak sekilde)
+    const addressLine = [detail.address, detail.district, detail.city].filter(Boolean).join(", ");
 
     const mapItems: ProviderListItem[] = detail.location
         ? [{
@@ -75,66 +68,65 @@ export default async function ProviderDetailPage({
     const range = [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5];
     const buckets = range.map(s => ({
         score: s,
-        count: Number(detail.scoreHistogram?.[String(s)] ?? 0)
+        count: Number(detail.scoreHistogram?.[String(s)] ?? 0),
     }));
-
-    const histogramTotal = buckets.reduce((sum, bucket) => sum + bucket.count, 0);
-    const top3 = detail.recentRatings ?? [];
-
+    const histogramTotal = buckets.reduce((sum, b) => sum + b.count, 0);
 
     return (
-        <main className="mx-auto max-w-4xl p-4 space-y-6">
-            {/* Üst başlık ve özet bilgiler */}
-            <section className="space-y-2">
-                <h1 className="text-2xl font-bold">{detail.name}</h1>
-                <div className="text-sm opacity-80">{addressLine || "Adres bilgisi yok"}</div>
-                {detail.phone && (
-                    <div className="text-sm">
-                        Tel: <a className="underline underline-offset-2" href={`tel:${detail.phone}`}>{detail.phone}</a>
+        <main className="container page" style={{maxWidth: "56rem"}}>
+            {/* Başlık kartı */}
+            <section className="card stack" style={{padding: "1.5rem"}}>
+                <div className="row-between" style={{alignItems: "flex-start"}}>
+                    <div className="stack-sm" style={{gap: "0.35rem", minWidth: 0}}>
+                        <h1 style={{fontSize: "var(--text-2xl)", letterSpacing: "-0.02em"}}>{detail.name}</h1>
+                        <div className="card-sub">{addressLine || "Adres bilgisi yok"}</div>
+                        {detail.phone && (
+                            <a className="text-sm" style={{color: "var(--accent)", fontWeight: 550}}
+                               href={`tel:${detail.phone}`}>
+                                {detail.phone}
+                            </a>
+                        )}
+                    </div>
+                    <ScoreBadge score={detail.avgScore} count={detail.ratingCount}/>
+                </div>
+
+                {(detail.brands.length > 0 || detail.categories.length > 0) && (
+                    <div className="row" style={{flexWrap: "wrap", gap: "0.4rem"}}>
+                        {detail.brands.map(b => (
+                            <Link key={`b${b.id}`} href={`/providers?brandId=${b.id}`}
+                                  className="chip chip-accent">{b.name}</Link>
+                        ))}
+                        {detail.categories.map(c => (
+                            <Link key={`c${c.id}`} href={`/providers?categoryId=${c.id}`}
+                                  className="chip">{c.name}</Link>
+                        ))}
                     </div>
                 )}
-                <div className="text-sm">Puan: <span className="font-semibold">{scoreLine}</span></div>
             </section>
 
-            {/* Marka ve kategoriler etiketleri */}
-            <section className="space-y-2">
-                <div className="flex flex-wrap gap-2">
-                    {detail.brands.map(b => (
-                        <span key={b.id} className="text-xs rounded-lg border border-white/15 px-2 py-1">
-              {b.name}
-            </span>
-                    ))}
-                </div>
-                <div className="flex flex-wrap gap-2">
-                    {detail.categories.map(c => (
-                        <span key={c.id} className="text-xs rounded-lg border border-white/15 px-2 py-1">
-              {c.name}
-            </span>
-                    ))}
-                </div>
-            </section>
-
-            {/* Mini harita */}
+            {/* Konum */}
             {mapItems.length > 0 && (
-                <section className="space-y-2">
-                    <h2 className="text-lg font-semibold">Konum</h2>
-                    <ProvidersMap items={mapItems} height={220}/>
+                <section className="stack-sm">
+                    <h2 className="section-title">Konum</h2>
+                    <div className="map-frame">
+                        <ProvidersMap items={mapItems} height={220}/>
+                    </div>
                 </section>
             )}
 
-            {/* İstatistikler: histogram + özet */}
+            {/* Puan dağılımı */}
             {detail.ratingCount > 0 && (
-                <section className="space-y-2">
-                    <h2 className="text-lg font-semibold">Puan Dağılımı</h2>
-                    <div className="flex items-center gap-4">
-                        <div className="text-sm min-w-36">
-                            <div className="opacity-80">Ortalama</div>
-                            <div className="text-2xl font-bold leading-none">
-                                {typeof detail.avgScore === "number" ? detail.avgScore.toFixed(2) : "-"}
+                <section className="stack-sm">
+                    <h2 className="section-title">Puan dağılımı</h2>
+                    <div className="row" style={{alignItems: "stretch", gap: "1rem", flexWrap: "wrap"}}>
+                        <div className="card stack-sm"
+                             style={{minWidth: "9rem", justifyItems: "center", alignContent: "center"}}>
+                            <div style={{fontSize: "2.2rem", fontWeight: 800, letterSpacing: "-0.03em"}}>
+                                {typeof detail.avgScore === "number" ? detail.avgScore.toFixed(2) : "—"}
                             </div>
-                            <div className="text-xs opacity-70">{detail.ratingCount} oy</div>
+                            <div className="text-xs faint">{detail.ratingCount} oy ortalaması</div>
                         </div>
-                        <div className="flex-1">
+                        <div style={{flex: 1, minWidth: "16rem"}}>
                             <MiniHistogram buckets={buckets} total={histogramTotal || detail.ratingCount}/>
                         </div>
                     </div>
@@ -142,46 +134,28 @@ export default async function ProviderDetailPage({
             )}
 
             {/* Puan/yorum formu */}
-            <section className="space-y-3">
-                <RateForm providerId={id} />
-            </section>
+            <RateForm providerId={id}/>
 
-            {/* Son 3 yorum (yorum listesinin ilk sayfasıyla tekrar etmesin diye eski sayfalarda göster) */}
-            {detail.ratingCount > 0 && rPage > 1 && top3.length > 0 && (
-                <section className="space-y-3">
-                    <h2 className="text-lg font-semibold">Son 3 yorum</h2>
-                    <ul className="space-y-2">
-                        {top3.map(r => <RatingItem key={`top3-${r.id}`} r={r}/>)}
-                    </ul>
-                </section>
-            )}
-
-            {/* Yorumlar listesi + sayfalama */}
-            <section className="space-y-3">
-                <h2 className="text-lg font-semibold">Yorumlar</h2>
+            {/* Yorumlar */}
+            <section className="stack">
+                <div className="row-between">
+                    <h2 className="section-title">Yorumlar</h2>
+                    <span className="chip">{detail.ratingCount} değerlendirme</span>
+                </div>
 
                 {ratingsPage.content.length === 0 ? (
-                    <div className="text-sm opacity-80 rounded-xl border border-white/10 p-3">
-                        Henüz yorum yok.
+                    <div className="empty-state">
+                        <b>Henüz yorum yok.</b>
+                        <span>İlk değerlendirmeyi sen yap!</span>
                     </div>
                 ) : (
-                    <ul className="space-y-2">
-                        {ratingsPage.content.map((r) => (
-                            <RatingItem key={r.id} r={r}/>
-                        ))}
+                    <ul className="stack-sm">
+                        {ratingsPage.content.map((r) => <RatingItem key={r.id} r={r}/>)}
                     </ul>
                 )}
 
-                {/* Aynı Pagination bileşenini kullanıyoruz; query param adı `page` */}
-                <div className="pt-2">
-                    <Pagination
-                        page={(ratingsPage.number ?? 0) + 1}
-                        totalPages={ratingsPage.totalPages ?? 1}
-                    />
-                </div>
+                <Pagination page={(ratingsPage.number ?? 0) + 1} totalPages={ratingsPage.totalPages ?? 1}/>
             </section>
-
-
         </main>
     );
 }

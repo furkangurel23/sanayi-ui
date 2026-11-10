@@ -116,6 +116,29 @@ export type AdminRatingItem = {
     deletedAt?: string | null;
 };
 
+export type ChatMessage = {
+    id: number;
+    brandId: number;
+    brandName: string;
+    userId: number;
+    displayName: string;
+    content?: string | null;
+    attachmentUrl?: string | null;
+    attachmentType?: "IMAGE" | "VIDEO" | null;
+    createdAt: string;
+};
+
+export type AdminUserItem = {
+    id: number;
+    email: string;
+    displayName?: string | null;
+    role: string;
+    enabled: boolean;
+    emailVerified: boolean;
+    createdAt?: string | null;
+    lastLoginAt?: string | null;
+};
+
 export type ModerationLogItem = {
     id: number;
     action: string;
