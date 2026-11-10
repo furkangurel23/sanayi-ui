@@ -15,7 +15,7 @@
  * - Onay sonrası: yeni dükkan bağlantısı; Server Action ile liste önbellekleri tazelenir;
  *   sekme rozetleri güncellenir.
  */
-import {useState} from "react";
+import {useEffect, useRef, useState} from "react";
 import Link from "next/link";
 import type {IdName} from "@/lib/types";
 import {useAuthedData} from "@/lib/useAuthedData";
@@ -81,6 +81,16 @@ export default function SuggestionReview({id, categories, brands, onClose, onDec
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [approvedId, setApprovedId] = useState<number | null>(null);
+    const headingRef = useRef<HTMLHeadingElement>(null);
+
+    // Karar verilince (PENDING -> başka durum) odak başlığa: karar düğmeleri DOM'dan kalktığı için
+    // diyalog kapanınca odak gövdeye düşerdi.
+    const status = review.data?.s.status;
+    const prevStatus = useRef(status);
+    useEffect(() => {
+        if (prevStatus.current === "PENDING" && status && status !== "PENDING") headingRef.current?.focus();
+        prevStatus.current = status;
+    }, [status]);
 
     async function afterApprove(providerId: number | null | undefined, t: string) {
         setApprovedId(providerId ?? null);
@@ -117,7 +127,7 @@ export default function SuggestionReview({id, categories, brands, onClose, onDec
             <div className="stack">
                 <div className="request-head">
                     <div className="stack-sm request-body">
-                        <h2 id="review-title" className="headline">{s.name}</h2>
+                        <h2 id="review-title" ref={headingRef} tabIndex={-1} className="headline">{s.name}</h2>
                         <span className="caption muted">
                             #{s.id} &middot; {s.suggestedBy.email} &middot; <time dateTime={s.createdAt}>{formatDateTime(s.createdAt)}</time>
                         </span>

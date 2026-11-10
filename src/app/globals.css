@@ -1513,3 +1513,39 @@ table.data a.btn:hover { text-decoration: none; }
 .similar-title { display: inline-flex; align-items: center; gap: var(--space-2); margin: 0; font-weight: var(--type-headline-wt); }
 .similar-list { margin: 0; padding: 0; list-style: none; }
 .similar-list a { min-height: var(--target-min); display: inline-flex; align-items: center; }
+
+/* ---------- sahiplenme talebi (ClaimForm, Taleplerim, yönetici incelemesi) ---------- */
+.file-pick { position: relative; justify-self: start; cursor: pointer; }
+/* Gerçek <input type=file> görsel olarak gizli (.sr-only) ama odaklanabilir: odak halkası etikette */
+.file-pick:focus-within { outline: var(--ring-width) solid var(--ring); outline-offset: var(--ring-offset); }
+.file-list { display: grid; gap: var(--space-2); margin: 0; padding: 0; list-style: none; }
+.file-item {
+    display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3);
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--hairline); border-radius: var(--radius-md);
+    background: var(--surface-1);
+}
+.file-name { min-width: 0; flex: 1 1 calc(var(--space-10) * 1.2); overflow-wrap: anywhere; font-size: var(--type-callout); }
+.kvkk-box { padding: var(--space-4); border: 1px solid var(--hairline); border-radius: var(--radius-md); }
+.kvkk-summary > summary { cursor: pointer; min-height: var(--target-min); display: flex; align-items: center; color: var(--accent-text); font-size: var(--type-callout); }
+.legal-list { margin: 0; padding-inline-start: var(--space-5); display: grid; gap: var(--space-2); list-style: disc; }
+.legal-text p { line-height: var(--type-body-lh); }
+/* Uzun etiketli onay kutusu: kutu ilk satırla hizalı */
+.checkbox-top { align-items: flex-start; }
+.checkbox-top input[type="checkbox"] { margin-top: var(--space-1); }
+/* Belirli ilerleme çubuğu (yerel <progress> = role="progressbar") — belirteç renkleri */
+.progress {
+    width: 100%; height: var(--space-2);
+    appearance: none; -webkit-appearance: none;
+    border: 0; border-radius: var(--radius-full);
+    background: var(--neutral-soft); overflow: hidden;
+}
+.progress::-webkit-progress-bar { background: var(--neutral-soft); border-radius: var(--radius-full); }
+.progress::-webkit-progress-value { background: var(--accent); border-radius: var(--radius-full); }
+.progress::-moz-progress-bar { background: var(--accent); border-radius: var(--radius-full); }
+.detail-secondary { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.review-panel h2[tabindex="-1"]:focus { outline: none; }
+.review-panel h2[tabindex="-1"]:focus-visible { outline: var(--ring-width) solid var(--ring); }
+/* Metin içi bağlantı (KVKK cümlesi): satır akışında kalsın — 44 px kutusu cümleyi bölüyordu.
+   WCAG 2.5.8 "satır içi" istisnası: cümle içindeki bağlantının hedef boyutu metin satırıdır. */
+.kvkk-box .callout .link-accent { display: inline; min-height: 0; padding: 0; }

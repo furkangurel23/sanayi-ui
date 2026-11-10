@@ -16,7 +16,7 @@
  * aria-current="page" ile (ekran okuyucu "geçerli sayfa" der). Satır içi stil yok.
  * T041: yetkisiz ekranın h1'i EmptyState başlığının kendisi (titleAs="h1").
  *
- * 003 (T101): + "Dikkat" (ve sonraki dilimlerde "Öneriler", "Talepler") sekmeleri. Etkin sekme
+ * 003 (T101/T108/T116): + "Öneriler", "Talepler", "Dikkat" sekmeleri. Etkin sekme
  * artık `pathname.startsWith(href)` — alt sayfalar (/admin/providers/12) da sekmeyi etkin
  * gösterir. Kuyruk sekmelerinde SAYI ROZETİ (`GET /api/admin/queues/counts`): görünür sayı +
  * bağlantının erişilebilir adında sayı ("Dikkat, 3 bekleyen"). Bir karar verilince içerik
@@ -42,6 +42,7 @@ const TABS: Tab[] = [
     {href: "/admin/providers", label: "Dükkanlar"},
     {href: "/admin/users", label: "Kullanıcılar"},
     {href: "/admin/suggestions", label: "Öneriler", count: c => c.pendingSuggestions},
+    {href: "/admin/claims", label: "Talepler", count: c => c.pendingClaims},
     {href: "/admin/attention", label: "Dikkat", count: c => c.openAttention},
 ];
 

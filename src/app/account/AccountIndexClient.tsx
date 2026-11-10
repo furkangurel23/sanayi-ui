@@ -2,20 +2,22 @@
 
 /*
  * HESAP DİZİNİ (003 / T098) — üyenin kendi kayıtlarına giriş noktası: Dükkanlarım (sahip
- * olduğu dükkanlar), Önerilerim + sayılar. Taleplerim bağlantısı sahiplenme diliminde eklenir.
+ * olduğu dükkanlar), Önerilerim, Taleplerim + sayılar.
  * Kartlar `card-hover` + "stretched" bağlantı değil düz <Link> kart (tek tıklama hedefi).
  */
 import Link from "next/link";
 import AccountShell from "@/components/AccountShell";
 import {useAuthedData} from "@/lib/useAuthedData";
-import {mySuggestions, ownerProviders} from "@/lib/accountApi";
-import {ChevronRight, Pin, Shield} from "@/components/icons";
+import {myClaims, mySuggestions, ownerProviders} from "@/lib/accountApi";
+import {ChevronRight, File as FileIcon, Pin, Shield} from "@/components/icons";
 
 function Counts() {
     const owned = useAuthedData("account:owned", ownerProviders);
     const suggestions = useAuthedData("account:suggestions", t => mySuggestions(t, 1, 1));
     const n = owned.data?.length;
+    const claims = useAuthedData("account:claims", t => myClaims(t, 1, 1));
     const ns = suggestions.data?.totalElements;
+    const nc = claims.data?.totalElements;
     return (
         <ul className="grid-2 account-links">
             <li>
@@ -25,6 +27,18 @@ function Counts() {
                         <span className="card-title">Önerilerim</span>
                         <span className="card-sub">
                             {ns === undefined ? "Yükleniyor…" : ns === 0 ? "Henüz öneri yok" : `${ns} öneri`}
+                        </span>
+                    </span>
+                    <ChevronRight className="account-link-arrow"/>
+                </Link>
+            </li>
+            <li>
+                <Link href="/account/claims" className="card card-hover account-link">
+                    <span className="account-link-icon" aria-hidden><FileIcon/></span>
+                    <span className="account-link-body">
+                        <span className="card-title">Taleplerim</span>
+                        <span className="card-sub">
+                            {nc === undefined ? "Yükleniyor…" : nc === 0 ? "Sahiplenme talebi yok" : `${nc} talep`}
                         </span>
                     </span>
                     <ChevronRight className="account-link-arrow"/>

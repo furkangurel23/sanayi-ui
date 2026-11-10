@@ -14,11 +14,11 @@
 "use client";
 
 import type {
-    ChangeSet, OwnedProvider, Page, ProviderEditRequest, ProviderEditView, SimilarProvider, SpringPage, Suggestion,
+    ChangeSet, Claim, ClaimSubmitRequest, OwnedProvider, Page, ProviderEditRequest, ProviderEditView, SimilarProvider, SpringPage, Suggestion,
     SuggestionCreateRequest,
 } from "@/lib/types";
 import {normalizePage} from "@/lib/page";
-import {toApiError} from "@/lib/apiError";
+import {ApiError, toApiError} from "@/lib/apiError";
 
 const BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080/api";
 
@@ -98,4 +98,66 @@ export function getSuggestion(token: string, id: number): Promise<Suggestion> {
 /** Geri çek (yalnız incelemedeyken; aksi 409 error.suggestion.not-pending). */
 export function withdrawSuggestion(token: string, id: number): Promise<Suggestion> {
     return authedJson("POST", `${BASE}/suggestions/${id}/withdraw`, token);
+}
+
+// ---------------- SAHİPLENME TALEPLERİ (üye) ----------------
+
+/**
+ * Talep gönder — `XMLHttpRequest` ile (fetch yükleme ilerlemesini VERMEZ; XHR'nin
+ * `upload.onprogress` olayı gönderilen bayt sayısını bildirir -> belirli ilerleme çubuğu).
+ *
+ * Gövde `multipart/form-data`: `data` parçası JSON (`Blob([...], {type: "application/json"})` —
+ * Spring `@RequestPart("data")` JSON'u bu içerik türüyle bekler), `files` parçaları belgeler.
+ * Content-Type başlığını ELLE yazmıyoruz: tarayıcı sınır (boundary) değeriyle kendisi yazar.
+ *
+ * Dönüş: `{promise, abort}` — "İptal" düğmesi `abort()` çağırır; iptal edilen istek
+ * `ApiError(0, "error.upload.aborted")` ile reddedilir (çağıran bunu sessizce karşılar).
+ * Hata yanıtı JSON ErrorResponse ise aynı ApiError sözleşmesine çevrilir.
+ */
+export function submitClaim(token: string, providerId: number, data: ClaimSubmitRequest, files: File[],
+                            onProgress?: (fraction: number) => void): { promise: Promise<Claim>; abort: () => void } {
+    const xhr = new XMLHttpRequest();
+    const promise = new Promise<Claim>((resolve, reject) => {
+        const form = new FormData();
+        form.append("data", new Blob([JSON.stringify(data)], {type: "application/json"}));
+        files.forEach(f => form.append("files", f, f.name));
+
+        xhr.open("POST", `${BASE}/providers/${providerId}/claims`);
+        xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+        xhr.responseType = "text";
+        xhr.upload.onprogress = e => {
+            if (e.lengthComputable && onProgress) onProgress(e.loaded / e.total);
+        };
+        xhr.onload = () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+                resolve(JSON.parse(xhr.responseText) as Claim);
+                return;
+            }
+            try {
+                const body = JSON.parse(xhr.responseText);
+                reject(new ApiError(body.status ?? xhr.status, body.code ?? "error.unknown",
+                    body.message ?? `İstek başarısız (${xhr.status})`, body.fieldErrors ?? undefined));
+            } catch {
+                reject(new ApiError(xhr.status, "error.unknown", `İstek başarısız (${xhr.status})`));
+            }
+        };
+        xhr.onerror = () => reject(new ApiError(0, "error.network", "Bağlantı hatası. İnternet bağlantınızı kontrol edip tekrar deneyin."));
+        xhr.onabort = () => reject(new ApiError(0, "error.upload.aborted", "Yükleme iptal edildi."));
+        xhr.send(form);
+    });
+    return {promise, abort: () => xhr.abort()};
+}
+
+/** Taleplerim (en yeni önce). Backend durum filtresi almaz (bkz. AccountClaimsClient). */
+export async function myClaims(token: string, page = 1, size = 20): Promise<Page<Claim>> {
+    return normalizePage(await authedJson<SpringPage<Claim>>("GET", `${BASE}/claims/mine?${pageQuery(page, size)}`, token));
+}
+
+export function getClaim(token: string, id: number): Promise<Claim> {
+    return authedJson("GET", `${BASE}/claims/${id}`, token);
+}
+
+/** Geri çek (yalnız incelemedeyken; belgeler hemen silinir). */
+export function withdrawClaim(token: string, id: number): Promise<Claim> {
+    return authedJson("POST", `${BASE}/claims/${id}/withdraw`, token);
 }

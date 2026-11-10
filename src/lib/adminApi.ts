@@ -14,6 +14,7 @@
 import type {
     AdminProviderItem, AdminRatingItem, AdminUserItem, ChangeSet, ModerationLogItem, Page, ProviderEditRequest,
     ProviderEditView, ProviderFieldsRequest, QueueCounts, SpringPage, AdminSuggestionItem, SuggestionDecision,
+    AdminClaimItem, Ownership,
 } from "@/lib/types";
 import {authedJson, pageQuery} from "@/lib/accountApi";
 import {normalizePage} from "@/lib/page";
@@ -177,4 +178,58 @@ export function approveSuggestion(token: string, id: number, overrides: Provider
 /** Reddet — gerekçe zorunlu (fieldErrors.reason). */
 export function rejectSuggestion(token: string, id: number, reason: string): Promise<AdminSuggestionItem> {
     return authedJson("POST", `${BASE}/admin/suggestions/${id}/reject`, token, {reason});
+}
+
+// ---------------- 003: SAHİPLENME TALEPLERİ + SAHİPLİK ----------------
+
+/** Kuyruk: status (vars. PENDING | ALL…), kind (NORMAL|DISPUTE), ilçe, ad öneki; en eski önce. */
+export async function adminClaims(token: string, params: {
+    status: string; kind?: string; district?: string; q?: string; page?: number; size?: number;
+}): Promise<Page<AdminClaimItem>> {
+    const query = pageQuery(params.page, params.size ?? 20,
+        {status: params.status, kind: params.kind, district: params.district, q: params.q});
+    return normalizePage(await authedJson<SpringPage<AdminClaimItem>>("GET", `${BASE}/admin/claims?${query}`, token));
+}
+
+export function adminClaim(token: string, id: number): Promise<AdminClaimItem> {
+    return authedJson("GET", `${BASE}/admin/claims/${id}`, token);
+}
+
+/** Onayla -> 201 OwnershipDto; aktif sahip varsa 409 error.ownership.already-active (önce geri alın). */
+export function approveClaim(token: string, id: number): Promise<Ownership> {
+    return authedJson("POST", `${BASE}/admin/claims/${id}/approve`, token);
+}
+
+export function rejectClaim(token: string, id: number, reason: string): Promise<AdminClaimItem> {
+    return authedJson("POST", `${BASE}/admin/claims/${id}/reject`, token, {reason});
+}
+
+/**
+ * Belgeyi indir — Bearer gerektirdiği için düz <a href> KULLANILAMAZ (başlık eklenemez).
+ * fetch -> Blob döner; çağıran `URL.createObjectURL` + `a.download` ile kaydettirir.
+ * Uç `/api/admin/**` dışında (`/api/claims/{c}/documents/{d}`); yönetici olmayana 404.
+ */
+export async function downloadClaimDocument(token: string, claimId: number, documentId: number): Promise<Blob> {
+    const res = await fetch(`${BASE}/claims/${claimId}/documents/${documentId}`, {
+        headers: {Authorization: `Bearer ${token}`},
+        cache: "no-store",
+    });
+    if (!res.ok) throw await toApiError(res);
+    return res.blob();
+}
+
+/** Dükkanın aktif sahipliği; 204 (aktif sahip yok) -> null. */
+export async function providerOwnership(token: string, providerId: number): Promise<Ownership | null> {
+    const res = await fetch(`${BASE}/admin/providers/${providerId}/ownership`, {
+        headers: {Authorization: `Bearer ${token}`},
+        cache: "no-store",
+    });
+    if (res.status === 204) return null;
+    if (!res.ok) throw await toApiError(res);
+    return res.json();
+}
+
+/** Sahipliği gerekçeyle geri al — eski sahibin düzenleme yetkisi hemen kalkar. */
+export function revokeOwnership(token: string, ownershipId: number, reason: string): Promise<Ownership> {
+    return authedJson("POST", `${BASE}/admin/ownerships/${ownershipId}/revoke`, token, {reason});
 }

@@ -342,3 +342,74 @@ export type ProviderFieldsRequest = {
     openingHours?: OpeningHours | null;
 };
 export type SuggestionCreateRequest = ProviderFieldsRequest & { note: string | null };
+
+/** Talep belgesi üst verisi (ClaimDocumentMeta) — üyede indirme bağlantısı YOK. */
+export type ClaimDocumentMeta = {
+    id: number;
+    originalName?: string | null;
+    contentType: string;
+    sizeBytes: number;
+    deleted: boolean;
+};
+
+export type ClaimKind = "NORMAL" | "DISPUTE";
+export type ClaimStatus = "PENDING" | "APPROVED" | "REJECTED" | "WITHDRAWN" | "EXPIRED";
+
+/** Üye görünümü (ClaimDto). */
+export type Claim = {
+    id: number;
+    provider: IdName;
+    kind: ClaimKind;
+    status: ClaimStatus;
+    decisionReason?: string | null;
+    createdAt: string;
+    decidedAt?: string | null;
+    documents: ClaimDocumentMeta[];
+};
+
+/** CurrentOwnerRef — talebin dükkanının aktif sahibi. */
+export type CurrentOwnerRef = { ownershipId: number; userId: number; email: string; since: string };
+
+/** Yönetici kuyruğu/ayrıntısı (AdminClaimItem); anonimleştirilmişse kişisel alanlar null. */
+export type AdminClaimItem = {
+    id: number;
+    provider: IdName;
+    providerDistrict?: string | null;
+    kind: ClaimKind;
+    status: ClaimStatus;
+    decisionReason?: string | null;
+    createdAt: string;
+    decidedAt?: string | null;
+    documents: ClaimDocumentMeta[];
+    claimant: UserRef;
+    fullName?: string | null;
+    phone?: string | null;
+    description?: string | null;
+    kvkkVersion: string;
+    kvkkAcceptedAt: string;
+    anonymized: boolean;
+    currentOwner?: CurrentOwnerRef | null;
+    otherPendingClaims: number;
+};
+
+/** OwnershipDto — onay (201) ve geri alma yanıtı; `GET …/ownership` 200 gövdesi. */
+export type Ownership = {
+    id: number;
+    providerId: number;
+    providerName: string;
+    userId: number;
+    userEmail: string;
+    startedAt: string;
+    revokedAt?: string | null;
+    revokeReason?: string | null;
+    claimId?: number | null;
+};
+
+/** Talep formunun JSON parçası (ClaimSubmitRequest — multipart `data`). */
+export type ClaimSubmitRequest = {
+    fullName: string;
+    phone: string;
+    description: string;
+    kvkkVersion: string;
+    kvkkAccepted: boolean;
+};

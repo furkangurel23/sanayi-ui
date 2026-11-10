@@ -32,6 +32,7 @@
  *
  * 003 (T095): "Çalışma saatleri" bölümü (OpeningHoursView — sunucu; "şu an açık" küçük client
  * adacığı). Bilgi yoksa "Çalışma saati bilgisi yok" yazar.
+ * 003 (T114): başlık kartının altında "Bu dükkan benim" ikincil bağlantısı (ClaimLink).
  */
 import {formatPhoneTR} from "@/lib/phone";
 import {sourceLabel} from "@/lib/sources";
@@ -51,6 +52,7 @@ import RateForm from "@/components/RateForm";
 import ScoreBadge, {formatScore} from "@/components/ScoreBadge";
 import EmptyState from "@/components/EmptyState";
 import OpeningHoursView from "@/components/OpeningHoursView";
+import ClaimLink from "@/components/ClaimLink";
 import {Chat, Pin} from "@/components/icons";
 
 /** Detay haritasının yüksekliği (px) — iskelet ve harita aynı değeri --map-h ile okur. */
@@ -163,6 +165,10 @@ export default async function ProviderDetailPage({
                 <DirectionsLinks variant="buttons" name={detail.name}
                                  lat={detail.location?.lat} lon={detail.location?.lon}
                                  address={detail.address} district={detail.district} city={detail.city}/>
+
+                <div className="detail-secondary">
+                    <ClaimLink providerId={detail.id}/>
+                </div>
 
                 {(detail.brands.length > 0 || detail.categories.length > 0) && (
                     <div className="cluster">
