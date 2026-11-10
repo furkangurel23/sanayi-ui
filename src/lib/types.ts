@@ -285,3 +285,60 @@ export type OwnedProvider = {
     avgScore?: number | null;
     ratingCount: number;
 };
+
+/** GET /api/suggestions/similar satırı (SimilarProviderDto) — 75 m içinde adı benzeyen gerçek dükkan. */
+export type SimilarProvider = {
+    id: number;
+    name: string;
+    district?: string | null;
+    address?: string | null;
+    distanceMeters: number;
+};
+
+export type SuggestionStatus = "PENDING" | "APPROVED" | "REJECTED" | "WITHDRAWN";
+
+/** Üye görünümü (SuggestionDto). `possibleDuplicates` yalnız gönderim yanıtında dolu. */
+export type Suggestion = {
+    id: number;
+    name: string;
+    address?: string | null;
+    district: string;
+    phone?: string | null;
+    lat: number;
+    lon: number;
+    categories: IdName[];
+    brands: IdName[];
+    note?: string | null;
+    status: SuggestionStatus;
+    decisionReason?: string | null;
+    decidedAt?: string | null;
+    createdProviderId?: number | null;
+    createdAt: string;
+    possibleDuplicates: SimilarProvider[];
+};
+
+/** UserRef — öneren / talep eden. */
+export type UserRef = { userId: number; email: string };
+
+/** Yönetici kuyruğu/ayrıntısı (AdminSuggestionItem): üye görünümü + öneren + tekrar sayısı. */
+export type AdminSuggestionItem = Suggestion & {
+    suggestedBy: UserRef;
+    duplicateCandidateCount: number;
+};
+
+/** POST /api/admin/suggestions/{id}/approve yanıtı (SuggestionDecisionResponse). */
+export type SuggestionDecision = { suggestion: AdminSuggestionItem; providerId?: number | null };
+
+/** Öneri gövdesi (SuggestionCreateRequest) ve onaydaki düzeltmeler (ProviderFieldsRequest). */
+export type ProviderFieldsRequest = {
+    name: string;
+    address: string | null;
+    district: string;
+    phone: string | null;
+    lat: number;
+    lon: number;
+    categoryIds: number[];
+    brandIds: number[];
+    openingHours?: OpeningHours | null;
+};
+export type SuggestionCreateRequest = ProviderFieldsRequest & { note: string | null };

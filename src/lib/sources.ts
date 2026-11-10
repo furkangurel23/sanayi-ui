@@ -11,6 +11,8 @@ export const SOURCE_LABELS: Record<string, string> = {
     openstreetmap: "OpenStreetMap",
     overture: "Overture Maps",
     foursquare: "Foursquare",
+    // 003: üye önerisinden oluşan dükkan. Atıf/lisans gerektirmez -> DATA_ATTRIBUTIONS'a GİRMEZ.
+    user_suggestion: "Kullanıcı önerisi",
 };
 
 export function sourceLabel(code: string): string {

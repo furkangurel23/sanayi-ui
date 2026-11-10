@@ -418,9 +418,11 @@ h2, h3, .headline {
 /* .btn'den (dosyada sonra gelir) güçlü olsun diye iki sınıflı seçici */
 .header-actions .nav-burger { display: none; }
 
-/* Mobil menü: 720 px altında nav gizlenir; açıkken üst barın hemen altında --surface-2 panel.
-   Üst bar (sticky) "positioned" olduğu için absolute panel ona göre yerleşir. */
-@media (max-width: 720px) {
+/* Mobil menü: 1023 px altında nav gizlenir; açıkken üst barın hemen altında --surface-2 panel.
+   Üst bar (sticky) "positioned" olduğu için absolute panel ona göre yerleşir.
+   003: menüye "Dükkan öner" + "Hesabım" eklenince (yöneticide 7 bağlantı) 721–960 px arasında
+   üst bar taşıyordu -> eşik 720'den 1023'e çıktı (tablet de menü düğmesini kullanır). */
+@media (max-width: 1023px) {
     .site-header .container { gap: var(--space-3); }
     .main-nav { display: none; }
     .main-nav[data-open="true"] {
@@ -1487,3 +1489,27 @@ table.data a.btn:hover { text-decoration: none; }
     font-size: var(--type-caption); font-weight: var(--type-headline-wt);
     font-variant-numeric: tabular-nums;
 }
+
+/* ---------- öneri / talep satırları (üye listeleri + yönetici kuyrukları) ---------- */
+.request-item { display: grid; gap: var(--space-3); padding: var(--space-4) var(--space-5); }
+.request-item[data-selected="true"] { border-color: var(--accent); }
+.request-head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: var(--space-2) var(--space-3); }
+.request-body { min-width: 0; flex: 1 1 calc(var(--space-10) * 1.5); }
+.request-body .card-title, .request-body .caption { overflow-wrap: anywhere; }
+.request-actions { justify-content: flex-start; flex-wrap: wrap; }
+.admin-search-flat { padding: 0; }
+.review-panel { display: grid; gap: var(--space-4); padding: var(--space-5); border-color: var(--border-control); }
+.review-close { display: flex; justify-content: flex-end; }
+/* Ayrıntı listesi: dar ekranda etiket üstte, geniş ekranda iki sütun */
+.detail-list { display: grid; gap: var(--space-2); margin: 0; }
+.detail-list > div { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-1); }
+.detail-list dt { color: var(--fg-muted); font-size: var(--type-caption); font-weight: var(--type-headline-wt); }
+.detail-list dd { margin: 0; overflow-wrap: anywhere; }
+@media (min-width: 640px) {
+    .detail-list > div { grid-template-columns: calc(var(--space-10) * 1.1) minmax(0, 1fr); gap: var(--space-4); }
+}
+
+/* ---------- olası tekrar uyarısı (SimilarShopsNotice) ---------- */
+.similar-title { display: inline-flex; align-items: center; gap: var(--space-2); margin: 0; font-weight: var(--type-headline-wt); }
+.similar-list { margin: 0; padding: 0; list-style: none; }
+.similar-list a { min-height: var(--target-min); display: inline-flex; align-items: center; }

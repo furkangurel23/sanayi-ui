@@ -6,7 +6,10 @@
  * fieldErrors anahtarlarıyla AYNI: name, address, district, phone, location, categoryIds,
  * brandIds, openingHours (+ öneride note).
  */
-import type {IdName, OpeningHours, ProviderEditRequest, ProviderEditView} from "@/lib/types";
+import type {
+    IdName, OpeningHours, ProviderEditRequest, ProviderEditView, ProviderFieldsRequest, Suggestion,
+    SuggestionCreateRequest,
+} from "@/lib/types";
 import {DAY_LABELS, DAYS, formatDay, type Hours} from "@/lib/openingHours";
 import {formatPhoneTR} from "@/lib/phone";
 
@@ -79,6 +82,39 @@ export function formToEditRequest(f: ProviderFormValues, version: number): Provi
         brandIds: f.brandIds,
         openingHours: f.openingHours,
     };
+}
+
+/** Öneri -> form (yöneticinin "düzelterek onayla" başlangıcı). */
+export function suggestionToForm(sg: Suggestion): ProviderFormValues {
+    return {
+        name: sg.name, address: sg.address ?? "", district: sg.district, phone: sg.phone ?? "",
+        location: {lat: sg.lat, lon: sg.lon},
+        categoryIds: sg.categories.map(c => c.id), brandIds: sg.brands.map(b => b.id),
+        openingHours: null, note: "",
+    };
+}
+
+/** Form -> alan gövdesi (öneri onayındaki `overrides`; saat yok). */
+export function formToFieldsRequest(f: ProviderFormValues): ProviderFieldsRequest {
+    return {
+        name: f.name.trim(),
+        address: f.address.trim() || null,
+        district: f.district,
+        phone: f.phone.trim() || null,
+        lat: f.location!.lat,
+        lon: f.location!.lon,
+        categoryIds: f.categoryIds,
+        brandIds: f.brandIds,
+        openingHours: null,
+    };
+}
+
+/** Form -> öneri gövdesi (not dahil). */
+export function formToSuggestionRequest(f: ProviderFormValues): SuggestionCreateRequest {
+    // Öneride saat alınmaz (backend her zaman null sayar) -> gövdeye hiç koymuyoruz.
+    const {openingHours: _ignored, ...fields} = formToFieldsRequest(f);
+    void _ignored;
+    return {...fields, note: f.note.trim() || null};
 }
 
 /** İki form değerinin bir alanı farklı mı? (409 çakışmasında "Sizin değeriniz" ipucu) */

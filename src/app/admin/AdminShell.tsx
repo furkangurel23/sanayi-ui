@@ -41,6 +41,7 @@ const TABS: Tab[] = [
     {href: "/admin/ratings", label: "Yorumlar"},
     {href: "/admin/providers", label: "Dükkanlar"},
     {href: "/admin/users", label: "Kullanıcılar"},
+    {href: "/admin/suggestions", label: "Öneriler", count: c => c.pendingSuggestions},
     {href: "/admin/attention", label: "Dikkat", count: c => c.openAttention},
 ];
 

@@ -15,11 +15,13 @@
  *    yetkisiyle çekilmiş veriler ekranda kalmasın.
  *  - Cam görünüm (D11) tamamen CSS'te: .site-header yarı saydam --surface-glass +
  *    backdrop-filter; desteklenmezse / şeffaflık azaltma açıksa opak --surface-1.
- *  - Mobil menü: CSS'te .main-nav 720px altında gizlenir; data-open="true" olunca üst barın
+ *  - Mobil menü: CSS'te .main-nav 1023px ve altında gizlenir (003: eskiden 720); data-open="true" olunca üst barın
  *    altında --surface-2 panel olarak açılır (JS sadece state tutar, görünümü CSS yönetir).
  *    Escape menüyü kapatır ve odağı menü düğmesine geri verir (FR-013, klavye erişimi).
  *  - İkonlar ortak setten (Menu/Close) — elle çizilmiş satır içi SVG yerine (FR-006).
  *  - 003: oturum açıkken "Hesabım" (/account — dükkanlarım, önerilerim, taleplerim).
+ *  - 003: "Dükkan öner" herkese görünür; oturum yoksa doğrudan giriş sayfasına `next` ile gider
+ *    (`/login?next=/providers/suggest` — giriş sonrası forma dönülür).
  */
 
 import Link from "next/link";
@@ -71,6 +73,7 @@ export default function Header() {
 
     const isAdmin = pathname.startsWith("/admin");
     const isAccount = pathname.startsWith("/account");
+    const isSuggest = pathname === "/providers/suggest";
 
     return (
         <header className="site-header">
@@ -96,6 +99,11 @@ export default function Header() {
                             </Link>
                         );
                     })}
+                    <Link href={user ? "/providers/suggest" : "/login?next=/providers/suggest"} className="nav-link"
+                          data-active={isSuggest} aria-current={isSuggest ? "page" : undefined}
+                          onClick={() => setOpen(false)}>
+                        Dükkan öner
+                    </Link>
                     {user && (
                         <Link href="/account" className="nav-link" data-active={isAccount}
                               aria-current={isAccount ? "page" : undefined}

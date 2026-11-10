@@ -13,7 +13,7 @@
 
 import type {
     AdminProviderItem, AdminRatingItem, AdminUserItem, ChangeSet, ModerationLogItem, Page, ProviderEditRequest,
-    ProviderEditView, QueueCounts, SpringPage,
+    ProviderEditView, ProviderFieldsRequest, QueueCounts, SpringPage, AdminSuggestionItem, SuggestionDecision,
 } from "@/lib/types";
 import {authedJson, pageQuery} from "@/lib/accountApi";
 import {normalizePage} from "@/lib/page";
@@ -150,4 +150,31 @@ export function acknowledgeChangeSet(token: string, id: number): Promise<void> {
 /** Panel sekme rozetleri (önbelleklenmez). */
 export function queueCounts(token: string): Promise<QueueCounts> {
     return authedJson("GET", `${BASE}/admin/queues/counts`, token);
+}
+
+// ---------------- 003: ÖNERİ KUYRUĞU ----------------
+
+/** Kuyruk: status (vars. PENDING | ALL…), ilçe, ad öneki (≥2); EN ESKİ önce (backend sırası). */
+export async function adminSuggestions(token: string, params: {
+    status: string; district?: string; q?: string; page?: number; size?: number;
+}): Promise<Page<AdminSuggestionItem>> {
+    const query = pageQuery(params.page, params.size ?? 20,
+        {status: params.status, district: params.district, q: params.q});
+    return normalizePage(await authedJson<SpringPage<AdminSuggestionItem>>("GET", `${BASE}/admin/suggestions?${query}`, token));
+}
+
+/** Ayrıntı — olası tekrarlar CANLI yeniden hesaplanır. */
+export function adminSuggestion(token: string, id: number): Promise<AdminSuggestionItem> {
+    return authedJson("GET", `${BASE}/admin/suggestions/${id}`, token);
+}
+
+/** Onayla -> 201; `overrides` null = olduğu gibi, dolu = yöneticinin düzeltmeleri (tam alan seti). */
+export function approveSuggestion(token: string, id: number, overrides: ProviderFieldsRequest | null, note?: string | null)
+    : Promise<SuggestionDecision> {
+    return authedJson("POST", `${BASE}/admin/suggestions/${id}/approve`, token, {overrides, note: note || null});
+}
+
+/** Reddet — gerekçe zorunlu (fieldErrors.reason). */
+export function rejectSuggestion(token: string, id: number, reason: string): Promise<AdminSuggestionItem> {
+    return authedJson("POST", `${BASE}/admin/suggestions/${id}/reject`, token, {reason});
 }

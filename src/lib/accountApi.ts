@@ -13,7 +13,10 @@
 
 "use client";
 
-import type {ChangeSet, OwnedProvider, Page, ProviderEditRequest, ProviderEditView, SpringPage} from "@/lib/types";
+import type {
+    ChangeSet, OwnedProvider, Page, ProviderEditRequest, ProviderEditView, SimilarProvider, SpringPage, Suggestion,
+    SuggestionCreateRequest,
+} from "@/lib/types";
 import {normalizePage} from "@/lib/page";
 import {toApiError} from "@/lib/apiError";
 
@@ -67,4 +70,32 @@ export function updateProvider(token: string, id: number, req: ProviderEditReque
 export async function ownerHistory(token: string, id: number, page = 1, size = 20): Promise<Page<ChangeSet>> {
     return normalizePage(await authedJson<SpringPage<ChangeSet>>(
         "GET", `${BASE}/owner/providers/${id}/changes?${pageQuery(page, size)}`, token));
+}
+
+// ---------------- ÖNERİLER (üye) ----------------
+
+/** Olası tekrar: 75 m içinde adı benzeyen gerçek dükkanlar (gönderimi ENGELLEMEZ). */
+export function similarProviders(token: string, name: string, lat: number, lon: number): Promise<SimilarProvider[]> {
+    const q = new URLSearchParams({name, lat: String(lat), lon: String(lon)});
+    return authedJson("GET", `${BASE}/suggestions/similar?${q.toString()}`, token);
+}
+
+/** Öneri gönder -> 201; 403 doğrulanmamış, 429 (24 saatte 5), 400 alan hataları. */
+export function submitSuggestion(token: string, req: SuggestionCreateRequest): Promise<Suggestion> {
+    return authedJson("POST", `${BASE}/suggestions`, token, req);
+}
+
+/** Önerilerim (en yeni önce). Backend durum filtresi almaz (bkz. AccountSuggestionsClient). */
+export async function mySuggestions(token: string, page = 1, size = 20): Promise<Page<Suggestion>> {
+    return normalizePage(await authedJson<SpringPage<Suggestion>>(
+        "GET", `${BASE}/suggestions/mine?${pageQuery(page, size)}`, token));
+}
+
+export function getSuggestion(token: string, id: number): Promise<Suggestion> {
+    return authedJson("GET", `${BASE}/suggestions/${id}`, token);
+}
+
+/** Geri çek (yalnız incelemedeyken; aksi 409 error.suggestion.not-pending). */
+export function withdrawSuggestion(token: string, id: number): Promise<Suggestion> {
+    return authedJson("POST", `${BASE}/suggestions/${id}/withdraw`, token);
 }
