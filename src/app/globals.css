@@ -1348,3 +1348,142 @@ table.data a:hover { text-decoration: underline; text-underline-offset: var(--sp
 /* Satır içi onay (ConfirmButton) */
 .confirm-inline { display: inline-flex; align-items: center; gap: var(--space-2); }
 
+
+/* ============================================================
+   5) 003 — dükkan öner / sahiplenme / düzenleme ekranları
+   ============================================================ */
+
+/* ---------- onay kutusu (.checkbox) — tasarım sisteminde (contracts/ui-sanayi-ui.md) ----------
+   Yerel <input type="checkbox"> + accent-color (vurgu tonu; iki temada da ≥3:1 kenar).
+   Etiketle birlikte vuruş alanı ≥ --target-min (44 px): tüm satır tıklanabilir. */
+.checkbox {
+    display: inline-flex; align-items: center; gap: var(--space-2);
+    min-height: var(--target-min);
+    font-size: var(--type-callout);
+    color: var(--fg);
+    cursor: pointer;
+}
+.checkbox input[type="checkbox"] {
+    width: var(--icon-md); height: var(--icon-md);
+    margin: 0;
+    flex-shrink: 0;
+    accent-color: var(--accent);
+    cursor: pointer;
+}
+
+/* ---------- form kartı (ProviderEditForm, ClaimForm) ---------- */
+.form-card { padding: var(--space-5); gap: var(--space-5); }
+.form-fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+.form-fieldset > legend { padding: 0; margin-bottom: var(--space-2); }
+.form-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); }
+.chip-select { margin-top: var(--space-1); }
+/* 409 çakışması: "Sizin değeriniz" ipucu — alanın altında, nötr zemin + metin */
+.conflict-hint {
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-md);
+    background: var(--accent-soft);
+    color: var(--fg);
+    font-size: var(--type-caption);
+    overflow-wrap: anywhere;
+}
+.alert:focus-visible { outline-offset: var(--ring-offset); }
+
+/* ---------- çalışma saati editörü (OpeningHoursEditor) ---------- */
+.hours-toolbar { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.hours-day {
+    display: grid; gap: var(--space-2);
+    margin: 0; min-width: 0;
+    padding: var(--space-3) var(--space-4);
+    border: 1px solid var(--hairline);
+    border-radius: var(--radius-md);
+}
+.hours-day-name { padding: 0 var(--space-1); font-weight: var(--type-headline-wt); font-size: var(--type-callout); }
+.hours-day-controls { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-4); }
+.hours-range-block { display: grid; gap: var(--space-1); }
+/* 375 px: aralık alanları ALT ALTA (tek sütun); ≥ 560 px'te yan yana */
+.hours-range { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-2) var(--space-3); align-items: end; }
+@media (min-width: 560px) {
+    .hours-range { grid-template-columns: repeat(2, minmax(0, 1fr)) auto auto; }
+}
+.hours-midnight { display: flex; align-items: center; color: var(--fg-muted); background: var(--neutral-soft); }
+.hours-add { justify-self: start; }
+
+/* ---------- çalışma saati görünümü (OpeningHoursView) ---------- */
+.hours-card { padding: var(--space-4) var(--space-5); }
+.hours-list { display: grid; margin: 0; }
+.hours-row {
+    display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--space-1) var(--space-4);
+    padding: var(--space-2) 0;
+    border-bottom: 1px solid var(--hairline);
+    font-size: var(--type-callout);
+}
+.hours-row:last-child { border-bottom: 0; }
+.hours-row dt { display: inline-flex; align-items: center; gap: var(--space-2); color: var(--fg-muted); }
+.hours-row dd { margin: 0; color: var(--fg); font-variant-numeric: tabular-nums; }
+/* Bugün: kalınlık + "Bugün" etiketi (yalnız renk değil — D10 ruhu) */
+.hours-row[data-today="true"] dt, .hours-row[data-today="true"] dd { color: var(--fg); font-weight: var(--type-headline-wt); }
+.open-now { display: inline-flex; align-items: center; gap: var(--space-2); margin: 0; font-weight: var(--type-headline-wt); }
+.open-now[data-open="true"] { color: var(--pos); }
+.open-now[data-open="false"] { color: var(--fg-muted); }
+
+/* ---------- konum seçici (LocationPicker) — --map-h: çalışma anı değişkeni (sarmalayıcı verir) ---------- */
+.picker-frame { position: relative; }
+.picker-map { height: var(--map-h); isolation: isolate; }
+.picker-map:focus-visible { outline: var(--ring-width) solid var(--ring); outline-offset: calc(var(--ring-width) * -1); }
+/* Sabit merkez iğnesi: harita ALTINDA kayar; iğne ucu tam merkezde (translate -100%) */
+.picker-pin {
+    position: absolute; left: 50%; top: 50%; z-index: 1;
+    transform: translate(-50%, -100%);
+    color: var(--accent);
+    pointer-events: none;
+    filter: var(--marker-outline);
+}
+.picker-pin .icon { width: var(--space-7); height: var(--space-7); fill: var(--surface-1); }
+.picker-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.picker-manual > summary { cursor: pointer; min-height: var(--target-min); display: flex; align-items: center; color: var(--accent-text); font-size: var(--type-callout); }
+.picker-manual-fields { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-3); align-items: end; margin-block: var(--space-2); }
+@media (min-width: 560px) { .picker-manual-fields { grid-template-columns: repeat(2, minmax(0, 1fr)) auto; } }
+.picker-skeleton-actions { height: var(--control-h); width: calc(var(--space-10) * 2); border-radius: var(--radius-full); }
+/* Leaflet daire işaretçileri: SVG yolu — Leaflet'in öznitelik renkleri CSS ile ezilir (belirteçler) */
+.map-frame .picker-confirmed { fill: var(--accent); fill-opacity: 1; stroke: var(--fg); stroke-width: 2; }
+.map-frame .picker-suggested { fill: var(--accent); fill-opacity: 1; stroke: var(--bg); stroke-width: 3; }
+.map-frame .picker-duplicate { fill: var(--neg); fill-opacity: 1; stroke: var(--bg); stroke-width: 2; }
+
+/* ---------- değişiklik geçmişi (ChangeHistory) ---------- */
+.change-item { display: grid; gap: var(--space-3); padding: var(--space-4) var(--space-5); }
+.change-head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: var(--space-2); }
+.change-provider { font-weight: var(--type-headline-wt); }
+.table-wrap table.change-table { min-width: 0; } /* 3 sütun dar ekranda sığar; uzun değerler satır içinde kırılır */
+.change-table th[scope="row"] { white-space: nowrap; }
+.change-table td { overflow-wrap: anywhere; vertical-align: top; }
+.change-before { color: var(--fg-muted); }
+.change-actions { justify-content: flex-start; }
+table.data a.btn { color: var(--fg); font-weight: 500; }
+table.data a.btn:hover { text-decoration: none; }
+
+/* ---------- hesap dizini / dükkanlarım ---------- */
+.account-link { display: flex; align-items: center; gap: var(--space-4); padding: var(--space-4) var(--space-5); color: var(--fg); }
+.account-link-icon {
+    display: inline-grid; place-items: center; flex-shrink: 0;
+    width: var(--target-min); height: var(--target-min);
+    border-radius: var(--radius-md);
+    background: var(--accent-soft); color: var(--fg);
+}
+.account-link-body { display: grid; gap: var(--space-1); min-width: 0; flex: 1; }
+.account-link-arrow { color: var(--fg-faint); }
+.owned-item { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3) var(--space-4); padding: var(--space-4) var(--space-5); }
+.owned-item-body { display: grid; gap: var(--space-1); min-width: 0; flex: 1 1 calc(var(--space-10) * 1.5); }
+.ownership-card { padding: var(--space-4) var(--space-5); }
+.ownership-card h3 { display: inline-flex; align-items: center; gap: var(--space-2); }
+
+/* ---------- admin sekme rozeti (kuyruk sayısı) ---------- */
+.tab-badge {
+    display: inline-grid; place-items: center;
+    min-width: var(--icon-md); height: var(--icon-md);
+    padding: 0 var(--space-1);
+    border-radius: var(--radius-full);
+    background: var(--accent); color: var(--accent-fg);
+    font-size: var(--type-caption); font-weight: var(--type-headline-wt);
+    font-variant-numeric: tabular-nums;
+}

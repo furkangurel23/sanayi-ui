@@ -86,6 +86,8 @@ export type ProviderDetailDto = {
     // 002: verinin kaynak kodları ("openstreetmap" | "overture" | "foursquare"), benzersiz ve alfabetik.
     // Opsiyonel: eski backend alanı göndermez.
     sources?: string[];
+    // 003: haftalık çalışma saatleri; null/yok = "çalışma saati bilgisi yok" (boş liste = o gün Kapalı).
+    openingHours?: OpeningHours | null;
 };
 
 export type RatingDto = {
@@ -132,6 +134,10 @@ export type AdminProviderItem = {
     synthetic: boolean;
     createdAt?: string | null;
     sources: ProviderSourceItem[];
+    // 003: sahip/yönetici düzenledi ya da öneriden oluştu (boru hattı dokunmaz) / aktif sahibi var.
+    // Opsiyonel: eski backend göndermez.
+    manuallyEdited?: boolean;
+    hasOwner?: boolean;
 };
 
 export type AdminRatingItem = {
@@ -182,4 +188,100 @@ export type ModerationLogItem = {
     ipAddress?: string | null;
     details?: Record<string, unknown> | null;
     createdAt: string;
+};
+
+/* ============================================================
+ * 003 — Dükkan öner / sahiplenme / düzenleme (backend application/dto ile birebir)
+ * ============================================================ */
+
+/** java.time.DayOfWeek adları — backend haftalık saatleri bu 7 anahtarla taşır (MONDAY…SUNDAY). */
+export type DayKey = "MONDAY" | "TUESDAY" | "WEDNESDAY" | "THURSDAY" | "FRIDAY" | "SATURDAY" | "SUNDAY";
+
+/** Tek açık aralık (TimeRangeDto): "HH:mm"; kapanış "24:00" olabilir; kapanış <= açılış = gece aralığı. */
+export type TimeRange = { open: string; close: string };
+
+/** Haftalık saatler: 7 anahtar; boş liste = Kapalı. Alanın kendisi null = bilgi yok. */
+export type OpeningHours = Record<DayKey, TimeRange[]>;
+
+/** GET /api/user/me (CurrentUserDto) — JWT `emailVerified` taşımaz, bu uç taşır. */
+export type CurrentUser = {
+    id: number;
+    email: string;
+    displayName?: string | null;
+    role: string;
+    emailVerified: boolean;
+};
+
+/** ProviderEditView.owner — aktif sahip (yalnız yönetici görür). */
+export type OwnerRef = { userId: number; email: string };
+
+/** GET/PUT /api/owner|admin/providers/{id} — düzenleme formu görünümü (PUT yanıtı da budur). */
+export type ProviderEditView = {
+    id: number;
+    name: string;
+    address?: string | null;
+    district?: string | null;
+    phone?: string | null;
+    lat?: number | null;
+    lon?: number | null;
+    categories: IdName[];
+    brands: IdName[];
+    openingHours: OpeningHours | null;
+    version: number;
+    manuallyEdited: boolean;
+    viewerRole: "OWNER" | "ADMIN";
+    owner: OwnerRef | null;
+};
+
+/** PUT gövdesi — TAM yerine koyma + iyimser kilit sürümü (ProviderEditRequest). */
+export type ProviderEditRequest = {
+    version: number;
+    name: string;
+    address: string | null;
+    district: string;
+    phone: string | null;
+    lat: number;
+    lon: number;
+    categoryIds: number[];
+    brandIds: number[];
+    openingHours: OpeningHours | null;
+};
+
+/** Değişiklik kaydındaki bir alanın önce/sonra değeri (değer tipi alana göre değişir). */
+export type FieldChange = { before: unknown; after: unknown };
+
+/** ChangeSetDto — `changes` yalnız değişen alanları taşır (kategori/marka tam küme). */
+export type ChangeSet = {
+    id: number;
+    providerId: number;
+    providerName?: string | null;
+    /** Sahip yolunda yönetici kayıtlarında null (UI "Yönetici" yazar). */
+    actorEmail?: string | null;
+    actorRole: "OWNER" | "ADMIN";
+    kind: "EDIT" | "REVERT";
+    changes: Record<string, FieldChange>;
+    attention: boolean;
+    attentionReasons: Array<"NAME_CHANGED" | "MOVED_FAR" | string>;
+    attentionResolvedAt?: string | null;
+    revertsChangeSetId?: number | null;
+    revertedById?: number | null;
+    createdAt: string;
+};
+
+/** GET /api/admin/queues/counts — panel sekme rozetleri. */
+export type QueueCounts = {
+    pendingSuggestions: number;
+    pendingClaims: number;
+    pendingDisputes: number;
+    openAttention: number;
+};
+
+/** GET /api/owner/providers satırı (OwnedProviderItem). */
+export type OwnedProvider = {
+    providerId: number;
+    name: string;
+    district?: string | null;
+    since: string;
+    avgScore?: number | null;
+    ratingCount: number;
 };

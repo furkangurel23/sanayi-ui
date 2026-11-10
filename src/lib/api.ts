@@ -26,6 +26,11 @@ const BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080/api";
 *
 * revalidate: 300 -> ilk istek cache'lenir, 5 dk'da bir arka planda yenilenir (kullanici beklemez).
 *
+* 003 — ETİKETLER (`next.tags`): liste fetch'leri "providers", marka/kategori fetch'leri "brands" /
+* "categories" etiketini taşır. Dükkan düzenlenince (ya da öneri onaylanınca) Server Action
+* (app/actions/revalidateProvider.ts) bu etiketleri bayat işaretler -> süre dolmadan tazelenir.
+* Süreler DEĞİŞMEDİ (etiket yalnız "erken tazeleme kolu"dur).
+*
 * */
 
 
@@ -76,7 +81,7 @@ export async function getBrands(opts: {
     params.append("sort", `${sort},${dir}`);
 
     const url = `${BASE}/brands?${params.toString()}`;
-    const res = await fetch(url, {next: {revalidate: 300}});
+    const res = await fetch(url, {next: {revalidate: 300, tags: ["brands", "providers"]}});
     if (!res.ok) {
         throw new Error(`GET /brands failed: ${res.status} ${res.statusText}`);
     }
@@ -90,7 +95,7 @@ export async function getCategoriesAllSorted(): Promise<IdName[]> {
     params.append("sort", "name,asc");
     params.append("withProviders", "false");
     const url = `${BASE}/categories?${params.toString()}`;
-    const res = await fetch(url, {next: {revalidate: 300}});
+    const res = await fetch(url, {next: {revalidate: 300, tags: ["categories"]}});
     if (!res.ok) {
         throw new Error(`GET /categories failed: ${res.status} ${res.statusText}`);
     }
@@ -103,7 +108,7 @@ export async function getBrandsAllSorted(): Promise<IdName[]> {
     params.append("sort", "name,asc");
     params.append("withProviders", "false");
     const url = `${BASE}/brands?${params.toString()}`;
-    const res = await fetch(url, {next: {revalidate: 300}});
+    const res = await fetch(url, {next: {revalidate: 300, tags: ["brands"]}});
     if (!res.ok) {
         throw new Error(`GET /brands failed: ${res.status} ${res.statusText}`);
     }
@@ -148,7 +153,7 @@ export async function getProviders(opts: {
     }
 
     const url = `${BASE}/providers?${params.toString()}`;
-    const res = await fetch(url, {next: {revalidate: 60}}); // liste daha sık güncellensin
+    const res = await fetch(url, {next: {revalidate: 60, tags: ["providers"]}}); // liste daha sık güncellensin
     if (!res.ok) {
         throw new Error(`GET /providers failed: ${res.status} ${res.statusText}`);
     }

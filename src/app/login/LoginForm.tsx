@@ -10,6 +10,9 @@
  * hazır Türkçe metindir; UI olduğu gibi gösterir. 401'de ayrıca "doğrulama mailini
  * tekrar gönder" kısayolu sunulur (hesap doğrulanmamış olabilir).
  *
+ * 003: `next` prop'u (sunucu sayfası safeNext ile doğruladı) — başarıda oraya dönülür
+ * (`router.push(next ?? "/")`).
+ *
  * Not: Bu dosya eskiden doğrudan page.tsx'ti. Client Component'ler `metadata`
  * export EDEMEZ; sekme başlığı için page.tsx artık küçük bir Server Component
  * (metadata + <LoginForm/>), form mantığı burada ("use client").
@@ -28,7 +31,7 @@ import {setToken} from "@/lib/auth";
 import {fieldErrorMap} from "@/lib/apiError";
 import {ChevronRight} from "@/components/icons";
 
-export default function LoginForm() {
+export default function LoginForm({next}: { next?: string }) {
     const router = useRouter();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -47,7 +50,7 @@ export default function LoginForm() {
         try {
             const res = await login(email.trim(), password);
             setToken(res.token, res.refreshToken);
-            router.push("/");
+            router.push(next ?? "/");
             router.refresh();
         } catch (err: unknown) {
             const msg = err instanceof Error ? err.message : "Giriş başarısız.";

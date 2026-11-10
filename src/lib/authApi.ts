@@ -15,7 +15,9 @@
  *    err.code ile davranış dallandırılır (bkz. lib/apiError.ts).
  */
 
-import {toApiError} from "@/lib/apiError";
+import {ApiError, toApiError} from "@/lib/apiError";
+import {ensureFreshToken} from "@/lib/auth";
+import type {CurrentUser} from "@/lib/types";
 
 // ?? = nullish coalescing: sol taraf null/undefined ise sağdaki default kullanılır.
 const BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080/api";
@@ -80,4 +82,23 @@ export async function logoutServer(refreshToken: string): Promise<void> {
             body: JSON.stringify({refreshToken}),
         });
     } catch { /* ağ hatası olsa bile client tarafında token'ı temizleyeceğiz */ }
+}
+
+/**
+ * 003: oturumdaki kullanıcı (GET /api/user/me) — rol ve `emailVerified`.
+ *
+ * Neden ayrı istek? JWT payload'ı yalnız e-posta + rol + exp taşır; "e-postası doğrulanmış mı?"
+ * bilgisi belirteçte YOK (doğrulama sonradan değişebilir). Hesap sayfaları (AccountShell) bu
+ * bilgiyle "önce e-postanı doğrula" ekranını gösterir. Belirteç yoksa istek atılmadan 401
+ * ApiError fırlatılır (çağıran giriş sayfasına yönlendirir).
+ */
+export async function getMe(): Promise<CurrentUser> {
+    const token = await ensureFreshToken();
+    if (!token) throw new ApiError(401, "error.auth.unauthorized", "Bu işlem için giriş yapmalısınız.");
+    const res = await fetch(`${BASE}/user/me`, {
+        headers: {Authorization: `Bearer ${token}`},
+        cache: "no-store",
+    });
+    if (!res.ok) throw await toApiError(res);
+    return res.json() as Promise<CurrentUser>;
 }

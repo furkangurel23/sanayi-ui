@@ -114,3 +114,17 @@ export const NAVIGATION_PATH = "M3.5 10.5 20.5 3.5l-7 17-2.25-7.75L3.5 10.5Z";
 export const Navigation = (p: IconProps) => (
     <IconBase {...p}><path d={NAVIGATION_PATH}/></IconBase>
 );
+
+/* 003 — sahiplenme belgeleri, geri alma, dikkat işareti (aynı kurallar: 24 viewBox, 1.75 çizgi) */
+export const Download = (p: IconProps) => (
+    <IconBase {...p}><path d="M12 4v11"/><path d="m7.5 10.5 4.5 4.5 4.5-4.5"/><path d="M5 19.5h14"/></IconBase>
+);
+export const File = (p: IconProps) => (
+    <IconBase {...p}><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5Z"/><path d="M14 3v5h5"/></IconBase>
+);
+export const Undo = (p: IconProps) => (
+    <IconBase {...p}><path d="M9 14 4.5 9.5 9 5"/><path d="M4.5 9.5H15a4.5 4.5 0 0 1 0 9h-3"/></IconBase>
+);
+export const Flag = (p: IconProps) => (
+    <IconBase {...p}><path d="M5 21V4"/><path d="M5 4.5h11.5l-2 4 2 4H5"/></IconBase>
+);

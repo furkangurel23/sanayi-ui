@@ -19,6 +19,7 @@
  *    altında --surface-2 panel olarak açılır (JS sadece state tutar, görünümü CSS yönetir).
  *    Escape menüyü kapatır ve odağı menü düğmesine geri verir (FR-013, klavye erişimi).
  *  - İkonlar ortak setten (Menu/Close) — elle çizilmiş satır içi SVG yerine (FR-006).
+ *  - 003: oturum açıkken "Hesabım" (/account — dükkanlarım, önerilerim, taleplerim).
  */
 
 import Link from "next/link";
@@ -69,6 +70,7 @@ export default function Header() {
     };
 
     const isAdmin = pathname.startsWith("/admin");
+    const isAccount = pathname.startsWith("/account");
 
     return (
         <header className="site-header">
@@ -94,6 +96,13 @@ export default function Header() {
                             </Link>
                         );
                     })}
+                    {user && (
+                        <Link href="/account" className="nav-link" data-active={isAccount}
+                              aria-current={isAccount ? "page" : undefined}
+                              onClick={() => setOpen(false)}>
+                            Hesabım
+                        </Link>
+                    )}
                     {user?.roles.includes("ADMIN") && (
                         <Link href="/admin/ratings" className="nav-link" data-active={isAdmin}
                               aria-current={isAdmin ? "page" : undefined}

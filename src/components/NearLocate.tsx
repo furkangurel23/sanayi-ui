@@ -33,6 +33,7 @@ import {type ReactNode, useState} from "react";
 import {useRouter} from "next/navigation";
 import EmptyState from "@/components/EmptyState";
 import {Alert, Clock, Pin} from "@/components/icons";
+import {GEO_FAILURE_TEXT, GeolocationFailure, getCurrentLocation} from "@/lib/geolocation";
 
 type Status = "idle" | "locating" | "denied" | "unsupported" | "error";
 
@@ -41,44 +42,32 @@ export default function NearLocate({initialRadiusKm = 10}: { initialRadiusKm?: n
     const [radius, setRadius] = useState<number>(initialRadiusKm);
     const [status, setStatus] = useState<Status>("idle");
 
-    const locate = () => {
-        if (!navigator.geolocation) {
-            setStatus("unsupported");
-            return;
-        }
+    // 003: konum alma mantığı lib/geolocation.ts'e taşındı (konum seçici de kullanır) —
+    // davranış aynı: başarıda URL'e lat/lon/yarıçap yazılır, hata türü duruma çevrilir.
+    const locate = async () => {
         setStatus("locating");
-
-        navigator.geolocation.getCurrentPosition(
-            (pos) => {
-                // Tıklama anında mevcut query korunur, konum + yarıçap eklenir.
-                const params = new URLSearchParams(window.location.search);
-                params.set("lat", String(pos.coords.latitude));
-                params.set("lon", String(pos.coords.longitude));
-                params.set("radiusKm", String(radius));
-                params.set("page", "1");
-                router.push(`/providers/near?${params.toString()}`);
-                setStatus("idle");
-            },
-            (e) => {
-                // e.code: 1 = PERMISSION_DENIED, 2 = POSITION_UNAVAILABLE, 3 = TIMEOUT
-                setStatus(e.code === e.PERMISSION_DENIED ? "denied" : "error");
-                // Tarayıcının (İngilizce) teknik metni yalnız geliştiriciye: console.
-                console.warn("Geolocation hatası:", e.code, e.message);
-            },
-            {enableHighAccuracy: true, timeout: 10000}
-        );
+        try {
+            const pos = await getCurrentLocation();
+            // Tıklama anında mevcut query korunur, konum + yarıçap eklenir.
+            const params = new URLSearchParams(window.location.search);
+            params.set("lat", String(pos.lat));
+            params.set("lon", String(pos.lon));
+            params.set("radiusKm", String(radius));
+            params.set("page", "1");
+            router.push(`/providers/near?${params.toString()}`);
+            setStatus("idle");
+        } catch (e) {
+            setStatus(e instanceof GeolocationFailure ? e.kind : "error");
+        }
     };
 
     // Durum -> ikon + başlık + açıklama (tek tablo; JSX'te dallanma yok)
     const view: Record<Status, { icon: ReactNode; title: string; desc: string }> = {
         idle: {icon: <Pin/>, title: "Konumunu paylaş", desc: "Yakınındaki ustaları görmek için konumuna izin ver."},
         locating: {icon: <Clock/>, title: "Konum alınıyor…", desc: "Tarayıcın izin isterse onayla."},
-        denied: {
-            icon: <Alert/>, title: "Konum izni reddedildi",
-            desc: "Tarayıcı ayarlarından bu site için konum iznini açıp tekrar dene.",
-        },
-        unsupported: {icon: <Alert/>, title: "Konum desteklenmiyor", desc: "Tarayıcınız konum desteğini sunmuyor."},
-        error: {icon: <Alert/>, title: "Konum alınamadı", desc: "Biraz sonra tekrar dene."},
+        denied: {icon: <Alert/>, ...GEO_FAILURE_TEXT.denied},
+        unsupported: {icon: <Alert/>, ...GEO_FAILURE_TEXT.unsupported},
+        error: {icon: <Alert/>, ...GEO_FAILURE_TEXT.error},
     };
     const v = view[status];
     const loading = status === "locating";

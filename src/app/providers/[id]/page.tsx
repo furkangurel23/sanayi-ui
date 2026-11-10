@@ -29,6 +29,9 @@
  *    yoksa "auto" mod -> telefonda kapalı başlar, Leaflet ve karolar inmez (FR-022). Eski
  *    ProviderMapClient sarmalayıcısı kaldırıldı (tek harita kalıbı). Harita kabının
  *    yüksekliği (--map-h) MapSection'da çalışma anı değeri olarak verilir.
+ *
+ * 003 (T095): "Çalışma saatleri" bölümü (OpeningHoursView — sunucu; "şu an açık" küçük client
+ * adacığı). Bilgi yoksa "Çalışma saati bilgisi yok" yazar.
  */
 import {formatPhoneTR} from "@/lib/phone";
 import {sourceLabel} from "@/lib/sources";
@@ -47,6 +50,7 @@ import MiniHistogram from "@/components/MiniHistogram";
 import RateForm from "@/components/RateForm";
 import ScoreBadge, {formatScore} from "@/components/ScoreBadge";
 import EmptyState from "@/components/EmptyState";
+import OpeningHoursView from "@/components/OpeningHoursView";
 import {Chat, Pin} from "@/components/icons";
 
 /** Detay haritasının yüksekliği (px) — iskelet ve harita aynı değeri --map-h ile okur. */
@@ -172,6 +176,14 @@ export default async function ProviderDetailPage({
                         ))}
                     </div>
                 )}
+            </section>
+
+            {/* Çalışma saatleri (003) */}
+            <section className="stack" aria-labelledby="hours-title">
+                <h2 id="hours-title" className="headline">Çalışma saatleri</h2>
+                <div className="card hours-card">
+                    <OpeningHoursView hours={detail.openingHours}/>
+                </div>
             </section>
 
             {/* Konum */}

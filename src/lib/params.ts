@@ -103,3 +103,43 @@ export function parseEnum<T extends string>(v: unknown, allowed: readonly T[], f
     const s = first(v);
     return s !== undefined && (allowed as readonly string[]).includes(s) ? (s as T) : fallback;
 }
+
+/*
+ * GİRİŞ DÖNÜŞ ADRESİ (003) — `/login?next=/providers/suggest` güvenli mi?
+ *
+ * "Açık yönlendirme" (open redirect) açığı: saldırgan `/login?next=https://kotu.site` linki
+ * paylaşır; kullanıcı BİZİM sitemizde giriş yapar ve sonra fark etmeden başka siteye gider
+ * (oltalama). Bu yüzden `next` yalnız SİTE İÇİ göreli yol olabilir:
+ *  - `/` ile başlamalı (`account` ya da `https://…` reddedilir),
+ *  - `//evil.example` reddedilir: tarayıcı bunu "şemasız mutlak adres" (protocol-relative)
+ *    sayar ve başka alan adına gider,
+ *  - `/\evil.example` reddedilir: bazı tarayıcılar `\`'i `/` gibi okur (= `//evil.example`),
+ *  - kontrol karakterleri (sekme, satır sonu) reddedilir: tarayıcı URL'den onları SİLER,
+ *    `/<sekme>/evil.example` -> `//evil.example` olurdu.
+ * Son emniyet: `new URL(v, sahte-köken)` ile çözülür; köken değişmişse (yani başka siteye
+ * çıkıyorsa) reddedilir. Geçerliyse yalnız yol + sorgu + çapa döner; aksi `undefined`
+ * (çağıran `?? "/"` ile ana sayfaya düşer).
+ */
+export function safeNext(v: unknown): string | undefined {
+    const s = first(v);
+    if (!s || !s.startsWith("/") || s.startsWith("//") || s.startsWith("/\\")) return undefined;
+    // \u0000-\u001F + \u007F: kontrol karakterleri; ters bölü hiçbir yerde kabul edilmez.
+    if (/[\u0000-\u001F\u007F\\]/.test(s)) return undefined;
+    try {
+        const base = "http://sanayi.invalid";
+        const u = new URL(s, base);
+        if (u.origin !== base) return undefined;
+        return `${u.pathname}${u.search}${u.hash}`;
+    } catch {
+        return undefined;
+    }
+}
+
+/**
+ * Serbest metin araması (`q`): kırpılır; en az `min` karakter değilse `undefined`
+ * (backend kısa sorguyu 400 ile reddeder — hiç göndermeyiz).
+ */
+export function parseQuery(v: unknown, min = 2): string | undefined {
+    const s = first(v)?.trim();
+    return s && s.length >= min ? s.slice(0, 100) : undefined;
+}

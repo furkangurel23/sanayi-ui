@@ -17,7 +17,7 @@
  * kutuya yazıp Ara'ya basmadan sayfa değiştirirse liste, ekrandaki sonuçlarla tutarlı kalır
  * (eskiden yarım yazılmış metinle sorgu atılıyordu).
  *
- * Yarış koruması: hızlı tıklamalarda (sayfa 2 → 3 → filtre) yanıtlar sırasız dönebilir. Her
+ * Yarış koruması: hızlı tıklamalarda (sayfa 2, sonra 3, sonra filtre) yanıtlar sırasız dönebilir. Her
  * istek `useRef` sayacından bir numara alır; yalnız EN SON isteğin yanıtı `setData` edilir —
  * eski bir yanıt yeni sonucu ezemez. `useRef` = render'lar arasında yaşayan, değişince yeniden
  * render TETİKLEMEYEN kutu (sayaç için ideal; useState olsaydı her artış render ederdi).
@@ -25,6 +25,9 @@
  * 002: satır içi stiller sınıflara (.admin-search, .cell-*); sayfalama ortak
  * <Pagination mode="callback">. Dükkan bağlantısı ham <a> yerine next/link <Link>
  * (yeni sekmede açılır — target="_blank" korunur; Link'in prefetch'i de gelir).
+ *
+ * 003 (T099): satırda "Düzenle" -> /admin/providers/{id} (yönetici formu + değişiklik geçmişi;
+ * sentetik dükkan düzenlenemez -> bağlantı yok) ve "Elle düzenlendi" / "Sahipli" rozetleri.
  */
 import Link from "next/link";
 
@@ -145,7 +148,13 @@ function ProvidersAdmin() {
                                 </Link>
                                 <div className="caption faint">#{p.id}</div>
                                 {/* chip-accent: gerçek kayıtlardan ayrışsın diye vurgulu rozet (token renkleri) */}
-                                {p.synthetic && <span className="chip chip-accent">Sentetik</span>}
+                                {(p.synthetic || p.manuallyEdited || p.hasOwner) && (
+                                    <div className="cluster">
+                                        {p.synthetic && <span className="chip chip-accent">Sentetik</span>}
+                                        {p.manuallyEdited && <span className="chip">Elle düzenlendi</span>}
+                                        {p.hasOwner && <span className="chip chip-pos">Sahipli</span>}
+                                    </div>
+                                )}
                             </td>
                             <td className="callout muted">
                                 {p.sources.length
@@ -158,8 +167,15 @@ function ProvidersAdmin() {
                             </td>
                             <td className="callout muted">{p.ratingCount ?? 0}</td>
                             <td className="cell-actions">
-                                <ConfirmButton label="Sil" askReason
-                                               onConfirm={(reason) => remove(p.id, reason)}/>
+                                <span className="row-actions">
+                                    {!p.synthetic && (
+                                        <Link href={`/admin/providers/${p.id}`} className="btn btn-outline btn-sm">
+                                            Düzenle<span className="sr-only">: {p.name}</span>
+                                        </Link>
+                                    )}
+                                    <ConfirmButton label="Sil" askReason
+                                                   onConfirm={(reason) => remove(p.id, reason)}/>
+                                </span>
                             </td>
                         </tr>
                     ))}
