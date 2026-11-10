@@ -17,12 +17,28 @@
  *
  * Performans: harita SADECE open iken render edilir (kapalıyken unmount) —
  * leaflet gibi ağır bir kütüphane boşuna çalışmaz.
+ *
+ * next/dynamic + ssr:false (anayasa I): ProvidersMap'i statik import etmek yerine
+ * dinamik yüklüyoruz. Böylece harita kodu + Leaflet CSS'i AYRI bir parça (chunk) olur;
+ * yalnızca bu bileşen ekranda harita çizdiğinde indirilir. `ssr: false` sunucuda hiç
+ * render etmez (Leaflet `window` ister). Not: `ssr: false` yalnızca CLIENT bileşen
+ * içinde kullanılabilir — bu dosya zaten "use client". Yüklenirken aynı yükseklikte
+ * bir .skeleton gösterilir -> düzen kayması (CLS) olmaz.
+ * Kullanan rotalar: /providers ve /providers/near.
  */
 
 import {useState} from "react";
+import dynamic from "next/dynamic";
 import {useRouter} from "next/navigation";
 import type {ProviderListItem} from "@/lib/types";
-import ProvidersMap from "@/components/ProvidersMap";
+
+const ProvidersMap = dynamic(() => import("@/components/ProvidersMap"), {
+    ssr: false,
+    // `loading` fonksiyonu bileşenin prop'larını (height) GÖREMEZ; bu yüzden iskelet
+    // MapSection'ın varsayılan harita yüksekliğiyle (280 px — /providers ve /near'ın
+    // kullandığı değer) sabit çizilir. Farklı yükseklik kullanılırsa burası da güncellenmeli.
+    loading: () => <div className="skeleton" style={{height: 280}}/>,
+});
 
 type Props = { items: ProviderListItem[]; height?: number; initialOpen?: boolean };
 

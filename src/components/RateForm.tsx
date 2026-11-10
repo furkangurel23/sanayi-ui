@@ -13,19 +13,36 @@
  *  - Anonim: localStorage'daki kalıcı anonymousId ile usta başına TEK oy
  *    (ikinci gönderim mevcut oyu günceller); prod'da reCAPTCHA zorunlu.
  *
+ * reCAPTCHA (performans):
+ *  - Kutu RecaptchaField içinde ve `next/dynamic(..., {ssr:false})` ile yükleniyor:
+ *    üyeye ve site key yoksa HİÇ indirilmez.
+ *  - `mounted` bayrağı neden var? useAuth'un SUNUCU anlık görüntüsü null'dır
+ *    (sunucu localStorage'ı bilemez). Hidrasyon render'ında herkes "anonim" görünür;
+ *    bayrak olmasaydı dinamik import üye kullanıcıda da o ilk render'da tetiklenirdi.
+ *    `useSyncExternalStore(noop, () => true, () => false)`: sunucuda ve hidrasyonda
+ *    false, hidrasyon bittikten sonra true döner — useEffect + setState'siz
+ *    (o kalıp hem ekstra render yapar hem lint uyarısı üretir).
+ *
  * Hata standardı:
  *  - postRating başarısız olursa ApiError fırlatır; err.code'a göre dallanır,
  *    err.message backend'den gelen hazır Türkçe metindir (messages.properties).
  */
 
-import React, {useEffect, useMemo, useRef, useState} from "react";
+import React, {useEffect, useMemo, useState, useSyncExternalStore} from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import {useRouter} from "next/navigation";
 import {postRating} from "@/lib/api";
 import {useAuth} from "@/lib/useAuth";
 import {ensureFreshToken} from "@/lib/auth";
 import {ApiError, errorMessage} from "@/lib/apiError";
-import ReCAPTCHA from "react-google-recaptcha";
+
+// Dinamik (ayrı chunk) ve yalnız istemcide; bkz. dosya başı "reCAPTCHA (performans)".
+const RecaptchaField = dynamic(() => import("@/components/RecaptchaField"), {ssr: false});
+
+// useSyncExternalStore için "hiçbir şeye abone olma" fonksiyonu: değer hiç değişmez,
+// yalnızca sunucu (false) / istemci (true) farkını okuyoruz.
+const noopSubscribe = () => () => {};
 
 // -5..+5 puan dizisi. Array.from yerine sabit liste: okunaklı ve tip güvenli.
 const SCORES = [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5];
@@ -45,11 +62,12 @@ export default function RateForm({providerId}: { providerId: number }) {
 
     // reCAPTCHA yalnızca anonim kullanıcıya gösterilir (üye için gereksiz sürtünme).
     const siteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || "";
-    const showCaptcha = Boolean(siteKey) && !user;
-    // useRef: render'lar arasında YAŞAYAN ama değişince render TETİKLEMEYEN kutu.
-    // Burada reCAPTCHA bileşeninin imperatif API'sine (reset) erişmek için kullanılır.
-    const captchaRef = useRef<ReCAPTCHA | null>(null);
+    // Hidrasyon bitti mi? (sunucu/hidrasyon: false, sonrası: true)
+    const mounted = useSyncExternalStore(noopSubscribe, () => true, () => false);
+    const showCaptcha = Boolean(siteKey) && mounted && !user;
     const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+    // Gönderim sonrası artırılır -> RecaptchaField key ile yeniden kurulur (= reset).
+    const [captchaResetKey, setCaptchaResetKey] = useState(0);
 
     // Anonim kimlik: ilk ziyarette üret, localStorage'da kalıcı sakla.
     // Backend bu id ile "usta başına tek anonim oy" kuralını uygular.
@@ -99,7 +117,7 @@ export default function RateForm({providerId}: { providerId: number }) {
             setComment("");
             setScore(null);
             setCaptchaToken(null);
-            captchaRef.current?.reset?.();
+            setCaptchaResetKey(k => k + 1); // kutuyu sıfırla (eski token tek kullanımlık)
             // router.refresh(): Server Component'ları yeniden çalıştırır ->
             // yeni yorum listede/histogramda hemen görünür (tam sayfa yenileme YOK).
             router.refresh();
@@ -179,10 +197,10 @@ export default function RateForm({providerId}: { providerId: number }) {
 
             {showCaptcha && (
                 <div className="field">
-                    <ReCAPTCHA
-                        ref={captchaRef}
-                        sitekey={siteKey}
-                        onChange={val => setCaptchaToken(val)}
+                    <RecaptchaField
+                        siteKey={siteKey}
+                        onToken={setCaptchaToken}
+                        resetKey={captchaResetKey}
                     />
                     <span className="field-hint">Anonim oylar için doğrulama gerekir.</span>
                 </div>

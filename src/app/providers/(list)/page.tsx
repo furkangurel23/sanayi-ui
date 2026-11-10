@@ -78,14 +78,17 @@ export default async function ProvidersPage({
     if (sortField !== "ratingCount") sorts.push({field: "ratingCount", dir: "desc"});
     if (sortField !== "id") sorts.push({field: "id", dir: "asc"});
 
-    const [brands, categories] = await Promise.all([
+    // Üç bağımsız istek TEK Promise.all'da PARALEL: toplam bekleme = en yavaş istek
+    // (eskiden meta bitince dükkan isteği başlıyordu: meta + dükkan süresi toplanıyordu).
+    // Meta istekleri hata verirse boş listeye düşer; dükkan isteği hata verirse sayfa
+    // error.tsx'e (RouteError) gider — dükkansız bir liste sayfası anlamsız.
+    const [brands, categories, data] = await Promise.all([
         getBrandsAllSorted().catch(() => []),
         getCategoriesAllSorted().catch(() => []),
+        getProviders({
+            page, size, brandId, categoryId, city, district, minScore, maxScore, sorts,
+        }),
     ]);
-
-    const data = await getProviders({
-        page, size, brandId, categoryId, city, district, minScore, maxScore, sorts,
-    });
 
     /*
      * Client bileşenlerine başlangıç değerleri PROP olarak iner (Next 16 kalıbı:

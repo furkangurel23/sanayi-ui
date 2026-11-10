@@ -1,5 +1,21 @@
 "use client";
 
+/*
+ * HARİTA (Leaflet, imperatif kullanım — react-leaflet yok).
+ *
+ * Öğrenme notları:
+ *  - Leaflet `window`/`document`'a dokunduğu için sunucuda çalışamaz. Bu bileşen
+ *    hiçbir zaman doğrudan import edilmez; yalnızca `next/dynamic(..., {ssr: false})`
+ *    sarmalayıcıları (MapSection, ProviderMapClient) üzerinden yüklenir -> ayrı bir JS
+ *    parçası (chunk) olur ve sadece harita gösteren rotalarda iner.
+ *  - Leaflet CSS'i de BURADA import ediliyor (eskiden globals.css'te @import idi ve
+ *    her sayfaya iniyordu). App Router, bir bileşenin import ettiği CSS'i o bileşeni
+ *    yükleyen parçaya bağlar -> harita CSS'i de yalnızca harita olan rotalarda gelir.
+ *    Sıra notu: bu CSS artık globals.css'ten SONRA yüklenir; tek override'ımız
+ *    `.map-frame .leaflet-container` daha yüksek özgüllükle (0,2,0) yine kazanır.
+ */
+import "leaflet/dist/leaflet.css";
+import "leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility.css";
 import {useEffect, useRef, useState} from "react";
 import type {ProviderListItem} from "@/lib/types";
 

@@ -38,3 +38,10 @@ Gözlem: metin LCP'lerinde süre neredeyse tamamen "Render Delay" (yükleme değ
 ## Sonra
 
 (implement sonunda doldurulur)
+
+## LCP kök neden (T045, ön ölçüm — resmi "Sonra" tablosu T049'da)
+
+- Metin LCP'li rotalarda (`/`, `/login`, `/chat`, `/brands`) "Render Delay", Lighthouse simülasyonunun gözlenen ilk boyamadan önce başlayan tüm istekleri (async JS ~143 KB, iki Geist woff2 ~47 KB, ilk görünüm alanındaki logolar) LCP bağımlılığı saymasından kaynaklanıyor; localhost'ta ilk boyama bu kaynaklar indikten sonra oluyor. Logo PNG→WebP ile `/` 4210 → ~2425 ms, `/login` 2499 → ~2327 ms, `/chat` 3102 → ~2575 ms.
+- Harita rotalarında LCP üçüncü taraf OSM karosu; karo isteği harita parçasının (dynamic, ssr:false) yüklenmesini bekliyor (Load Delay ~3.4 sn). Görünümü değiştirmeden (harita kapalı başlatma / statik önizleme olmadan) giderilemiyor → 002.
+- Ayrıntı ve koşu değerleri: `tasks.md` → Uygulama Notları → T045.
+

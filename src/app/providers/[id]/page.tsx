@@ -22,7 +22,8 @@ import {notFound} from "next/navigation";
 import {parsePage, parsePositiveId, parseSize} from "@/lib/params";
 import RatingItem from "@/components/RatingItem";
 import Pagination from "@/components/Pagination";
-import ProvidersMap from "@/components/ProvidersMap";
+// Harita: ssr:false dinamik sarmalayıcı (server component dynamic ssr:false kullanamaz).
+import ProviderMapClient from "@/components/ProviderMapClient";
 import MiniHistogram from "@/components/MiniHistogram";
 import RateForm from "@/components/RateForm";
 import ScoreBadge from "@/components/ScoreBadge";
@@ -129,7 +130,7 @@ export default async function ProviderDetailPage({
                 <section className="stack-sm">
                     <h2 className="section-title">Konum</h2>
                     <div className="map-frame">
-                        <ProvidersMap items={mapItems} height={220}/>
+                        <ProviderMapClient items={mapItems} height={220}/>
                     </div>
                 </section>
             )}

@@ -4,7 +4,9 @@
  * Öğrenme notları:
  *  - next/font/google: Geist fontunu BUILD sırasında indirir ve self-host eder
  *    (Google'a runtime istek gitmez -> hız + gizlilik). variable ile CSS değişkeni
- *    olarak (--font-geist-sans) globals.css'e bağlanır.
+ *    olarak (--font-geist-sans) globals.css'e bağlanır. Yükleyici src/app/fonts.ts'te
+ *    (global-error.tsx ile ortak); latin + latin-ext alt kümesi -> Türkçe ğ/ş/ı/İ
+ *    harfleri de Geist ile çizilir (yalnız "latin"de bu harfler yoktu, yedek fonta düşüyordu).
  *  - metadata.title.template: alt sayfalar sadece kendi adını verir,
  *    "%s | Sanayi" şablonuna otomatik oturur (SEO).
  *  - <html data-theme="dark"> SUNUCUDA yazılır: JavaScript kapalı olsa bile sayfa
@@ -21,15 +23,14 @@
  *    olabildiğince aşağıda tutulur (bundle küçük kalır).
  */
 import type {Metadata} from "next";
-import {Geist} from "next/font/google";
 import "./globals.css";
 import React from "react";
 import Header from "@/components/Header";
 import {THEME_COLOR, themeInit} from "./theme";
+import {geist} from "./fonts";
 
-// Tek font: Geist (sans). Eskiden ikinci bir mono font (Geist_Mono) da yükleniyordu ama
-// onu kullanan .mono sınıfı hiçbir yerde kullanılmıyordu -> boşuna indirilen font dosyası.
-const geistSans = Geist({variable: "--font-geist-sans", subsets: ["latin"]});
+// Tek font: Geist (sans, fonts.ts). Eskiden ikinci bir mono font (Geist_Mono) da yükleniyordu
+// ama onu kullanan .mono sınıfı hiçbir yerde kullanılmıyordu -> boşuna indirilen font dosyası.
 
 export const metadata: Metadata = {
     title: {default: "Sanayi — Ankara usta & servis platformu", template: "%s | Sanayi"},
@@ -48,7 +49,7 @@ export default function RootLayout({children}: { children: React.ReactNode }) {
             <meta name="theme-color" content={THEME_COLOR.dark} suppressHydrationWarning/>
             <script dangerouslySetInnerHTML={{__html: themeInit}}/>
         </head>
-        <body className={geistSans.variable}>
+        <body className={geist.variable}>
         <Header/>
         {children}
         <footer className="site-footer">
