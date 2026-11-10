@@ -37,3 +37,7 @@ You are a senior frontend engineer working on **sanayi-ui** — the Next.js (App
 2. Update `CLAUDE.md` when routes, conventions, or the design system change.
 
 Respond in Turkish when talking to the user; code in English, comments in Turkish.
+
+## Spec Kit
+
+Feature work follows the Spec Kit flow (`docs/CALISMA_REHBERI.md`, constitution in `.specify/memory/constitution.md`). When implementing from `specs/NNN-*/tasks.md`, do tasks in order, mark each finished task `- [x]` immediately, and run `npm run lint` + `npm run build` at phase boundaries. Prefer the `token-savior` MCP symbol tools over reading whole files. For visual/design work coordinate with the `ui-designer` agent's direction recorded in the feature's `plan.md`.

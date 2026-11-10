@@ -29,10 +29,12 @@ UI metinleri Türkçe. `:focus-visible`, `prefers-reduced-motion` ve WCAG AA kon
 ## Geliştirme Akışı
 
 - Yeni özellik: `/speckit-specify` → (`/speckit-clarify`) → `/speckit-plan` → `/speckit-tasks` → `/speckit-implement`. Çıktılar `specs/NNN-ozellik/` altında durur; yeni session oradan devam eder.
+- **Review kapıları**: `spec.md`, `plan.md`, `tasks.md` (analyze ile birlikte) ve implementasyon sonrası kod, ayrı bir agent'ta `frontend-reviewer` ile incelenir. BLOCKER/MAJOR bulgular düzeltilmeden sonraki adıma geçilmez.
+- Her özellik kendi commit'i ile kapanır.
 - Küçük düzeltmeler (tek bileşen, davranış değişmiyor) spec gerektirmez.
 
 ## Governance
 
 Bu constitution diğer pratiklerin üstündedir; `CLAUDE.md` onun ayrıntılı uygulama rehberidir. Değişiklik `/speckit-constitution` ile yapılır, sürüm artırılır ve gerekçesi Sync Impact Report'ta yazılır. Karmaşıklık ekleyen her sapma planın "Complexity Tracking" bölümünde gerekçelendirilir.
 
-**Version**: 1.0.0 | **Ratified**: 2026-11-10 | **Last Amended**: 2026-11-10
+**Version**: 1.1.0 | **Ratified**: 2026-11-10 | **Last Amended**: 2026-11-10

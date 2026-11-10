@@ -88,6 +88,29 @@ Komutlar **terminalde değil, Claude chat'inde** yazılır. Her adımdan sonra �
 
 ---
 
+## 2.5 Review kapıları ve agent'lar
+
+Her adımdan sonra ayrı bir agent bağımsız inceleme yapar; BLOCKER/MAJOR bulgu düzeltilmeden ilerlenmez:
+
+| Adım | İnceleme |
+|---|---|
+| `/speckit-specify` (+clarify) | reviewer `spec` modu |
+| `/speckit-plan` | reviewer `plan` modu |
+| `/speckit-tasks` + `/speckit-analyze` | reviewer `tasks` modu |
+| `/speckit-implement` | reviewer `code` modu (diff + lint/build/test) |
+
+Agent'lar (`.claude/agents/`):
+
+| Repo | Agent | Görev |
+|---|---|---|
+| sanayi | `senior-backend-engineer` | backend görevlerini uygular |
+| sanayi | `backend-reviewer` | backend spec/plan/tasks/kod incelemesi (salt okunur) |
+| sanayi-ui | `senior-frontend-engineer` | UI görevlerini uygular |
+| sanayi-ui | `ui-designer` | görsel dil, token'lar, sayfa düzenleri |
+| sanayi-ui | `frontend-reviewer` | UI spec/plan/tasks/kod incelemesi (salt okunur) |
+
+Chat'te istemek için: "`backend-reviewer` ile plan.md'yi incele" demen yeterli.
+
 ## 3. İki repoya dokunan özellikler (backend + UI)
 
 Spec Kit her repoda ayrı çalışır (`sanayi/specs/` ve `sanayi-ui/specs/`). İki tarafı ilgilendiren bir özellikte (favoriler gibi) önerilen sıra:
