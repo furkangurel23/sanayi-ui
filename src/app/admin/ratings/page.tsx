@@ -193,7 +193,7 @@ function RatingsAdmin() {
                                 <td>
                                     <a href={`/providers/${it.providerId}`} target="_blank"
                                        rel="noreferrer noopener"
-                                       style={{color: "var(--accent)", fontWeight: 550}}>
+                                       style={{color: "var(--accent-text)", fontWeight: 550}}>
                                         {it.providerName}
                                     </a>
                                     <div className="text-xs faint">#{it.id}</div>

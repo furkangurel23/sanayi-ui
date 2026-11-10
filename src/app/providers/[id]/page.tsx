@@ -99,10 +99,10 @@ export default async function ProviderDetailPage({
             <section className="card stack" style={{padding: "1.5rem"}}>
                 <div className="row-between" style={{alignItems: "flex-start"}}>
                     <div className="stack-sm" style={{gap: "0.35rem", minWidth: 0}}>
-                        <h1 style={{fontSize: "var(--text-2xl)", letterSpacing: "-0.02em"}}>{detail.name}</h1>
+                        <h1 style={{fontSize: "var(--type-title)", letterSpacing: "-0.02em"}}>{detail.name}</h1>
                         <div className="card-sub">{addressLine || "Adres bilgisi yok"}</div>
                         {detail.phone && (
-                            <a className="text-sm" style={{color: "var(--accent)", fontWeight: 550}}
+                            <a className="text-sm" style={{color: "var(--accent-text)", fontWeight: 550}}
                                href={`tel:${detail.phone}`}>
                                 {detail.phone}
                             </a>

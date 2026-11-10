@@ -44,7 +44,7 @@ export default function AdminShell({children}: { children: ReactNode }) {
         <main className="container page">
             <div className="stack-sm">
                 <span className="eyebrow">Yönetim</span>
-                <h1 className="section-title" style={{fontSize: "var(--text-2xl)"}}>Admin paneli</h1>
+                <h1 className="section-title" style={{fontSize: "var(--type-title)"}}>Admin paneli</h1>
             </div>
 
             {/* Sekme çubuğu: aktif sekme .seg[data-active] ile vurgulanır (tasarım sistemi) */}

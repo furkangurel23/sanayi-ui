@@ -97,7 +97,7 @@ function ProvidersAdmin() {
                         <tr key={p.id}>
                             <td>
                                 <a href={`/providers/${p.id}`} target="_blank" rel="noreferrer noopener"
-                                   style={{color: "var(--accent)", fontWeight: 550}}>{p.name}</a>
+                                   style={{color: "var(--accent-text)", fontWeight: 550}}>{p.name}</a>
                                 <div className="text-xs faint">#{p.id}</div>
                             </td>
                             <td className="text-sm muted">{[p.district, p.city].filter(Boolean).join(", ")}</td>

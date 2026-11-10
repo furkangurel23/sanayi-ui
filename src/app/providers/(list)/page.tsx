@@ -115,7 +115,7 @@ export default async function ProvidersPage({
             <div className="row-between">
                 <div className="stack-sm">
                     <span className="eyebrow">Keşfet</span>
-                    <h1 className="section-title" style={{fontSize: "var(--text-2xl)"}}>Ustalar</h1>
+                    <h1 className="section-title" style={{fontSize: "var(--type-title)"}}>Ustalar</h1>
                 </div>
                 <span className="chip">{data.totalElements} sonuç</span>
             </div>

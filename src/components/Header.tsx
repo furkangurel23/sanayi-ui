@@ -1,27 +1,34 @@
 "use client";
 
 /*
- * SİTE BAŞLIĞI (sticky header) — Client Component.
+ * SİTE BAŞLIĞI (yapışkan, CAM üst bar) — Client Component.
  *
  * Neden client? usePathname/useRouter hook'ları ve mobil menü state'i tarayıcı ister.
  *
  * Öğrenme notları:
  *  - usePathname(): aktif URL path'i; nav linkinde data-active ile "hangi sayfadayım"
- *    vurgusu yapılır (CSS: .nav-link[data-active="true"]).
+ *    vurgusu yapılır. Seçili durum YALNIZCA renkle gösterilmez (D10): kalınlık + alt çizgi
+ *    göstergesi (CSS: .nav-link[data-active="true"]::after). Ayrıca aria-current="page"
+ *    ekran okuyucuya "geçerli sayfa" der.
  *  - useAuth(): login/logout anında Header'ı otomatik günceller (useSyncExternalStore).
  *  - router.refresh(): logout sonrası Server Component'ları tazeler; kullanıcının
  *    yetkisiyle çekilmiş veriler ekranda kalmasın.
- *  - Mobil menü: CSS'te .main-nav 720px altında gizlenir; data-open="true" olunca
- *    fixed panel olarak açılır (JS sadece state tutar, görünümü CSS yönetir).
+ *  - Cam görünüm (D11) tamamen CSS'te: .site-header yarı saydam --surface-glass +
+ *    backdrop-filter; desteklenmezse / şeffaflık azaltma açıksa opak --surface-1.
+ *  - Mobil menü: CSS'te .main-nav 720px altında gizlenir; data-open="true" olunca üst barın
+ *    altında --surface-2 panel olarak açılır (JS sadece state tutar, görünümü CSS yönetir).
+ *    Escape menüyü kapatır ve odağı menü düğmesine geri verir (FR-013, klavye erişimi).
+ *  - İkonlar ortak setten (Menu/Close) — elle çizilmiş satır içi SVG yerine (FR-006).
  */
 
 import Link from "next/link";
 import {usePathname, useRouter} from "next/navigation";
-import {useState} from "react";
+import {useEffect, useRef, useState} from "react";
 import {useAuth} from "@/lib/useAuth";
 import {clearToken, getRefreshToken} from "@/lib/auth";
 import {logoutServer} from "@/lib/authApi";
 import ThemeToggle from "@/components/ThemeToggle";
+import {Close, Menu} from "@/components/icons";
 
 const NAV = [
     {href: "/providers", label: "Ustalar"},
@@ -35,6 +42,21 @@ export default function Header() {
     const router = useRouter();
     const user = useAuth();
     const [open, setOpen] = useState(false);
+    const burgerRef = useRef<HTMLButtonElement>(null);
+
+    // Menü açıkken Escape -> kapat + odağı menü düğmesine iade et.
+    // Dinleyici yalnızca menü AÇIKKEN kurulur; kapanınca temizlik fonksiyonu kaldırır.
+    useEffect(() => {
+        if (!open) return;
+        const onKey = (e: KeyboardEvent) => {
+            if (e.key === "Escape") {
+                setOpen(false);
+                burgerRef.current?.focus();
+            }
+        };
+        document.addEventListener("keydown", onKey);
+        return () => document.removeEventListener("keydown", onKey);
+    }, [open]);
 
     const logout = async () => {
         // Önce backend'de refresh token'ı İPTAL ettir (o oturum gerçekten ölsün),
@@ -46,28 +68,35 @@ export default function Header() {
         router.refresh();
     };
 
+    const isAdmin = pathname.startsWith("/admin");
+
     return (
         <header className="site-header">
             <div className="container">
                 <Link href="/" className="logo" onClick={() => setOpen(false)}>
-                    <span className="logo-mark">S</span>
+                    <span className="logo-mark" aria-hidden>S</span>
                     Sanayi
                 </Link>
 
-                <nav className="main-nav" data-open={open} aria-label="Ana menü">
-                    {NAV.map(item => (
-                        <Link
-                            key={item.href}
-                            href={item.href}
-                            className="nav-link"
-                            data-active={pathname === item.href}
-                            onClick={() => setOpen(false)}
-                        >
-                            {item.label}
-                        </Link>
-                    ))}
+                <nav id="main-nav" className="main-nav" data-open={open} aria-label="Ana menü">
+                    {NAV.map(item => {
+                        const active = pathname === item.href;
+                        return (
+                            <Link
+                                key={item.href}
+                                href={item.href}
+                                className="nav-link"
+                                data-active={active}
+                                aria-current={active ? "page" : undefined}
+                                onClick={() => setOpen(false)}
+                            >
+                                {item.label}
+                            </Link>
+                        );
+                    })}
                     {user?.roles.includes("ADMIN") && (
-                        <Link href="/admin/ratings" className="nav-link" data-active={pathname.startsWith("/admin")}
+                        <Link href="/admin/ratings" className="nav-link" data-active={isAdmin}
+                              aria-current={isAdmin ? "page" : undefined}
                               onClick={() => setOpen(false)}>
                             Admin
                         </Link>
@@ -78,11 +107,10 @@ export default function Header() {
                     <ThemeToggle/>
                     {user ? (
                         <>
-                            <span className="chip chip-accent truncate" style={{maxWidth: "10rem"}}
-                                  title={user.email}>
+                            <span className="chip chip-accent truncate user-chip" title={user.email}>
                                 {user.email.split("@")[0]}
                             </span>
-                            <button className="btn btn-ghost btn-sm" onClick={logout}>Çıkış</button>
+                            <button type="button" className="btn btn-ghost btn-sm" onClick={logout}>Çıkış</button>
                         </>
                     ) : (
                         <>
@@ -91,16 +119,15 @@ export default function Header() {
                         </>
                     )}
                     <button
+                        ref={burgerRef}
                         type="button"
                         className="btn btn-ghost btn-icon nav-burger"
-                        aria-label="Menüyü aç/kapat"
+                        aria-label={open ? "Menüyü kapat" : "Menüyü aç"}
                         aria-expanded={open}
+                        aria-controls="main-nav"
                         onClick={() => setOpen(v => !v)}
                     >
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                             strokeWidth="2" strokeLinecap="round" aria-hidden>
-                            {open ? <path d="M6 6l12 12M18 6L6 18"/> : <path d="M4 7h16M4 12h16M4 17h16"/>}
-                        </svg>
+                        {open ? <Close/> : <Menu/>}
                     </button>
                 </div>
             </div>

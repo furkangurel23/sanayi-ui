@@ -11,11 +11,16 @@
  *  - Leaflet CSS'i de BURADA import ediliyor (eskiden globals.css'te @import idi ve
  *    her sayfaya iniyordu). App Router, bir bileşenin import ettiği CSS'i o bileşeni
  *    yükleyen parçaya bağlar -> harita CSS'i de yalnızca harita olan rotalarda gelir.
- *    Sıra notu: bu CSS artık globals.css'ten SONRA yüklenir; tek override'ımız
- *    `.map-frame .leaflet-container` daha yüksek özgüllükle (0,2,0) yine kazanır.
+ *    Sıra notu: bu CSS artık globals.css'ten SONRA yüklenir.
+ *  - 002: tema uyumlu harita stilleri (koyu karo filtresi, kontroller, popup, atıf)
+ *    ./ProvidersMap.css'te — leaflet CSS'inden SONRA import edilir ki onu ezsin.
+ *  - Karo kaynağı OSM kullanım politikasına göre (D3): TEK alan adı
+ *    `tile.openstreetmap.org` (eski `{s}.` alt alan adları kaldırıldı) ve tam atıf
+ *    metni "© OpenStreetMap contributors" (bağlantılı).
  */
 import "leaflet/dist/leaflet.css";
 import "leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility.css";
+import "./ProvidersMap.css";
 import {useEffect, useRef, useState} from "react";
 import type {ProviderListItem} from "@/lib/types";
 
@@ -97,8 +102,8 @@ export default function ProvidersMap({items, height = 260}: Props) {
                 scrollWheelZoom: false,
             });
 
-            L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>',
+            L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
             }).addTo(map);
 
             const markerLayer = L.layerGroup().addTo(map);
@@ -196,7 +201,8 @@ export default function ProvidersMap({items, height = 260}: Props) {
     return (
         <div
             ref={mapDivRef}
-            style={{height, width: "100%"}}
+            // çalışma anı değeri: harita yüksekliği prop'tan gelir (çağıran sayfa belirler)
+            style={{height}}
             aria-label="Harita"
             role="region"
         />

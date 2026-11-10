@@ -48,7 +48,7 @@ export default async function ProvidersNearPage({
             <main className="container page" style={{maxWidth: "44rem"}}>
                 <div className="stack-sm">
                     <span className="eyebrow">Konum</span>
-                    <h1 className="section-title" style={{fontSize: "var(--text-2xl)"}}>Yakınımdaki ustalar</h1>
+                    <h1 className="section-title" style={{fontSize: "var(--type-title)"}}>Yakınımdaki ustalar</h1>
                     <p className="muted text-sm">
                         Konumunu paylaştıktan sonra belirlediğin yarıçap içindeki ustaları mesafeleriyle listeleriz.
                     </p>
@@ -78,7 +78,7 @@ export default async function ProvidersNearPage({
             <div className="row-between">
                 <div className="stack-sm">
                     <span className="eyebrow">Konum</span>
-                    <h1 className="section-title" style={{fontSize: "var(--text-2xl)"}}>Yakınımdaki ustalar</h1>
+                    <h1 className="section-title" style={{fontSize: "var(--type-title)"}}>Yakınımdaki ustalar</h1>
                 </div>
                 <span className="chip">Yarıçap: {radiusKm} km · {data.totalElements} sonuç</span>
             </div>

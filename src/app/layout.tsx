@@ -38,8 +38,11 @@ export const metadata: Metadata = {
 };
 
 // Tema tercihi ilk boyamadan önce uygulanır (FOUC önleme) — script metni theme.ts'te.
-// Varsayılan KOYU tema: koyu zemin + nötr (grafit) vurgu rengi; kullanıcı toggle'la
-// değiştirirse tercihi localStorage'da kalıcıdır.
+// Varsayılan KOYU tema (002: neredeyse siyah, katmanlı nötr yüzeyler + tek MAVİ vurgu);
+// kullanıcı toggle'la değiştirirse tercihi localStorage'da kalıcıdır.
+//
+// Alt bilgi (footer): metinler aynı; görünüm .site-footer/.footer-inner sınıflarıyla
+// (hairline üst çizgi, caption boyutu, dar ekranda alt alta sarar).
 
 export default function RootLayout({children}: { children: React.ReactNode }) {
     return (
@@ -53,8 +56,11 @@ export default function RootLayout({children}: { children: React.ReactNode }) {
         <Header/>
         {children}
         <footer className="site-footer">
-            <div className="container row-between">
-                <span>Sanayi — Ankara usta &amp; servis platformu</span>
+            <div className="container footer-inner">
+                <span className="footer-brand">
+                    <span className="logo-mark" aria-hidden>S</span>
+                    <span>Sanayi — Ankara usta &amp; servis platformu</span>
+                </span>
                 <span>Puanla · Yorumla · Sohbet et</span>
             </div>
         </footer>

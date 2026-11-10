@@ -7,14 +7,16 @@
  *    kopyala-yapıştır yerine tek kaynak (DRY).
  *  - THEME_COLOR: tarayıcının arayüz rengi (<meta name="theme-color">; mobilde adres
  *    çubuğu, PWA başlığı). Değerler globals.css'teki --bg token'larının HEX karşılığı:
- *      koyu  --bg: oklch(0.17 0.01 75)    -> #120f0b
- *      açık  --bg: oklch(0.985 0.004 85)  -> #fbfaf7
+ *      koyu  --bg: oklch(0.13 0.004 260)   -> #070709
+ *      açık  --bg: oklch(0.975 0.002 260)  -> #f6f7f8
+ *    (002 değerleri; `node scripts/contrast-check.mjs` her temanın başlığında --bg'nin
+ *    HEX karşılığını yazdırır — bu sabitler onunla birebir doğrulandı.)
  *    Meta etiketinde OKLCH her tarayıcıda desteklenmediği için HEX kullanıyoruz.
  *    globals.css'te --bg değişirse burası da güncellenmeli.
  *  - React 19 tuzağı (doğrulanarak öğrenildi): <meta> React 19'da "hoistable" bir
  *    öğedir; hidrasyonda React mevcut etiketi `content` değeriyle eşleştirir. Açık
- *    temalı kullanıcıda script content'i #fbfaf7 yaptığı için React, prop'taki
- *    #120f0b ile eşleşen etiket bulamaz ve head'e İKİNCİ bir meta ekler. Tarayıcı
+ *    temalı kullanıcıda script content'i açık rengi yaptığı için React, prop'taki
+ *    koyu renkle eşleşen etiket bulamaz ve head'e İKİNCİ bir meta ekler. Tarayıcı
  *    İLK meta'yı kullandığı için görünür bir sorun yok; yine de bütün güncellemeler
  *    (script, applyStoredTheme, ThemeToggle) TEK meta değil TÜM theme-color
  *    etiketlerini (querySelectorAll) günceller -> hepsi her zaman aynı rengi taşır.
@@ -24,7 +26,7 @@
  *    kendimiz basıyor, script ve ThemeToggle ile güncelliyoruz.
  */
 
-export const THEME_COLOR = {dark: "#120f0b", light: "#fbfaf7"} as const;
+export const THEME_COLOR = {dark: "#070709", light: "#f6f7f8"} as const;
 
 /**
  * İlk boyamadan ÖNCE çalışan inline script metni (FOUC önleme).

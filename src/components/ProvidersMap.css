@@ -1,0 +1,69 @@
+/*
+ * HARİTA STİLLERİ (002 / research D3) — yalnızca harita rotalarında yüklenir.
+ *
+ * Neden ayrı dosya? ProvidersMap.tsx bu dosyayı import eder; App Router bir bileşenin
+ * import ettiği CSS'i o bileşenin parçasına (chunk) bağlar. ProvidersMap yalnızca
+ * next/dynamic(ssr:false) ile harita olan sayfalarda yüklendiği için bu kurallar da
+ * yalnızca orada iner (001 R4 / FR-018 "harita stilleri yalnızca harita rotalarında").
+ * Sıra: leaflet.css'ten SONRA import edilir; ayrıca .map-frame öneki özgüllüğü artırır.
+ *
+ * Koyu tema (D3): ek karo sağlayıcısı YOK. OSM'in açık karoları koyu temada CSS filtresiyle
+ * tersine çevrilir (--map-dark-filter: invert + hue-rotate + hafif kısma). Filtre YALNIZCA
+ * karo katmanına (.leaflet-tile-pane) uygulanır; işaretçiler (marker pane), popup'lar ve
+ * kontroller filtre dışında kalır -> renkleri/kontrastları bozulmaz. Tema değişimi saf CSS
+ * olduğu için anında olur; harita yeniden kurulmaz (konum/zoom/açık popup korunur — US2-AS3).
+ */
+
+/* Karolar yüklenene kadar zemin tema yüzeyi: koyu temada beyaz parlama olmaz. */
+.map-frame .leaflet-container {
+    background: var(--surface-1);
+    font-family: inherit;
+    font-size: var(--type-caption);
+    color: var(--fg);
+}
+:root[data-theme="dark"] .map-frame .leaflet-tile-pane { filter: var(--map-dark-filter); }
+
+/* — Yakınlaştırma kontrolleri: 44 px dokunma hedefi (FR-013), belirteç renkleri — */
+.map-frame .leaflet-bar {
+    border: 1px solid var(--hairline);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-2);
+    overflow: hidden;
+}
+.map-frame .leaflet-bar a,
+.map-frame .leaflet-bar a:hover {
+    width: var(--target-min);
+    height: var(--target-min);
+    line-height: var(--target-min);
+    background: var(--surface-2);
+    color: var(--fg);
+    border-bottom: 1px solid var(--hairline);
+    font-size: var(--type-headline);
+}
+.map-frame .leaflet-bar a:hover { background: var(--surface-1); }
+.map-frame .leaflet-bar a:last-child { border-bottom: 0; }
+.map-frame .leaflet-bar a.leaflet-disabled { color: var(--fg-faint); background: var(--surface-2); }
+.map-frame .leaflet-touch .leaflet-bar a { width: var(--target-min); height: var(--target-min); line-height: var(--target-min); }
+
+/* — Atıf (OSM politikası: "© OpenStreetMap contributors" görünür kalmalı) — */
+.map-frame .leaflet-control-attribution {
+    background: var(--surface-glass);
+    color: var(--fg-muted);
+    font-size: var(--type-caption);
+    padding: 0 var(--space-2);
+    border-top-left-radius: var(--radius-sm);
+}
+.map-frame .leaflet-control-attribution a { color: var(--accent-text); }
+
+/* — Popup — */
+.map-frame .leaflet-popup-content-wrapper {
+    background: var(--surface-2);
+    color: var(--fg);
+    border: 1px solid var(--hairline);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-pop);
+}
+.map-frame .leaflet-popup-content { margin: var(--space-3) var(--space-4); font-size: var(--type-callout); line-height: var(--type-callout-lh); }
+.map-frame .leaflet-popup-tip { background: var(--surface-2); box-shadow: none; }
+.map-frame .leaflet-container a.leaflet-popup-close-button { color: var(--fg-muted); }
+.map-frame .leaflet-container a.leaflet-popup-close-button:hover { color: var(--fg); }

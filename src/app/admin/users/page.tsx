@@ -111,7 +111,7 @@ function UsersAdmin() {
                                 </td>
                                 <td>
                                     <span className="chip"
-                                          style={{color: u.role === "ADMIN" ? "var(--accent)" : "var(--fg-muted)"}}>
+                                          style={{color: u.role === "ADMIN" ? "var(--accent-text)" : "var(--fg-muted)"}}>
                                         {u.role}
                                     </span>
                                 </td>

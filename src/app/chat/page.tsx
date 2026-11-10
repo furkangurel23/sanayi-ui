@@ -18,7 +18,7 @@ export default async function ChatRoomsPage() {
         <main className="container page">
             <div className="stack-sm">
                 <span className="eyebrow">Topluluk</span>
-                <h1 className="section-title" style={{fontSize: "var(--text-2xl)"}}>Marka sohbet odaları</h1>
+                <h1 className="section-title" style={{fontSize: "var(--type-title)"}}>Marka sohbet odaları</h1>
                 <p className="muted text-sm" style={{maxWidth: "38rem"}}>
                     Aynı markayı kullananlarla konuş: usta tavsiyesi al, deneyim paylaş, fotoğraf ve video gönder.
                     Odalara katılmak için üye girişi gerekir.

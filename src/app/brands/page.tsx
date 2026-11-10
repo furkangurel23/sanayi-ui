@@ -34,7 +34,7 @@ export default async function BrandsPage({
         <main className="container page">
             <div className="stack-sm">
                 <span className="eyebrow">Markalar</span>
-                <h1 className="section-title" style={{fontSize: "var(--text-2xl)"}}>Markana bakan ustalar</h1>
+                <h1 className="section-title" style={{fontSize: "var(--type-title)"}}>Markana bakan ustalar</h1>
                 <p className="muted text-sm">Markanı seç; o markayla çalışan ustaları gör, sohbet odasına katıl.</p>
             </div>
 
