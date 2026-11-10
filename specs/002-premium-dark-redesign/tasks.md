@@ -90,7 +90,7 @@
 - [x] T039 quickstart #1–#8 tam akış (kayıt→doğrulama→giriş→puan→sohbet→admin) iki temada
 - [x] T040 Doküman: `CLAUDE.md` "Tasarım Sistemi" bölümü (yeni belirteçler, ikonlar, ortak bileşenler, D10 seçim kuralı, harita koyu filtre + OSM politikası notu); `ui-designer.md` gerekirse
 - [x] T041 `frontend-reviewer` kod incelemesi (code modu) + ui-designer görsel incelemesi; BLOCKER/MAJOR düzelt
-- [ ] T042 `/speckit-converge` → "Converged" → **Commit D4** (`docs(ui): redesign verification, screenshots, design system docs`)
+- [x] T042 `/speckit-converge` → "Converged" → **Commit D4** (`docs(ui): redesign verification, screenshots, design system docs`)
 
 ---
 
@@ -214,3 +214,11 @@ Task: "T011 ScoreBadge + histogram + RatingItem"
 - `frontend-reviewer` (code modu) bulguları düzeltildi: (1) `RecaptchaField` TEMA yorumu düzeltildi (gönder düğmesi token'a bağlı değil; token yoksa backend `error.recaptcha.missing` döner), `onToken` latest-ref'te → effect bağımlılığı `[theme]`; (2) admin yorumlar: iki `datetime-local` alanı `.toolbar-inputs-dates` ile 480 px altında alt alta (375'te her biri 293 px, saat kırpılmıyor); (3) `NearLocate`: `aria-live` yalnız başlık + açıklamada (`EmptyState live`), `denied`/`error` her zaman Türkçe açıklama, tarayıcının `e.message`'ı yalnız `console.warn`; (4) `EmptyState titleAs` (`h1 | h2 | p`) — 404, kilitli sohbet ve yetkisiz admin'de başlık h1, ayrı sr-only h1 kopyaları kaldırıldı (görünüm aynı: 17 px); (5) `Dialog` açıkken `<html>` `overflow: hidden` (temizlikte önceki değer); (6) ortak `src/lib/useRovingRadio.ts` — RateForm (ok seçer) ve FilterBar puan/sıralama segmentleri (ok yalnız odağı taşır, Space/Enter seçer — seçim gezinti + remount olduğu için) grup başına tek sekme durağı; URL yazımı aynı; (7) RateForm etiket id'si `useId()`, ana sayfa yorumu 48ch, ChatRoom'da `setError(null)` olan her yerde `setLocked(false)` + oda değişiminde sıfırlama (render sırasında state kalıbı); (8) `/brands` kartı: "Sohbet" ve "Ustalar" ikisi `btn-outline btn-sm`; eylemler kendi satırına inince sola hizalı (esneme oranı 999:1, media query'siz; 1440'ta sağda kalır).
 - **Sunum notları (incelemenin istediği kayıt)**: admin log paneli sağdan açılan çekmeceden (drawer) **ortalanmış `Dialog`**'a taşındı; admin sayfalaması **tek sayfa varken gizlenir** (eskiden "Sayfa 1 / 1" gösteriliyordu).
 - Doğrulama (prod build, :3100): `/providers` puan segmenti klavyeyle (tek durak, ok/Home/End odak, Enter → `?maxScore=0&page=1`, odak gruptan çıkınca durak seçiliye döner); `/providers/near` 375 px reddedildi/hata durumları Türkçe, tek canlı bölge, bölgede input/düğme yok; `/brands` 375 px taşma 0; 404'te tek h1. Kapı: token-lint 0, contrast-check 0, lint 0 hata / 7 uyarı (taban), build ✓.
+
+## Phase 7: Convergence
+
+Converge değerlendirmesi (2026-11-10): FR-001…FR-021 ve SC-001/002/003/005/006 kod + ölçümle karşılanıyor (token-lint 0, contrast-check 0, satır içi 5 çalışma anı değeri, emoji 0, 320/375 px taşma 0, a11y 96–100, review APPROVE + düzeltmeler `92d3bb0`). Kalan üç açık harita rotalarında toplanıyor ve davranış/düzen değişikliği gerektirdiği için **kullanıcı kararı bekliyor**:
+
+- [ ] T043 Harita rotalarında LCP ≤2.5 sn per FR-018/SC-004 (+ 001 T054) (partial) — `/providers` 4636 ms, `/providers/[id]` 5335 ms; LCP öğesi OSM karosu. Seçenekler: (a) bilinçli istisna olarak kabul et ve ölç-izle, (b) mobilde haritayı kapalı başlat (mevcut "Göster/Gizle" düğmesi), (c) statik önizleme görseli. **Karar bekliyor.**
+- [ ] T044 Harita işaretçilerinde dokunma hedefi per FR-013/SC-006 (partial) — axe `target-size` yalnız `/providers` ve `/providers/near`'daki üst üste binen Leaflet işaretçilerinde; her dükkan 44 px liste kartından da erişilebilir (WCAG 2.5.8 "eşdeğer" istisnası). **İstisna onayı bekliyor.**
+- [ ] T045 Harita işaretçi kontrastı ≥3:1 per FR-007 (partial) — mavi gövde su/ana yol üzerinde <3:1, beyaz merkez ≥7:1. T044 kararıyla birlikte ele alınır (ör. işaretçiye koyu kontur).
