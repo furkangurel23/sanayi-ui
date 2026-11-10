@@ -66,7 +66,9 @@ export function adminRestoreRating(token: string, ratingId: number, reason?: str
 
 export async function adminListLogs(token: string, ratingId: number, page = 0, size = 20): Promise<Page<ModerationLogItem>> {
     const q = qs({entity: "RATING", page, size});
-    return normalizePage(await getJson<SpringPage<ModerationLogItem>>(`${BASE}/admin/logs/${ratingId}?${q}`, token));
+    // Backend: ModerationLogController -> @RequestMapping("/api/admin/logs") + @GetMapping("/{id}/logs")
+    // yani tam yol /api/admin/logs/{id}/logs. (Eskiden sondaki /logs eksikti -> panel 404 alıyordu.)
+    return normalizePage(await getJson<SpringPage<ModerationLogItem>>(`${BASE}/admin/logs/${ratingId}/logs?${q}`, token));
 }
 
 // ---------------- DÜKKANLAR ----------------

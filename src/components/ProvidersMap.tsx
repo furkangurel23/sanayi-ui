@@ -17,6 +17,40 @@ function hasMapPane(map: LeafletMap | null): map is LeafletMap & {_mapPane: HTML
     return Boolean(map && (map as LeafletMapWithPane)._mapPane);
 }
 
+/*
+ * POPUP İÇERİĞİ — GÜVENLİ (XSS'siz) kurulum.
+ *
+ * Leaflet bindPopup'a STRING verilirse onu innerHTML olarak basar: dükkan adı
+ * `<img src=x onerror=alert(1)>` olsaydı tarayıcı bunu gerçek bir etiket sanıp
+ * içindeki JavaScript'i çalıştırırdı (Cross-Site Scripting). Ad/ilçe/şehir admin
+ * paneli ve içe aktarma betikleriyle girildiği için "güvenilmez veri" sayılır.
+ *
+ * Çözüm: HTML metni birleştirmek yerine DOM düğümü kuruyoruz. `textContent`
+ * kendisine verilen metni HER ZAMAN düz yazı olarak koyar (etiket yorumlamaz);
+ * Leaflet'e hazır HTMLElement verince innerHTML'e hiç dokunmaz.
+ * İçerik eskisiyle birebir aynı: kalın ad, "ilçe / şehir", varsa puan satırı;
+ * satırlar arasında <br>.
+ */
+function buildPopup(p: ProviderListItem): HTMLElement {
+    const root = document.createElement("div");
+
+    const name = document.createElement("strong");
+    name.textContent = p.name;
+
+    const lines: Node[] = [name];
+    const place = [p.district, p.city].filter(Boolean).join(" / ");
+    if (place) lines.push(document.createTextNode(place));
+    if (typeof p.avgScore === "number") {
+        lines.push(document.createTextNode(`Puan: ${p.avgScore.toFixed(1)} (${p.ratingCount ?? 0} oy)`));
+    }
+
+    lines.forEach((node, i) => {
+        if (i > 0) root.appendChild(document.createElement("br"));
+        root.appendChild(node);
+    });
+    return root;
+}
+
 export default function ProvidersMap({items, height = 260}: Props) {
     const mapDivRef = useRef<HTMLDivElement>(null!);
     const mapRef = useRef<LeafletMap | null>(null);
@@ -116,15 +150,7 @@ export default function ProvidersMap({items, height = 260}: Props) {
 
             for (const p of withCoords) {
                 L.marker([p.lat, p.lon])
-                    .bindPopup(
-                        [
-                            `<strong>${p.name}</strong>`,
-                            [p.district, p.city].filter(Boolean).join(" / "),
-                            typeof p.avgScore === "number"
-                                ? `Puan: ${p.avgScore.toFixed(1)} (${p.ratingCount ?? 0} oy)`
-                                : undefined,
-                        ].filter(Boolean).join("<br/>")
-                    )
+                    .bindPopup(buildPopup(p))
                     .addTo(layer);
             }
 
@@ -154,7 +180,6 @@ export default function ProvidersMap({items, height = 260}: Props) {
     return (
         <div
             ref={mapDivRef}
-            className="rounded-2xl border border-white/10"
             style={{height, width: "100%"}}
             aria-label="Harita"
             role="region"

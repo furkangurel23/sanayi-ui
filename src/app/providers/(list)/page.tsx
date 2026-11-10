@@ -7,12 +7,31 @@
  *
  * Sıralama: birincil alan + stabil ikincil alanlar (ratingCount, id) —
  * eşit değerli kayıtların sayfalar arasında zıplamasını önler.
+ *
+ * URL GÜVENİLMEZ GİRDİDİR: tüm parametreler params.ts yardımcılarıyla okunur.
+ * ?page=abc -> 1, ?size=99999 -> 20, ?brandId=abc -> filtre yok, ?minScore=9 -> yok;
+ * sort alanı/yönü beyaz listede değilse varsayılan sıralama. Böylece backend'e
+ * asla NaN, negatif sayfa ya da rastgele bir sort alanı gitmez.
+ *
+ * Meta veriler (marka/kategori) .catch(() => []) ile korunur: o servisler hata
+ * verirse dükkanlar yine listelenir, yalnızca filtre seçenekleri boş kalır.
  */
 import {getBrandsAllSorted, getCategoriesAllSorted, getProviders} from "@/lib/api";
 import ProviderCard from "@/components/ProviderCard";
 import FilterBar from "@/components/FilterBar";
 import Pagination from "@/components/Pagination";
 import MapSection from "@/components/MapSection";
+import {parseEnum, parsePage, parsePositiveId, parseScore, parseSize} from "@/lib/params";
+
+/*
+ * Sıralanabilir alanlar — BEYAZ LİSTE. FilterBar'daki SORT_FIELDS seçenekleri
+ * (avgScore, ratingCount, name) + stabil ikincil sıralamada kullandığımız id.
+ * FilterBar'a yeni bir sıralama seçeneği eklenirse buraya da eklenmeli.
+ * (FilterBar "use client" bir modül; ondan sabit import etmek server'da istemci
+ * referansı verir, değeri değil — bu yüzden listeyi burada tutuyoruz.)
+ */
+const SORT_FIELDS = ["avgScore", "ratingCount", "name", "id"] as const;
+const SORT_DIRS = ["asc", "desc"] as const;
 
 export const metadata = {
     title: "Ustalar",
@@ -25,26 +44,34 @@ export default async function ProvidersPage({
 }) {
     const sp = await searchParams;
 
-    const page = Number(sp.page ?? "1");
-    const size = Number(sp.size ?? "20");
-    const brandId = sp.brandId ? Number(sp.brandId) : undefined;
-    const categoryId = sp.categoryId ? Number(sp.categoryId) : undefined;
+    const page = parsePage(sp.page);
+    const size = parseSize(sp.size, 20, 50);
+    const brandId = parsePositiveId(sp.brandId);
+    const categoryId = parsePositiveId(sp.categoryId);
     const city = typeof sp.city === "string" ? sp.city : undefined;
     const district = typeof sp.district === "string" ? sp.district : undefined;
-    const minScore = sp.minScore ? Number(sp.minScore) : undefined;
-    const maxScore = sp.maxScore ? Number(sp.maxScore) : undefined;
+    const minScore = parseScore(sp.minScore);
+    const maxScore = parseScore(sp.maxScore);
 
-    let sortField = "avgScore";
+    let sortField: (typeof SORT_FIELDS)[number] = "avgScore";
     let sortDir: "asc" | "desc" = "desc";
 
+    // URL'de `sort` birden çok kez olabilir (?sort=name,asc&sort=ratingCount,desc&sort=id,asc).
+    // Birincil sıralama İLKİdir; ikincilleri aşağıda biz yeniden türetiyoruz.
+    // Eski biçim (?sortField=..&sortDir=..) de desteklenmeye devam eder (URL'ler değişmez).
     const sortsInUrl = Array.isArray(sp.sort) ? sp.sort : sp.sort ? [sp.sort] : [];
     if (sortsInUrl.length > 0 && typeof sortsInUrl[0] === "string" && sortsInUrl[0].includes(",")) {
         const [f, d] = (sortsInUrl[0] as string).split(",");
-        sortField = f;
-        sortDir = (d === "asc" ? "asc" : "desc");
+        const field = parseEnum(f, SORT_FIELDS, "avgScore");
+        // Alan beyaz listede değilse varsayılan sıralamanın TAMAMINA dön (avgScore,desc);
+        // yön asc değilse desc (önceki davranış).
+        if (field === f) {
+            sortField = field;
+            sortDir = parseEnum(d, SORT_DIRS, "desc");
+        }
     } else {
-        if (typeof sp.sortField === "string") sortField = sp.sortField;
-        if (sp.sortDir === "asc" || sp.sortDir === "desc") sortDir = sp.sortDir;
+        sortField = parseEnum(sp.sortField, SORT_FIELDS, "avgScore");
+        sortDir = parseEnum(sp.sortDir, SORT_DIRS, "desc");
     }
 
     const sorts: Array<{ field: string; dir: "asc" | "desc" }> = [{field: sortField, dir: sortDir}];
@@ -52,8 +79,8 @@ export default async function ProvidersPage({
     if (sortField !== "id") sorts.push({field: "id", dir: "asc"});
 
     const [brands, categories] = await Promise.all([
-        getBrandsAllSorted(),
-        getCategoriesAllSorted(),
+        getBrandsAllSorted().catch(() => []),
+        getCategoriesAllSorted().catch(() => []),
     ]);
 
     const data = await getProviders({

@@ -7,10 +7,16 @@
  *    olarak (--font-geist-sans) globals.css'e bağlanır.
  *  - metadata.title.template: alt sayfalar sadece kendi adını verir,
  *    "%s | Sanayi" şablonuna otomatik oturur (SEO).
- *  - themeInit inline script'i: React yüklenmeden ÖNCE çalışır; localStorage'daki
- *    tema tercihini <html data-theme> olarak yazar -> yanlış temayla flaş (FOUC) olmaz.
- *  - suppressHydrationWarning: data-theme'i script değiştirdiği için server/client
- *    HTML'i farklı olabilir; React'e "bu bilinçli" deriz.
+ *  - <html data-theme="dark"> SUNUCUDA yazılır: JavaScript kapalı olsa bile sayfa
+ *    varsayılan (koyu) temayla gelir.
+ *  - themeInit inline script'i (src/app/theme.ts): React yüklenmeden ÖNCE çalışır;
+ *    localStorage'daki tema tercihini <html data-theme> olarak yazar -> yanlış temayla
+ *    flaş (FOUC) olmaz. Aynı script <meta name="theme-color">'ı (tarayıcı arayüz rengi)
+ *    seçili temaya çeker; meta bu yüzden script'ten ÖNCE yer alır.
+ *  - viewport.themeColor KULLANMIYORUZ: işletim sistemi temasına göre medya sorgulu
+ *    meta üretir, kullanıcının elle seçtiği temayı izleyemez (ayrıntı theme.ts'te).
+ *  - suppressHydrationWarning: data-theme'i ve meta content'ini script değiştirdiği için
+ *    server/client HTML'i farklı olabilir; React'e "bu bilinçli" deriz.
  *  - Header client component'tır ama layout server kalır — client sınırı
  *    olabildiğince aşağıda tutulur (bundle küçük kalır).
  */
@@ -19,6 +25,7 @@ import {Geist} from "next/font/google";
 import "./globals.css";
 import React from "react";
 import Header from "@/components/Header";
+import {THEME_COLOR, themeInit} from "./theme";
 
 // Tek font: Geist (sans). Eskiden ikinci bir mono font (Geist_Mono) da yükleniyordu ama
 // onu kullanan .mono sınıfı hiçbir yerde kullanılmıyordu -> boşuna indirilen font dosyası.
@@ -29,15 +36,16 @@ export const metadata: Metadata = {
     description: "Ankara'daki sanayi ustalarını marka ve kategoriye göre keşfet, yorumları oku, puanla, marka sohbet odalarına katıl.",
 };
 
-// Tema tercihini ilk boyamadan önce uygula (FOUC önleme).
+// Tema tercihi ilk boyamadan önce uygulanır (FOUC önleme) — script metni theme.ts'te.
 // Varsayılan KOYU tema: koyu zemin + nötr (grafit) vurgu rengi; kullanıcı toggle'la
 // değiştirirse tercihi localStorage'da kalıcıdır.
-const themeInit = `(function(){try{var t=localStorage.getItem("sanayiTheme")||"dark";document.documentElement.dataset.theme=t}catch(e){document.documentElement.dataset.theme="dark"}})()`;
 
 export default function RootLayout({children}: { children: React.ReactNode }) {
     return (
-        <html lang="tr" suppressHydrationWarning>
+        <html lang="tr" data-theme="dark" suppressHydrationWarning>
         <head>
+            {/* Sıra önemli: önce meta, sonra onu güncelleyen script. */}
+            <meta name="theme-color" content={THEME_COLOR.dark} suppressHydrationWarning/>
             <script dangerouslySetInnerHTML={{__html: themeInit}}/>
         </head>
         <body className={geistSans.variable}>

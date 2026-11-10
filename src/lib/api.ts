@@ -11,6 +11,8 @@ import {
 } from "@/lib/types";
 import {normalizePage} from "@/lib/page";
 import {toApiError} from "@/lib/apiError";
+import {clampRadiusKm} from "@/lib/params";
+import {cache} from "react";
 
 const BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080/api";
 
@@ -41,6 +43,20 @@ function toQuery(params: Record<string, string | number | boolean | undefined>) 
     return u;
 }
 
+/*
+*
+*   Sayfa numarası dönüşümü — TEK YER.
+* UI 1-based (kullanıcı "1. sayfa" görür), Spring Pageable 0-based bekler.
+* page - 1 yapıp en az 0'a sıkıştırıyoruz: page 0/negatif gelse bile backend'e
+* ASLA negatif sayfa gitmez. (Eskiden getProviderRatings `Math.max(0, page) - 1`
+* yazıyordu: önce sıkıştırıp sonra 1 çıkardığı için page=0 -> -1 gidiyordu.)
+* Sayfalar URL'i zaten params.ts parsePage ile temizliyor; bu ikinci emniyet kemeri.
+*
+* */
+function toPage0(page: number | undefined): number {
+    return Math.max(0, (page ?? 1) - 1);
+}
+
 
 /*
 *
@@ -51,7 +67,7 @@ function toQuery(params: Record<string, string | number | boolean | undefined>) 
 export async function getBrands(opts: {
     page?: number; size?: number; sort?: string; dir?: "asc" | "desc";
 } = {}): Promise<Page<BrandDto>> {
-    const page0 = Math.max(0, (opts.page ?? 1) - 1);
+    const page0 = toPage0(opts.page);
     const size = opts.size ?? 20;
     const sort = opts.sort ?? "name";
     const dir = opts.dir ?? "asc";
@@ -101,7 +117,7 @@ export async function getProviders(opts: {
     // Çoklu sıralama desteği
     sorts?: Array<{ field: string; dir: "asc" | "desc" }>;
 } = {}): Promise<Page<ProviderListItem>> {
-    const page0 = Math.max(0, (opts.page ?? 1) - 1);
+    const page0 = toPage0(opts.page);
     const size = opts.size ?? 20;
 
     const params = toQuery({
@@ -135,14 +151,30 @@ export async function getProviders(opts: {
     return normalizePage(await res.json() as SpringPage<ProviderListItem>);
 }
 
-export async function getProviderDetail(id: number): Promise<ProviderDetailDto> {
+/*
+*
+*   Usta detayı — React cache() ile İSTEK İÇİ tekilleştirme.
+* Aynı istekte üç yer bu veriyi ister: providers/[id]/layout.tsx (404 kontrolü),
+* generateMetadata (sekme başlığı) ve sayfanın kendisi. fetch `no-store` olduğu için
+* Next'in fetch önbelleği devrede değil; cache() sarmalayıcısı ise aynı server
+* render'ı (tek HTTP isteği) boyunca aynı argümanla yapılan çağrıları TEK backend
+* isteğine indirir ve sonucu (Promise'i) paylaştırır. İstekler arası önbellek DEĞİLDİR —
+* her yeni sayfa isteği yine taze veri çeker.
+*
+*   404 -> null: "Bu usta yok" bir HATA değil, beklenen bir durum; çağıran taraf
+* `null` görünce notFound() çağırır (gerçek 404 durum kodu). Diğer hatalar
+* (500, ağ) fırlatılır ve error.tsx (RouteError) tarafından yakalanır.
+*
+* */
+export const getProviderDetail = cache(async (id: number): Promise<ProviderDetailDto | null> => {
     const url = `${BASE}/providers/${id}`;
     const res = await fetch(url, {cache: "no-store"});
+    if (res.status === 404) return null;
     if (!res.ok) {
         throw new Error(`GET /providers/${id} failed: ${res.status} ${res.statusText}`);
     }
     return res.json();
-}
+});
 
 export async function getProviderRatings(opts: {
     id: number; //provider id
@@ -151,7 +183,7 @@ export async function getProviderRatings(opts: {
     sortField?: string;
     sortDir?: "asc" | "desc";
 }): Promise<Page<RatingDto>> {
-    const page0 = Math.max(0, opts.page ?? 1) - 1;
+    const page0 = toPage0(opts.page);
     const size = opts.size ?? 10;
     const field = opts.sortField ?? "createdAt";
     const dir = opts.sortDir ?? "desc";
@@ -172,20 +204,25 @@ export async function getProviderRatings(opts: {
 export async function getProvidersNear(opts: {
     lat: number;
     lon: number;
-    radiusKm?: number; // 0..100
+    radiusKm?: number; // 1..100 (clampRadiusKm ile sıkıştırılır)
     page?: number;
     size?: number;
 }): Promise<Page<NearItem>> {
-    const page0 = Math.max(0, (opts.page ?? 1) - 1);
+    const page0 = toPage0(opts.page);
     const size = opts.size ?? 20;
-    const radius = Math.max(1, Math.max(0, opts.radiusKm ?? 10));
+    // Yarıçap kuralı tek yerde (params.ts): 1..100 km. Sayfa da aynı fonksiyonla
+    // gösterdiği değeri hesaplar -> ekrandaki "Yarıçap" ile backend'e giden aynı olur.
+    const radius = clampRadiusKm(opts.radiusKm ?? 10);
     const params = new URLSearchParams();
     params.set("lat", String(opts.lat));
     params.set("lon", String(opts.lon));
     params.set("radiusKm", String(radius));
     params.set("page", String(page0));
     params.set("size", String(size));
-    const res = await fetch(`${BASE}/providers/near?` + params.toString(), { next: { revalidate: 30 } });
+    // no-store: sorgu kullanıcının KONUMUNA özel. ISR (revalidate) her farklı lat/lon için
+    // ayrı bir önbellek kaydı üretirdi (sınırsız büyür, neredeyse hiç tekrar kullanılmaz).
+    // Bu yüzden anayasa I'deki "liste = ISR" kuralına bilinçli istisna (plan: Complexity Tracking).
+    const res = await fetch(`${BASE}/providers/near?` + params.toString(), {cache: "no-store"});
     if (!res.ok) {
         throw new Error(`GET /providers/near failed: ${res.status} ${res.statusText}`);
     }

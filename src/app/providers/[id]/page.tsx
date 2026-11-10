@@ -2,13 +2,24 @@
  * USTA DETAY SAYFASI — Server Component (SSR).
  *
  * generateMetadata: sekme başlığını usta adıyla dinamik kurar (SEO).
- * İki ayrı veri çekimi: detay (cache'li) + yorum sayfası (no-store, her zaman taze).
+ * İki bağımsız veri çekimi PARALEL (Promise.all): detay + yorum sayfası (ikisi de
+ * no-store, her zaman taze). Seri await'te toplam süre = detay + yorumlar olurdu;
+ * paralelde = en yavaşı kadar.
+ * 404 kontrolü bu sayfada DEĞİL, aynı klasördeki layout.tsx'te (neden: orada
+ * açıklandı — loading.tsx'in Suspense'i yüzünden sayfadaki notFound() 404 veremez).
+ * getProviderDetail React cache() ile sarılı: layout + generateMetadata + sayfa
+ * aynı istekte TEK backend çağrısı yapar.
+ * Yorum isteği hata verirse sayfa çökmez: .catch(() => null) -> yorum bölümünde
+ * Türkçe hata kutusu, dükkan bilgisi yine görünür ("graceful degradation").
+ * URL parametreleri (page, size) params.ts ile temizlenir: ?page=0/abc -> 1.
  * scoreHistogram Record<string, number> gelir; -5..+5 dizisine map'lenerek
  * eksik skorlar 0 ile doldurulur (histogram her zaman 11 çubuk).
  */
 import type {Page as PageType, ProviderDetailDto, ProviderListItem, RatingDto} from "@/lib/types";
 import {getProviderDetail, getProviderRatings} from "@/lib/api";
 import Link from "next/link";
+import {notFound} from "next/navigation";
+import {parsePage, parsePositiveId, parseSize} from "@/lib/params";
 import RatingItem from "@/components/RatingItem";
 import Pagination from "@/components/Pagination";
 import ProvidersMap from "@/components/ProvidersMap";
@@ -17,10 +28,14 @@ import RateForm from "@/components/RateForm";
 import ScoreBadge from "@/components/ScoreBadge";
 
 export async function generateMetadata({params}: { params: Promise<{ id: string }> }) {
-    const {id} = await params;
+    const {id: raw} = await params;
+    const id = parsePositiveId(raw);
+    // Geçersiz id'de layout zaten notFound() çağırır; burada backend'e hiç sormuyoruz.
+    if (id === undefined) return {title: "Usta Detayı"};
     try {
-        const detail = await getProviderDetail(Number(id));
-        return {title: detail.name};
+        // cache()'li çağrı: layout ile aynı isteği paylaşır (ikinci backend çağrısı yok).
+        const detail = await getProviderDetail(id);
+        return {title: detail?.name ?? "Usta Detayı"};
     } catch {
         return {title: "Usta Detayı"};
     }
@@ -36,18 +51,23 @@ export default async function ProviderDetailPage({
     const p = await params;
     const sp = await searchParams;
 
-    const id = Number(p.id);
-    if (!Number.isInteger(id) || id <= 0) {
-        throw new Error(`Geçersiz usta id: ${p.id}`);
-    }
+    // layout.tsx id'yi zaten doğruladı; yine de TypeScript için daraltıyoruz.
+    const id = parsePositiveId(p.id);
+    if (id === undefined) notFound();
 
-    const rPage = Number(sp.page ?? "1");
-    const rSize = Number(sp.size ?? "10");
+    const rPage = parsePage(sp.page);
+    const rSize = parseSize(sp.size, 10, 50);
 
-    const detail: ProviderDetailDto = await getProviderDetail(id);
-    const ratingsPage: PageType<RatingDto> = await getProviderRatings({
-        id, page: rPage, size: rSize, sortField: "createdAt", sortDir: "desc",
-    });
+    const [found, ratingsPage]: [ProviderDetailDto | null, PageType<RatingDto> | null] = await Promise.all([
+        getProviderDetail(id),
+        getProviderRatings({
+            id, page: rPage, size: rSize, sortField: "createdAt", sortDir: "desc",
+        }).catch(() => null), // yorumlar gelmezse sayfa yine açılır
+    ]);
+    // Layout null'ı zaten 404'e çevirdi (aynı cache()'li sonuç) — bu satır yalnızca
+    // TypeScript'e "buradan sonra detail kesin var" demek için (narrowing).
+    if (!found) notFound();
+    const detail: ProviderDetailDto = found;
 
     const addressLine = [detail.address, detail.district, detail.city].filter(Boolean).join(", ");
 
@@ -143,7 +163,10 @@ export default async function ProviderDetailPage({
                     <span className="chip">{detail.ratingCount} değerlendirme</span>
                 </div>
 
-                {ratingsPage.content.length === 0 ? (
+                {ratingsPage === null ? (
+                    // Yorum isteği başarısız oldu (backend hatası) — sayfanın geri kalanı çalışır.
+                    <div className="alert alert-error" role="alert">Yorumlar şu anda yüklenemedi.</div>
+                ) : ratingsPage.content.length === 0 ? (
                     <div className="empty-state">
                         <b>Henüz yorum yok.</b>
                         <span>İlk değerlendirmeyi sen yap!</span>
@@ -154,7 +177,9 @@ export default async function ProviderDetailPage({
                     </ul>
                 )}
 
-                <Pagination page={(ratingsPage.number ?? 0) + 1} totalPages={ratingsPage.totalPages ?? 1}/>
+                {ratingsPage && (
+                    <Pagination page={(ratingsPage.number ?? 0) + 1} totalPages={ratingsPage.totalPages ?? 1}/>
+                )}
             </section>
         </main>
     );

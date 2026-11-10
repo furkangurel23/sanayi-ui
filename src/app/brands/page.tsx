@@ -2,11 +2,15 @@
  * MARKALAR SAYFASI — Server Component.
  * Spring Page yanıtı normalizePage'den geçer; sayfa numarası UI'da 1-based,
  * backend'de 0-based'dir (data.number + 1 dönüşümüne dikkat).
+ * URL parametreleri params.ts ile temizlenir: sort/dir BEYAZ LİSTE ile okunur
+ * (backend Brand alanları: id, name) — ?sort=evil&dir=x gibi değerler backend'e
+ * gitmez, varsayılan "name,asc" kullanılır.
  */
 import {getBrands} from "@/lib/api";
 import type {BrandDto, Page as PageType} from "@/lib/types";
 import BrandCard from "@/components/BrandCard";
 import Pagination from "@/components/Pagination";
+import {parseEnum, parsePage, parseSize} from "@/lib/params";
 
 export const metadata = {
     title: "Markalar",
@@ -19,10 +23,10 @@ export default async function BrandsPage({
 }) {
     const sp = await searchParams;
 
-    const page = Number(sp.page ?? "1");
-    const size = Number(sp.size ?? "20");
-    const sort = String(sp.sort ?? "name");
-    const dir = (sp.dir as "asc" | "desc") ?? "asc";
+    const page = parsePage(sp.page);
+    const size = parseSize(sp.size, 20, 50);
+    const sort = parseEnum(sp.sort, ["name", "id"] as const, "name");
+    const dir = parseEnum(sp.dir, ["asc", "desc"] as const, "asc");
 
     const data: PageType<BrandDto> = await getBrands({page, size, sort, dir});
 

@@ -9,6 +9,10 @@
  *  2) globals.css: tüm renkler CSS değişkeni; :root[data-theme="dark"] bloğu
  *     değişkenleri override eder. Tema değişimi = tek attribute değişimi.
  *  3) Bu bileşen: attribute'u değiştirir ve tercihi localStorage'a yazar.
+ *  4) Tarayıcı arayüz rengi: <meta name="theme-color"> (mobilde adres çubuğu rengi)
+ *     da yeni temanın zemin rengine çekilir. Renkler tek kaynaktan: src/app/theme.ts
+ *     THEME_COLOR. (Next'in viewport.themeColor'ı yalnızca sistem temasını izler;
+ *     elle seçilen temayı bilemediği için meta'yı kendimiz güncelliyoruz.)
  *
  * Hydration notu: sunucu localStorage'ı bilemez; bu yüzden ilk render'da theme=null
  * (boş ikon) basılır, useEffect (yalnız client'ta koşar) gerçek temayı okur.
@@ -16,19 +20,26 @@
  */
 
 import {useEffect, useState} from "react";
+import {setThemeColorMeta} from "@/app/theme";
 
 /** data-theme'i html'e yazar; tercih localStorage'da saklanır. İlk boyama layout'taki inline script ile FOUC'suz yapılır. */
 export default function ThemeToggle() {
     const [theme, setTheme] = useState<"light" | "dark" | null>(null);
 
     useEffect(() => {
-        setTheme(document.documentElement.dataset.theme === "dark" ? "dark" : "light");
+        const current = document.documentElement.dataset.theme === "dark" ? "dark" : "light";
+        setTheme(current);
+        // Hidrasyondan sonra React head'e ikinci bir theme-color meta'sı eklemiş olabilir
+        // (açık temada; neden: theme.ts "React 19 tuzağı"). Hepsini mevcut temaya eşitle.
+        setThemeColorMeta(current);
     }, []);
 
     const toggle = () => {
         const next = theme === "dark" ? "light" : "dark";
         document.documentElement.dataset.theme = next;
         localStorage.setItem("sanayiTheme", next);
+        // Tarayıcı arayüz rengini de yeni temaya çek (tüm theme-color etiketleri — neden: theme.ts).
+        setThemeColorMeta(next);
         setTheme(next);
     };
 

@@ -4,6 +4,11 @@
  *  2) lat/lon VAR -> PostGIS destekli /providers/near ucu SUNUCUDA çağrılır,
  *     sonuçlar mesafeleriyle listelenir.
  * "Konum alma" client'ın, "mesafe hesabı" veritabanının işi — her iş doğru katmanda.
+ *
+ * URL doğrulama: lat -90..90, lon -180..180 aralığında SONLU sayı değilse (ör. ?lat=abc,
+ * ?lat=999) mod 1'e (konum isteme ekranı) düşeriz. Yarıçap params.ts parseRadiusKm ile
+ * 1..100 km'ye sıkıştırılır ve ekranda backend'e giden (sıkıştırılmış) değer gösterilir.
+ * Veri `no-store` çekilir: sorgu kullanıcının konumuna özel (api.ts'te açıklama).
  */
 import Link from "next/link";
 import {getProvidersNear} from "@/lib/api";
@@ -12,6 +17,14 @@ import MapSection from "@/components/MapSection";
 import Pagination from "@/components/Pagination";
 import NearLocate from "@/components/NearLocate";
 import ScoreBadge from "@/components/ScoreBadge";
+import {parsePage, parseRadiusKm, parseSize} from "@/lib/params";
+
+/** Koordinatı okur: tek string, sonlu sayı ve [-limit, limit] aralığında değilse null. */
+function parseCoord(v: string | string[] | undefined, limit: number): number | null {
+    if (typeof v !== "string" || v.trim() === "") return null;
+    const n = Number(v);
+    return Number.isFinite(n) && Math.abs(n) <= limit ? n : null;
+}
 
 export const metadata = {
     title: "Yakınımdaki Ustalar",
@@ -24,13 +37,13 @@ export default async function ProvidersNearPage({
 }) {
     const sp = await searchParams;
 
-    const lat = sp.lat ? Number(sp.lat) : null;
-    const lon = sp.lon ? Number(sp.lon) : null;
-    const radiusKm = sp.radiusKm ? Number(sp.radiusKm) : 10;
-    const page = Number(sp.page ?? "1");
-    const size = Number(sp.size ?? "20");
+    const lat = parseCoord(sp.lat, 90);
+    const lon = parseCoord(sp.lon, 180);
+    const radiusKm = parseRadiusKm(sp.radiusKm); // 1..100, geçersiz -> 10
+    const page = parsePage(sp.page);
+    const size = parseSize(sp.size, 20, 50);
 
-    if (lat === null || lon === null || !Number.isFinite(lat) || !Number.isFinite(lon)) {
+    if (lat === null || lon === null) {
         return (
             <main className="container page" style={{maxWidth: "44rem"}}>
                 <div className="stack-sm">
