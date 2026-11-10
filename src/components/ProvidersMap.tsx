@@ -6,7 +6,7 @@
  * Öğrenme notları:
  *  - Leaflet `window`/`document`'a dokunduğu için sunucuda çalışamaz. Bu bileşen
  *    hiçbir zaman doğrudan import edilmez; yalnızca `next/dynamic(..., {ssr: false})`
- *    sarmalayıcıları (MapSection, ProviderMapClient) üzerinden yüklenir -> ayrı bir JS
+ *    sarmalayıcısı (MapSection — liste, yakınımdakiler ve detay) üzerinden yüklenir -> ayrı bir JS
  *    parçası (chunk) olur ve sadece harita gösteren rotalarda iner.
  *  - Leaflet CSS'i de BURADA import ediliyor (eskiden globals.css'te @import idi ve
  *    her sayfaya iniyordu). App Router, bir bileşenin import ettiği CSS'i o bileşeni
@@ -23,6 +23,8 @@ import "leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility
 import "./ProvidersMap.css";
 import {useEffect, useRef, useState} from "react";
 import type {ProviderListItem} from "@/lib/types";
+import {directionsUrls} from "@/lib/directions";
+import {NAVIGATION_PATH} from "@/components/icons";
 
 // Runtime'a girmeyen type-only importlar. runtime'a girmez.
 type LeafletMap = import("leaflet").Map;
@@ -49,9 +51,56 @@ function hasMapPane(map: LeafletMap | null): map is LeafletMap & {_mapPane: HTML
  * Çözüm: HTML metni birleştirmek yerine DOM düğümü kuruyoruz. `textContent`
  * kendisine verilen metni HER ZAMAN düz yazı olarak koyar (etiket yorumlamaz);
  * Leaflet'e hazır HTMLElement verince innerHTML'e hiç dokunmaz.
- * İçerik eskisiyle birebir aynı: kalın ad, "ilçe / şehir", varsa puan satırı;
- * satırlar arasında <br>.
+ * İçerik: kalın ad, "ilçe / şehir", varsa puan satırı; satırlar arasında <br>.
+ *
+ * 002 rev 3 (T051, FR-023): altına "Yol tarifi" bağlantıları (Google önce, Apple sonra) —
+ * yine DOM ile: `href` sabit önekli (https://www.google.com/..., https://maps.apple.com/...)
+ * ve hedefi encodeURIComponent'li bir URL'dir (directions.ts), metin `textContent` ile
+ * girer -> XSS kuralı korunur. Görünür metin + .sr-only devamı DirectionsLinks ile aynı
+ * erişilebilir adı verir; ikon NAVIGATION_PATH'ten (ikon setiyle tek kaynak) SVG olarak
+ * createElementNS ile çizilir (SVG öğeleri createElement ile değil, SVG ad alanıyla kurulur).
  */
+const SVG_NS = "http://www.w3.org/2000/svg";
+
+function navigationIcon(): SVGSVGElement {
+    const svg = document.createElementNS(SVG_NS, "svg");
+    // IconBase ile aynı öznitelikler: 24 viewBox, currentColor çizgi, dekoratif (aria-hidden).
+    svg.setAttribute("viewBox", "0 0 24 24");
+    svg.setAttribute("fill", "none");
+    svg.setAttribute("stroke", "currentColor");
+    svg.setAttribute("stroke-width", "1.75");
+    svg.setAttribute("stroke-linecap", "round");
+    svg.setAttribute("stroke-linejoin", "round");
+    svg.setAttribute("aria-hidden", "true");
+    svg.setAttribute("focusable", "false");
+    svg.setAttribute("class", "icon icon-sm");
+    const path = document.createElementNS(SVG_NS, "path");
+    path.setAttribute("d", NAVIGATION_PATH);
+    svg.appendChild(path);
+    return svg;
+}
+
+function buildDirections(p: ProviderListItem): HTMLElement | null {
+    const urls = directionsUrls({name: p.name, lat: p.lat, lon: p.lon, district: p.district, city: p.city});
+    if (!urls) return null;
+    const wrap = document.createElement("div");
+    wrap.className = "popup-directions";
+    for (const [href, label] of [[urls.google, "Google Haritalar"], [urls.apple, "Apple Haritalar"]]) {
+        const a = document.createElement("a");
+        a.href = href;
+        a.target = "_blank";
+        a.rel = "noopener";
+        a.appendChild(navigationIcon());
+        a.appendChild(document.createTextNode(label));
+        const sr = document.createElement("span");
+        sr.className = "sr-only";
+        sr.textContent = ` ile ${p.name} için yol tarifi (yeni sekmede açılır)`; // düz metin
+        a.appendChild(sr);
+        wrap.appendChild(a);
+    }
+    return wrap;
+}
+
 function buildPopup(p: ProviderListItem): HTMLElement {
     const root = document.createElement("div");
 
@@ -69,6 +118,8 @@ function buildPopup(p: ProviderListItem): HTMLElement {
         if (i > 0) root.appendChild(document.createElement("br"));
         root.appendChild(node);
     });
+    const directions = buildDirections(p);
+    if (directions) root.appendChild(directions);
     return root;
 }
 
@@ -128,6 +179,16 @@ export default function ProvidersMap({items, height = 260}: Props) {
             setMapReady(true);
         })();
 
+        /*
+         * BOYUT DEĞİŞİMİ — 002 rev 3 (T048): eskiden yalnız `window` "resize" dinleniyordu.
+         * Ama harita kabı pencere değişmeden de boyut değiştirebilir (ör. CSS ile gizli bir
+         * kabın 768 px sınırı geçilince görünür olması, kaydırma çubuğunun belirmesi,
+         * telefonun döndürülmesi). Leaflet kabının boyutunu kendisi izlemez; yanlış boyutla
+         * kalırsa karolar yarım/kaymış çizilir. ResizeObserver doğrudan BU div'in boyutunu
+         * izler -> her değişimde invalidateSize() ("boyutunu yeniden ölç"). Pencere
+         * yeniden boyutlanması da kabı değiştirdiği için ayrı bir window dinleyicisi gerekmez.
+         * İlk observe() bir kez tetiklenir; harita henüz kurulmadıysa hasMapPane sessizce geçer.
+         */
         const onResize = () => {
             const m = mapRef.current;
             if (!hasMapPane(m)) return;
@@ -136,11 +197,12 @@ export default function ProvidersMap({items, height = 260}: Props) {
             } catch {
             }
         };
-        window.addEventListener("resize", onResize);
+        const resizeObserver = new ResizeObserver(onResize);
+        resizeObserver.observe(mapDivRef.current);
 
         return () => {
             cancelled = true;
-            window.removeEventListener("resize", onResize);
+            resizeObserver.disconnect();
             if (initRafRef.current !== null) cancelAnimationFrame(initRafRef.current);
             if (updateRafRef.current !== null) cancelAnimationFrame(updateRafRef.current);
             mapRef.current?.remove();

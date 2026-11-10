@@ -21,7 +21,7 @@ Tarih: 2026-11-10. Koşullar 001 "Sonra" ile aynı: prod build (`npm run build` 
 | Genel stil dosyası | ≤ 001 × 1.5 = 6.0 × 1.5 ≈ 9.0 KB gzip | ✅ 40.9 KB ham / **8.4 KB** gzip (−9) — tavana yakın, yeni stil eklerken dikkat |
 | Harita stilleri yalnız harita rotalarında | — | ✅ `leaflet + ProvidersMap.css` parçası (12.9 KB / 3.1 KB gzip) yalnız `/providers`, `/providers/[id]`, `/providers/near`'da iniyor; `/`, `/login`, `/chat`, `/brands` HTML'inde yalnız global CSS |
 | CLS < 0.1 | — | ✅ tüm rotalarda 0.000 |
-| LCP ≤ 2.5 sn | — | ⚠️ **Kısmi**: `/` 2492 ✓, `/login` 2486 ✓; `/chat` 2513 (+13 ms, 001'de de 2505 — gürültü sınırı); `/brands` 2726 ✗ (001: 2727, değişmedi); harita rotaları ✗ (aşağıda) |
+| LCP ≤ 2.5 sn | — | (rev 3: harita rotaları mobilde ✅ 2494 / 2493 ms — aşağıda "rev 3") ⚠️ **Kısmi**: `/` 2492 ✓, `/login` 2486 ✓; `/chat` 2513 (+13 ms, 001'de de 2505 — gürültü sınırı); `/brands` 2726 ✗ (001: 2727, değişmedi); harita rotaları ✗ (aşağıda) |
 | Yeni üçüncü taraf | yalnız karo sağlayıcısı | ✅ yeni kaynak yok (OSM zaten vardı; yalnız `preconnect` ipucu) |
 | Cam üst bar mobil TBT etkisi | — | Ölçülebilir etki yok: TBT `/` 53 → 18, `/chat` 22 → 23, `/login` 19 → 14, `/brands` 21 → 26, detay 164 → 131 (koşu gürültüsü aralığında) |
 
@@ -67,6 +67,63 @@ Leaflet varsayılan işaretçisi (mavi gövde `#2A81CB`, beyaz merkez) koyu filt
 | otoyol `#784c54` | **1.72** | 7.1 |
 
 → Kısmi: gövde çoğu zeminde ≥3:1, su/ana yol/otoyol üzerinde altında; beyaz merkez her zeminde ≥7:1 olduğundan işaretçi tanınabilir kalıyor. Tam uyum için özel işaretçi ikonu (ör. beyaz kenarlı) gerekir — sonraki iş.
+
+**rev 3 / T045 — `--marker-outline` sonrası (✅ FR-024)**: işaretçi görseline 4 yöne 1 px, bulanıklıksız `drop-shadow` konturu (belirteç, iki temada ayrı değer: açıkta koyu `oklch(0.21 0.005 260)`, koyuda açık `oklch(0.97 0.003 260)` — koyu kontur filtreli koyu karolar üstünde ayrışmazdı, siyah × su ≈ 1.8:1). Ölçüm (headless Chrome, `/providers/1058` 1440 px, işaretçinin %35 yüksekliğindeki piksel satırı, PNG çözülerek): açık tema karo `#f2dad9` → kontur `#1f2023` **12.26:1** (gövde 3.26); koyu tema karo `#2f2322` → kontur `#ececee` **12.86:1** (gövde 3.70). Ölçülen kontur renkleriyle OSM paleti üzerinde (kontur keskin ve opak olduğu için oran deterministik):
+
+| Zemin | açık: kontur `#1f2023` | koyu (filtreli): kontur `#ececee` |
+|---|---|---|
+| kara | 14.19 | 15.16 |
+| yerleşim | 12.25 | 12.96 |
+| bina | 10.72 | 11.04 |
+| park | 13.96 | 12.82 |
+| **su** | **10.16** | **10.13** |
+| **ana yol** | **11.86** | **8.52** |
+| otoyol | 7.03 | 6.01 |
+
+→ İşaretçi silüeti her zeminde ≥6:1 ile ayrışıyor (açık temada gövde tek başına su 2.57 / otoyol 1.78 idi). Ekran görüntüsü: `screenshots/providers--map-open-light-1440.png`.
+
+## rev 3 — US5: mobilde kapalı harita + yol tarifi (T052, 2026-11-10)
+
+Koşullar: prod build (`npm run build` + `next start`), Node 24, yerel backend :8080 (seed). Not: :3000'de başka bir oturumun `next dev` sunucusu çalıştığı için prod sunucusu **:3100**'de açıldı; `scripts/measure.sh` yalnız port değiştirilmiş bir kopyayla koşturuldu (Lighthouse 12, mobil, simüle kısıtlama, 3 koşu medyan). "Önce" sütunu aynı oturumda HEAD `673b4d1`'in ayrı bir worktree build'i (:3200) ile ölçüldü.
+
+### Mobil LCP (FR-018 / SC-004, 001 T054 — T043 kapanışı)
+
+| Rota | Önce (T038) | Önce (aynı oturum, 673b4d1) | **rev 3** | CLS | TBT (ms) | JS transfer (KB) | Toplam transfer (KB) | LCP öğesi |
+|---|---|---|---|---|---|---|---|---|
+| /providers | 4636 | 4631 | **2494** ✅ | 0.000 | 53 → 18 | 198.6 → **154.8** | 469.2 → 243.1 | karo → `<h1 class="title">` |
+| /providers/1058 | 5335 | 5234 | **2493** ✅ | 0.000 | 108 → 84 | 559.9 → **515.4** | 834.5 → 728.9 | karo → kapalı harita kutusunun metni |
+
+- Mobil LCP iki harita rotasında da ≤ 2.5 sn (sınırda: 2494 / 2493 ms; tek koşularda 2826 ve 2653 görüldü — medyan bütçe içinde). Lighthouse koşularında **0 OSM karo isteği** (önce 10) ve Leaflet parçası (≈ 44 KB) inmiyor; detayda kalan büyük kalem anonim reCAPTCHA.
+- Masaüstü izleme (Lighthouse `--preset=desktop`): `/providers` 1321 → 1285 ms; `/providers/1058` 3 koşu: önce 1364/1380/1372, sonra 1397/1379/1375 ms → değişmedi (harita masaüstünde auto modda yine açık; karo `preconnect` korunuyor — `Link: <https://tile.openstreetmap.org>; rel=preconnect` başlığı auto ve `showMap=1`'de var, `showMap=0`'da yok).
+
+### Davranış doğrulaması (headless Chrome + CDP, bağımlılıksız betik; yerleşik tarayıcı bölmesiyle çapraz kontrol)
+
+| Kontrol | Sonuç |
+|---|---|
+| 375 px `/providers`, `/providers/near?lat=39.92&lon=32.85`, `/providers/1`, `/providers/1058` | harita kapalı, "Haritayı göster" görünür; **ağda OSM isteği 0**, indirilen JS'lerin hiçbiri Leaflet içermiyor (her chunk `leafletjs.com` imzası için tarandı), Leaflet CSS parçası yok; CLS 0; konsolda hydration uyarısı 0 (prod + `next dev`). Yerleşik tarayıcı (375×812): `/providers/1` `read_network_requests("openstreetmap")` → istek yok, konsol boş |
+| 1440 px aynı rotalar | harita açık (Leaflet parçası 1, karo 18–22 istek), hydration uyarısı 0; CLS `/providers` ve detayda 0 |
+| URL önceliği | `?showMap=1` 375 px'te açık (karo yükleniyor); `?showMap=0` 1440 px'te kapalı (Leaflet/karo yok) — near ve detayda da |
+| Geri/ileri (375 px) | near ve detay: auto(kapalı) → "Haritayı göster" → `?…&showMap=1` açık → geri: auto kapalı → ileri: açık → "Haritayı gizle" → `showMap=0` kapalı ✓ (`scroll:false`) |
+| Auto modda yeniden boyutlandırma | 375 → 1024: harita açılıyor, kap 960 / Leaflet 958 px (kenarlıklar), karolar sağ kenara kadar dolu; 1024 → 375 kapanıyor; tekrar 1024 doğru boyut. Açık tercihte (`showMap=1`) 375 → 1024: 341 → 958 px, karolar tam (ResizeObserver → `invalidateSize`) ✓ |
+| ProviderCard (near, 375 px) | `a a` = 0 (iç içe bağlantı yok); kart ortasına tıklama → detay bağlantısı (`::after` örtüsü), alt köşe de karta ait; yol tarifi düğmesi kendi bağlantısına gidiyor; düğme 36 px + `::after` 44 px vuruş alanı; Tab ile odak: halka `::after`'da (2 px `--ring`, kartın çevresinde), Link'in kendi outline'ı yok |
+| 320 px | near, detay, liste: yatay kaydırma yok (near kartlarında iki düğme alt alta sarıyor) |
+| Masaüstü near CLS | 0.099 (footer kayması, `loading.tsx` akışı) — **önceden de aynı** (673b4d1 build'inde birebir 0.0989); bu değişiklikle ilgisiz, mobilde 0 |
+
+### Yol tarifi bağlantıları (FR-023)
+
+- Koordinatlı (`/providers/1`): `https://www.google.com/maps/dir/?api=1&destination=39.9776%2C32.754&travelmode=driving` · `https://maps.apple.com/?daddr=39.9776%2C32.754&dirflg=d`; `target="_blank" rel="noopener"`, 44 px; erişilebilir ad "Google Haritalar ile Ostim Honda Usta için yol tarifi (yeni sekmede açılır)" (görünür metinle başlar).
+- Koordinatsız + adresli (geçici: `UPDATE providers SET location = NULL WHERE id = 1054`, sonra orijinal EWKB değeri geri yazıldı ve doğrulandı): harita bölümü yok; `…destination=100.%20Y%C4%B1l%20Bulvar%C4%B1%20No%3A14%2C%20Etimesgut%2C%20Ankara…` / `…daddr=<aynı>&dirflg=d` (adres ilçeyi zaten içerdiği için ilçe tekrar eklenmedi). Ekran görüntüsü: `provider-detail--directions-address-dark-375.png`. (Not: backend detay önbelleği 10 dk boyunca 1054'ü konumsuz döndürebilir — `expireAfterWrite=10m`.)
+- Yakınımdakiler kartı ve harita popup'ı: aynı iki bağlantı (popup'ta DOM ile, `textContent`; 44 px; renk `--accent-text`).
+- `node --test src/lib/directions.test.mjs`: 4/4 (koordinat, adres, adreste geçen ilçe, eksik/NaN).
+- **Doğrulanmadı**: gerçek iOS/Android cihazda bağlantıların harita UYGULAMASINI açması (bu ortamda cihaz yok); masaüstü tarayıcıda URL'ler doğru biçimde üretildi ve yeni sekmede açılacak şekilde işaretlendi.
+
+### FR-025 — işaretçi dokunma hedefi istisnası (T044 kararı)
+
+Üst üste binen Leaflet işaretçileri (25×41 px) WCAG 2.5.8 "eşdeğer" istisnasıyla karşılanır: her işaretçinin dükkanı aynı sayfada ≥44 px kart bağlantısıyla erişilebilir ve rev 3 ile harita mobilde (dokunmatik ekranın asıl kullanıldığı yerde) varsayılan olarak kapalı başlar. axe `target-size` bulguları (yalnız harita açıkken, yalnız işaretçiler) bu istisna kapsamında kabul edilmiştir.
+
+### Kapılar
+
+token-lint 0 · contrast-check 0 eşik altı · lint 0 hata / 7 uyarı (taban) · `npm run build` ✓ · ekran görüntüleri: `providers--map-closed-{dark,light}-375.png`, `provider-detail--directions-{dark,light}-375.png`, `provider-detail--directions-address-dark-375.png`, `providers-near--directions-dark-375.png`, `providers--map-open-{dark,light}-1440.png`.
 
 ## Yatay kaydırma (SC-006) ve elle senaryolar (T039)
 

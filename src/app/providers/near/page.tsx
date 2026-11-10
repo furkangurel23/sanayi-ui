@@ -12,6 +12,9 @@
  *
  * 002: başlık ortak PageHeader, sonuç yok -> EmptyState (Pin), kartlar ortak ProviderCard
  * (mesafe chip'iyle); konum ekranı dar sütunda (.container-tight = 44rem). Satır içi stil yok.
+ *
+ * 002 rev 3 (US5): harita `showMap` yoksa "auto" modda (telefonda kapalı başlar, harita kodu
+ * inmez); her kartın altında Google/Apple Haritalar yol tarifi bağlantıları (DirectionsLinks).
  */
 import {getProvidersNear} from "@/lib/api";
 import type {NearItem, Page as PageType, ProviderListItem} from "@/lib/types";
@@ -19,6 +22,7 @@ import MapSection from "@/components/MapSection";
 import Pagination from "@/components/Pagination";
 import NearLocate from "@/components/NearLocate";
 import ProviderCard from "@/components/ProviderCard";
+import DirectionsLinks from "@/components/DirectionsLinks";
 import PageHeader from "@/components/PageHeader";
 import EmptyState from "@/components/EmptyState";
 import {Pin} from "@/components/icons";
@@ -47,6 +51,11 @@ export default async function ProvidersNearPage({
     const radiusKm = parseRadiusKm(sp.radiusKm); // 1..100, geçersiz -> 10
     const page = parsePage(sp.page);
     const size = parseSize(sp.size, 20, 50);
+    // Harita tercihi — liste sayfasıyla AYNI ayrıştırma (002 rev 3 / FR-022):
+    // "1" -> açık, "0" -> kapalı, yok/başka -> undefined = MapSection "auto" modu
+    // (dar ekranda kapalı, geniş ekranda açık). URL'deki tercih genişlikten önceliklidir.
+    const showMapParam = typeof sp.showMap === "string" ? sp.showMap : undefined;
+    const mapInitialOpen = showMapParam === "1" ? true : showMapParam === "0" ? false : undefined;
 
     if (lat === null || lon === null) {
         return (
@@ -84,7 +93,10 @@ export default async function ProvidersNearPage({
                 actions={<span className="chip">Yarıçap: {radiusKm} km · {data.totalElements} sonuç</span>}
             />
 
-            <MapSection items={forMap} height={280}/>
+            {/* key: URL'deki showMap değişince (geri/ileri) bileşen remount olur -> durum
+                URL'den yeniden başlar (anayasa II "key ile resetleme"). */}
+            <MapSection key={`map-${mapInitialOpen ?? "auto"}`} items={forMap} height={280}
+                        initialOpen={mapInitialOpen}/>
 
             {data.content.length === 0 ? (
                 <EmptyState
@@ -96,8 +108,14 @@ export default async function ProvidersNearPage({
                 <div className="grid-2">
                     {/* forMap[i] ile data.content[i] aynı sırada: kart verisi ProviderListItem,
                         mesafe NearItem'dan gelir. */}
+                    {/* footer: kartın ALTINDA, kart bağlantısının kardeşi olarak yol tarifi
+                        (iç içe <a> yok — ProviderCard'daki "stretched link" notu). Yakınımdaki
+                        sonuçlar koordinatlıdır -> hedef koordinat (FR-023). */}
                     {forMap.map((p, i) => (
-                        <ProviderCard key={p.id} p={p} distanceKm={data.content[i].distanceKm}/>
+                        <ProviderCard key={p.id} p={p} distanceKm={data.content[i].distanceKm}
+                                      footer={<DirectionsLinks variant="compact" name={p.name}
+                                                               lat={p.lat} lon={p.lon}
+                                                               district={p.district} city={p.city}/>}/>
                     ))}
                 </div>
             )}

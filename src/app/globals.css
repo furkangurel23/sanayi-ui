@@ -141,6 +141,14 @@
     --shadow-1: 0 1px 2px oklch(0 0 0 / 0.06), 0 1px 1px oklch(0 0 0 / 0.04);
     --shadow-2: 0 8px 24px -8px oklch(0 0 0 / 0.14);
     --shadow-pop: 0 24px 48px -12px oklch(0 0 0 / 0.22);
+    /* Harita işaretçi konturu (FR-024, T045): 4 yöne 1 px, bulanıklıksız drop-shadow =
+       işaretçinin silüetini izleyen KESKİN bir çizgi (bulanık gölge yarı saydam olurdu,
+       kontrastı belirsizleşirdi). Açık temada OSM karoları açık -> kontur KOYU. Koyu temada
+       karolar --map-dark-filter ile koyulaştığı için koyu kontur zeminden ayrılmaz
+       (siyah × filtreli su ≈ 1.8:1) -> koyu tema bloğu aynı belirteçte AÇIK kontur verir.
+       Ölçüm: specs/002-premium-dark-redesign/measurements.md "Harita işaretçi kontrastı". */
+    --marker-outline: drop-shadow(1px 0 0 oklch(0.21 0.005 260)) drop-shadow(-1px 0 0 oklch(0.21 0.005 260))
+                      drop-shadow(0 1px 0 oklch(0.21 0.005 260)) drop-shadow(0 -1px 0 oklch(0.21 0.005 260));
 
     color-scheme: light;
 }
@@ -177,6 +185,9 @@
     --shadow-1: none;
     --shadow-2: none;
     --shadow-pop: 0 24px 48px -12px oklch(0 0 0 / 0.6);
+    /* Koyu (filtreli) karolar üstünde AÇIK kontur — bkz. :root'taki --marker-outline. */
+    --marker-outline: drop-shadow(1px 0 0 oklch(0.97 0.003 260)) drop-shadow(-1px 0 0 oklch(0.97 0.003 260))
+                      drop-shadow(0 1px 0 oklch(0.97 0.003 260)) drop-shadow(0 -1px 0 oklch(0.97 0.003 260));
 
     color-scheme: dark;
 }
@@ -882,7 +893,16 @@ a.chip:hover, button.chip:hover { background: var(--surface-2); border-color: va
 }
 
 /* ---------- usta kartı / detay ---------- */
-.provider-card { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-4); }
+/* 002 rev 3 (T050) — "stretched link": kart <article>; detay bağlantısı (.provider-card-link)
+   ::after ile tüm kartı örter (position: relative -> ::after kartın kutusuna göre konumlanır).
+   Footer (yol tarifi) örtünün ÜSTÜNDE (z-index 1) -> kendi bağlantıları ayrı tıklanır.
+   Odak halkası Link'in kendisi yerine örtüye çizilir -> kartın çevresinde görünür. */
+.provider-card { position: relative; display: grid; gap: var(--space-4); }
+.provider-card-link { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-4); }
+.provider-card-link::after { content: ""; position: absolute; inset: 0; border-radius: var(--radius-lg); }
+.provider-card-link:focus-visible { outline: none; }
+.provider-card-link:focus-visible::after { outline: var(--ring-width) solid var(--ring); outline-offset: var(--ring-offset); }
+.provider-card-footer { position: relative; z-index: 1; }
 .provider-card-body { display: grid; gap: var(--space-1); min-width: 0; }
 .provider-card-meta { display: flex; align-items: center; gap: var(--space-1); color: var(--fg-muted); font-size: var(--type-callout); min-width: 0; }
 
@@ -899,6 +919,12 @@ a.chip:hover, button.chip:hover { background: var(--surface-2); border-color: va
     font-size: var(--type-callout);
 }
 .link-accent:hover { text-decoration: underline; text-underline-offset: var(--space-1); }
+
+/* ---------- yol tarifi bağlantıları (DirectionsLinks — 002 rev 3 / US5, FR-023) ----------
+   Görünüm mevcut .btn-outline'dan gelir (tek buton dili); burada yalnız dizilim var.
+   flex-wrap: 320 px'te iki bağlantı sığmazsa alt satıra geçer, yatay kaydırma olmaz. */
+.directions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.directions .icon { color: var(--accent-text); } /* ikon vurgu renginde: "harita/yön" ipucu */
 .stat-grid { display: grid; grid-template-columns: 1fr; gap: var(--space-4); }
 @media (min-width: 640px) { .stat-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 2.5fr); } }
 .stat-card { display: grid; align-content: center; justify-items: center; gap: var(--space-1); text-align: center; }
@@ -1107,6 +1133,15 @@ a.chip:hover, button.chip:hover { background: var(--surface-2); border-color: va
     border: 1px solid var(--hairline);
     background: var(--surface-1);
 }
+/* — Harita "auto" modu (MapSection — 002 rev 3 / US5, FR-022) —
+   URL'de showMap yokken sunucu İKİ durumu da çizer; ilk boyamada hangisinin görüneceğine
+   bu medya sorgusu karar verir (sunucu ekran genişliğini bilmez, CSS bilir — JS'siz de doğru).
+   Eşik src/lib/breakpoints.ts MAP_OPEN_MIN_WIDTH ile AYNI (768): JS hidrasyondan sonra aynı
+   kararı verip fazla durumu kaldırır -> görünüm değişmez, CLS yok. İki sorgu birbirinin tam
+   tümleyeni ("width < 768px" / "min-width: 768px") -> arada iki durumun da görünmediği
+   (ya da ikisinin birden göründüğü) kesirli piksel boşluğu yok. */
+@media (width < 768px) { .map-auto .map-when-open { display: none; } }
+@media (min-width: 768px) { .map-auto .map-when-closed { display: none; } }
 
 /* ---------- kimlik sayfaları ---------- */
 .auth-wrap { flex: 1; display: grid; place-items: center; padding-block: var(--space-7); }

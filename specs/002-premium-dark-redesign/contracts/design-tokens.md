@@ -17,7 +17,7 @@ Bileşenlerin kullanabileceği **tek** görsel yüzey. Değerler `research.md` D
 | Gölge | `--shadow-1`, `--shadow-2`, `--shadow-pop` | Koyu temada yalnızca `--shadow-pop` |
 | Hareket | `--dur-fast/--dur/--dur-slow`, `--ease-standard/--ease-out` | reduced-motion'da kapanır |
 | Yerleşim | `--container`, `--header-h`, `--card-min` | |
-| Gösterge/efekt | `--sel-border-w`, `--indicator-h`, `--glass-filter`, `--map-dark-filter` | Ham `blur()/saturate()/filter` yazılmaz |
+| Gösterge/efekt | `--sel-border-w`, `--indicator-h`, `--glass-filter`, `--map-dark-filter`, `--marker-outline` (rev 3: harita işaretçi konturu — açıkta koyu, koyuda açık; FR-024) | Ham `blur()/saturate()/filter/drop-shadow()` yazılmaz |
 | Katman | `--z-header/dropdown/dialog/toast` | Harita kabı `isolation: isolate` (Leaflet 400/1000 z-index'leri dışarı taşmaz) |
 
 İzinli ham değerler: `0`, `1px` (hairline genişliği), `100%`, `0.01ms` (reduced-motion), `@media`/`@container` sorgu koşulları, `currentColor` ve çalışma anında hesaplanan değerler (CSS değişkeni üzerinden). Doğrulama: `node scripts/token-lint.mjs` = 0 bulgu.

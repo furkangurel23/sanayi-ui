@@ -105,3 +105,12 @@ export const User = (p: IconProps) => (
 export const Paperclip = (p: IconProps) => (
     <IconBase {...p}><path d="m21.4 11.1-9.2 9.1a6 6 0 0 1-8.5-8.5l8.6-8.5a4 4 0 0 1 5.7 5.6l-8.6 8.6a2 2 0 0 1-2.8-2.8l8.5-8.5"/></IconBase>
 );
+/*
+ * Navigasyon oku — "Yol tarifi" bağlantıları (002 rev 3 / US5, FR-023). Yol çizimi sabit
+ * olarak da dışa açılır: ProvidersMap popup'ı JSX değil DOM API'siyle kurulduğu için
+ * (XSS kuralı) aynı ikonu document.createElementNS ile çizer -> tek kaynak, iki kullanım.
+ */
+export const NAVIGATION_PATH = "M3.5 10.5 20.5 3.5l-7 17-2.25-7.75L3.5 10.5Z";
+export const Navigation = (p: IconProps) => (
+    <IconBase {...p}><path d={NAVIGATION_PATH}/></IconBase>
+);

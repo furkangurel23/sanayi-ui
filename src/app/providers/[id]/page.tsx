@@ -18,18 +18,29 @@
  * 002 görünümü: başlık alanı geniş köşeli kart (.detail-head) — ad .title kademesinde,
  * adres Pin ikonuyla, telefon --accent-text bağlantısı (44 px dokunma alanı), büyük
  * ScoreBadge (renk + işaret). Yorum yoksa ortak EmptyState; satır içi stiller sınıflara
- * taşındı. Tek satır içi değer: harita kabının yüksekliği (--map-h, çalışma anı değeri).
+ * taşındı.
+ *
+ * 002 rev 3 (US5 — "arabadaki kullanıcı"):
+ *  - Telefonun altında "Yol tarifi" bağlantıları (DirectionsLinks): Google Haritalar önce,
+ *    Apple Haritalar sonra. Konum varsa hedef koordinat; yoksa adres + ilçe + şehir
+ *    (detay ucu `address` taşıyan tek yer -> adres yedeği burada çalışır); ikisi de yoksa
+ *    bağlantı çizilmez.
+ *  - Konum haritası artık liste sayfasıyla AYNI MapSection (title="Konum"): URL'de showMap
+ *    yoksa "auto" mod -> telefonda kapalı başlar, Leaflet ve karolar inmez (FR-022). Eski
+ *    ProviderMapClient sarmalayıcısı kaldırıldı (tek harita kalıbı). Harita kabının
+ *    yüksekliği (--map-h) MapSection'da çalışma anı değeri olarak verilir.
  */
 import type {Page as PageType, ProviderDetailDto, ProviderListItem, RatingDto} from "@/lib/types";
 import {getProviderDetail, getProviderRatings} from "@/lib/api";
 import Link from "next/link";
 import {notFound} from "next/navigation";
 import {parsePage, parsePositiveId, parseSize} from "@/lib/params";
-import type {CSSProperties} from "react";
 import RatingItem from "@/components/RatingItem";
 import Pagination from "@/components/Pagination";
-// Harita: ssr:false dinamik sarmalayıcı (server component dynamic ssr:false kullanamaz).
-import ProviderMapClient from "@/components/ProviderMapClient";
+// Harita: MapSection bir CLIENT bileşen; içinde ProvidersMap'i dynamic(ssr:false) ile yükler
+// (server component'ta ssr:false kullanılamaz — anayasa I).
+import MapSection from "@/components/MapSection";
+import DirectionsLinks from "@/components/DirectionsLinks";
 import MiniHistogram from "@/components/MiniHistogram";
 import RateForm from "@/components/RateForm";
 import ScoreBadge, {formatScore} from "@/components/ScoreBadge";
@@ -69,6 +80,10 @@ export default async function ProviderDetailPage({
 
     const rPage = parsePage(sp.page);
     const rSize = parseSize(sp.size, 10, 50);
+    // Harita tercihi — liste/yakınımdakiler ile AYNI ayrıştırma: "1"/"0" açık tercih,
+    // yoksa undefined = "auto" (dar ekranda kapalı). URL tercihi ekran genişliğinden önceliklidir.
+    const showMapParam = typeof sp.showMap === "string" ? sp.showMap : undefined;
+    const mapInitialOpen = showMapParam === "1" ? true : showMapParam === "0" ? false : undefined;
 
     const [found, ratingsPage]: [ProviderDetailDto | null, PageType<RatingDto> | null] = await Promise.all([
         getProviderDetail(id),
@@ -124,6 +139,10 @@ export default async function ProviderDetailPage({
                                 {detail.phone}
                             </a>
                         )}
+                        {/* Yol tarifi (FR-023): hedef yoksa bileşen hiçbir şey çizmez. */}
+                        <DirectionsLinks variant="buttons" name={detail.name}
+                                         lat={detail.location?.lat} lon={detail.location?.lon}
+                                         address={detail.address} district={detail.district} city={detail.city}/>
                     </div>
                     <ScoreBadge score={detail.avgScore} count={detail.ratingCount} size="lg"/>
                 </div>
@@ -143,14 +162,11 @@ export default async function ProviderDetailPage({
             </section>
 
             {/* Konum */}
+            {/* Konumu olmayan dükkanda harita bölümü hiç çizilmez (yol tarifi adresle çalışır).
+                key: showMap değişince (geri/ileri) remount -> durum URL'den yeniden başlar. */}
             {mapItems.length > 0 && (
-                <section className="stack" aria-labelledby="map-title">
-                    <h2 id="map-title" className="headline">Konum</h2>
-                    {/* çalışma anı değeri: harita yüksekliği -> iskelet (.skeleton-map) aynı boyda */}
-                    <div className="map-frame" style={{"--map-h": `${MAP_HEIGHT}px`} as CSSProperties}>
-                        <ProviderMapClient items={mapItems} height={MAP_HEIGHT}/>
-                    </div>
-                </section>
+                <MapSection key={`map-${mapInitialOpen ?? "auto"}`} title="Konum" items={mapItems}
+                            height={MAP_HEIGHT} initialOpen={mapInitialOpen}/>
             )}
 
             {/* Puan dağılımı */}

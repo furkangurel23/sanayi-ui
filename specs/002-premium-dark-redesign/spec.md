@@ -4,7 +4,7 @@
 
 **Created**: 2026-11-10
 
-**Status**: rev 3 — 2026-11-10 kullanıcı kararı eklendi: mobilde harita kapalı başlar + Google/Apple Haritalar ile yol tarifi (US5, FR-022…FR-025)
+**Status**: rev 3 uygulandı (T045–T052 ✅) — 2026-11-10 kullanıcı kararı: mobilde harita kapalı başlar + Google/Apple Haritalar ile yol tarifi (US5, FR-022…FR-025)
 
 **Input**: User description: "UI için Apple sitesi gibi (örnek bu sadece) güzel gözüken bir UI hazırlamamız gerekiyor." Kullanıcı kararları (2026-11-10): ton = **koyu öncelikli, premium** (Apple Pro ürün sayfaları hissi); kapsam = **tüm sayfalar**; açık tema desteklenmeye devam eder.
 

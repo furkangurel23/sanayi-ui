@@ -67,3 +67,33 @@
 .map-frame .leaflet-popup-tip { background: var(--surface-2); box-shadow: none; }
 .map-frame .leaflet-container a.leaflet-popup-close-button { color: var(--fg-muted); }
 .map-frame .leaflet-container a.leaflet-popup-close-button:hover { color: var(--fg); }
+
+/* — İşaretçi konturu (FR-024, T045) —
+   Leaflet'in varsayılan mavi işaretçisi (#2A81CB gövde) bazı karo renkleri üstünde 3:1'in
+   altında kalıyordu (koyu temada su 2.90, ana yol 2.44, otoyol 1.72 — measurements.md).
+   Çözüm: işaretçi görseline temaya göre değişen keskin bir kontur (--marker-outline:
+   açıkta koyu, koyuda açık). Filtre yalnız işaretçi görseline uygulanır; karo filtresi
+   (--map-dark-filter) yalnız .leaflet-tile-pane'de olduğu için ikisi birbirine karışmaz. */
+.map-frame .leaflet-marker-icon { filter: var(--marker-outline); }
+
+/* — Popup "Yol tarifi" bağlantıları (T051, FR-023) — DOM ile kurulur (ProvidersMap buildDirections).
+   Leaflet'in `.leaflet-container a` rengini ezmek için .map-frame önekli seçici; dokunma
+   hedefi ≥ 44 px (FR-013); ikon + metin vurgu renginde (bağlantı dili, .link-accent gibi). */
+.map-frame .popup-directions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 var(--space-3);
+    margin-top: var(--space-2);
+    border-top: 1px solid var(--hairline);
+}
+.map-frame .popup-directions a {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    min-height: var(--target-min);
+    color: var(--accent-text);
+    font-weight: var(--type-headline-wt);
+    white-space: nowrap;
+}
+.map-frame .popup-directions a:hover { text-decoration: underline; text-underline-offset: var(--space-1); }
