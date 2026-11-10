@@ -250,3 +250,7 @@ Converge değerlendirmesi (2026-11-10): FR-001…FR-021 ve SC-001/002/003/005/00
   - `scripts/measure.sh` mobil LCP (`/providers`, `/providers/1058`) → `measurements.md`; token-lint 0, contrast-check 0, lint 0 hata ≤7 uyarı, build.
   - Ekran görüntüleri: `providers--map-closed-{dark,light}-375.png`, `provider-detail--directions-{dark,light}-375.png`, `providers-near--directions-dark-375.png`, `providers--map-open-dark-1440.png`.
   - `CLAUDE.md` Tasarım Sistemi'ne kısa not: mobil harita varsayılanı (auto mod), `directions.ts`, FR-025 işaretçi istisnası.
+
+### Rev 3 kod incelemesi düzeltmeleri (2026-11-10)
+
+frontend-reviewer code modu → APPROVE WITH FIXES (e8dc1a6). Uygulanan: near kart footer'ının boş şeridi artık kartı açar (`pointer-events` ayrımı); kart yol tarifi "Yol tarifi · Google · Apple" tek satır (375 px'te sığar, erişilebilir ad tam); detayda yol tarifi düğmeleri puan rozeti yanındaki dar sütundan çıkarılıp kartın tam genişliğine alındı (mobilde alt alta büyük düğmeler, ≥480 px yan yana); karo `preconnect` liste için `providers/(list)/layout.tsx`'e taşındı → artık HTTP `Link` başlığıyla her yanıtta; harita aç/kapa düğmesinde çift sinyal (`aria-pressed`) kaldırıldı; spec FR-023/FR-024 metni kodla eşitlendi; ResizeObserver yorumu düzeltildi. Doğrulama: 375 px near + detay (leaflet yok, yatay taşma yok, iç içe `<a>` 0, footer boşluğu → kart bağlantısı), 1280 px detay (yan yana, harita açık); token-lint 0, contrast-check 0, lint 0/7, build ✓.

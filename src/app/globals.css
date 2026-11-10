@@ -902,7 +902,10 @@ a.chip:hover, button.chip:hover { background: var(--surface-2); border-color: va
 .provider-card-link::after { content: ""; position: absolute; inset: 0; border-radius: var(--radius-lg); }
 .provider-card-link:focus-visible { outline: none; }
 .provider-card-link:focus-visible::after { outline: var(--ring-width) solid var(--ring); outline-offset: var(--ring-offset); }
-.provider-card-footer { position: relative; z-index: 1; }
+/* Footer bağlantı örtüsünün (::after) üstünde durur; ama boş şeridi tıklamayı yutmasın diye
+   kendisi tıklanmaz (pointer-events:none), yalnız içindeki bağlantı/düğmeler tıklanır. */
+.provider-card-footer { position: relative; z-index: 1; pointer-events: none; }
+.provider-card-footer :is(a, button) { pointer-events: auto; }
 .provider-card-body { display: grid; gap: var(--space-1); min-width: 0; }
 .provider-card-meta { display: flex; align-items: center; gap: var(--space-1); color: var(--fg-muted); font-size: var(--type-callout); min-width: 0; }
 
@@ -923,7 +926,13 @@ a.chip:hover, button.chip:hover { background: var(--surface-2); border-color: va
 /* ---------- yol tarifi bağlantıları (DirectionsLinks — 002 rev 3 / US5, FR-023) ----------
    Görünüm mevcut .btn-outline'dan gelir (tek buton dili); burada yalnız dizilim var.
    flex-wrap: 320 px'te iki bağlantı sığmazsa alt satıra geçer, yatay kaydırma olmaz. */
-.directions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.directions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+/* Detay: mobilde tam genişlik, alt alta büyük düğmeler (arabada tek dokunuş); geniş ekranda yan yana. */
+.directions-buttons { display: grid; grid-template-columns: minmax(0, 1fr); }
+.directions-buttons .btn { justify-content: center; }
+@media (min-width: 480px) { .directions-buttons { grid-template-columns: repeat(2, max-content); } }
+/* Kart (kompakt): "Yol tarifi" etiketi + kısa "Google" / "Apple" düğmeleri tek satırda. */
+.directions-label { color: var(--fg-muted); font-size: var(--type-caption); }
 .directions .icon { color: var(--accent-text); } /* ikon vurgu renginde: "harita/yön" ipucu */
 .stat-grid { display: grid; grid-template-columns: 1fr; gap: var(--space-4); }
 @media (min-width: 640px) { .stat-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 2.5fr); } }

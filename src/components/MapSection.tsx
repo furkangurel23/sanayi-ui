@@ -135,10 +135,11 @@ export default function MapSection({items, height = 280, initialOpen, title = "H
         router.push(`?${params.toString()}`, {scroll: false});
     };
 
-    // Başlık düğmesi. aria-pressed: "harita açık mı" bilgisini yardımcı teknolojiye verir.
+    // Başlık düğmesi. Durum, değişen etikette ("Haritayı göster"/"Gizle") zaten okunur;
+    // ayrıca aria-pressed vermiyoruz (etiket + basılı durum birlikte değişince çift sinyal olur).
     // map-when-open/closed sınıfları yalnız .map-auto altında (bilinmiyorken) etkilidir.
     const toggleButton = (isOpen: boolean) => (
-        <button type="button" onClick={toggle} aria-pressed={isOpen}
+        <button type="button" onClick={toggle}
                 className={`btn btn-outline btn-sm ${isOpen ? "map-when-open" : "map-when-closed"}`}>
             {isOpen ? "Haritayı gizle" : "Haritayı göster"}
         </button>

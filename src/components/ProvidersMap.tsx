@@ -181,9 +181,10 @@ export default function ProvidersMap({items, height = 260}: Props) {
 
         /*
          * BOYUT DEĞİŞİMİ — 002 rev 3 (T048): eskiden yalnız `window` "resize" dinleniyordu.
-         * Ama harita kabı pencere değişmeden de boyut değiştirebilir (ör. CSS ile gizli bir
-         * kabın 768 px sınırı geçilince görünür olması, kaydırma çubuğunun belirmesi,
-         * telefonun döndürülmesi). Leaflet kabının boyutunu kendisi izlemez; yanlış boyutla
+         * Ama harita kabı pencere değişmeden de boyut değiştirebilir (ör. kaydırma çubuğunun
+         * belirmesi, telefonun döndürülmesi, ızgara değişimi). Not: harita yalnız etkin durum
+         * "açık" olunca mount edildiği için "CSS ile gizli kabın sonradan görünmesi" bu
+         * tasarımda oluşmaz.) Leaflet kabının boyutunu kendisi izlemez; yanlış boyutla
          * kalırsa karolar yarım/kaymış çizilir. ResizeObserver doğrudan BU div'in boyutunu
          * izler -> her değişimde invalidateSize() ("boyutunu yeniden ölç"). Pencere
          * yeniden boyutlanması da kabı değiştirdiği için ayrı bir window dinleyicisi gerekmez.

@@ -29,18 +29,23 @@ export default function DirectionsLinks({variant, ...target}: Props) {
     if (!urls) return null;
 
     const btn = variant === "compact" ? "btn btn-outline btn-sm" : "btn btn-outline";
+    // Kompakt (kart) varyantında görünür etiket kısa ("Google"/"Apple") ki iki düğme 375 px
+    // kartta yan yana sığsın; ekran okuyucu yine tam adı duyar: görünür metin + sr-only devamı
+    // = "Google Haritalar ile … için yol tarifi" (label-in-name: görünür kelime adın başında).
+    const compact = variant === "compact";
     const links = [
-        {href: urls.google, label: "Google Haritalar"},
-        {href: urls.apple, label: "Apple Haritalar"},
+        {href: urls.google, label: compact ? "Google" : "Google Haritalar", rest: compact ? " Haritalar" : ""},
+        {href: urls.apple, label: compact ? "Apple" : "Apple Haritalar", rest: compact ? " Haritalar" : ""},
     ];
 
     return (
         <div className={`directions directions-${variant}`}>
+            {compact && <span className="directions-label" aria-hidden>Yol tarifi</span>}
             {links.map(l => (
                 <a key={l.label} className={btn} href={l.href} target="_blank" rel="noopener">
                     <Navigation size="sm"/>
                     {l.label}
-                    <span className="sr-only"> ile {target.name} için yol tarifi (yeni sekmede açılır)</span>
+                    <span className="sr-only">{l.rest} ile {target.name} için yol tarifi (yeni sekmede açılır)</span>
                 </a>
             ))}
         </div>

@@ -139,13 +139,16 @@ export default async function ProviderDetailPage({
                                 {detail.phone}
                             </a>
                         )}
-                        {/* Yol tarifi (FR-023): hedef yoksa bileşen hiçbir şey çizmez. */}
-                        <DirectionsLinks variant="buttons" name={detail.name}
-                                         lat={detail.location?.lat} lon={detail.location?.lon}
-                                         address={detail.address} district={detail.district} city={detail.city}/>
                     </div>
                     <ScoreBadge score={detail.avgScore} count={detail.ratingCount} size="lg"/>
                 </div>
+
+                {/* Yol tarifi (FR-023): bilgi sütununun DIŞINDA, kartın tam genişliğinde — mobilde
+                    puan rozeti yanındaki dar sütun düğmeleri sıkıştırıyordu; arabadaki kullanıcı
+                    için büyük, tam genişlik dokunma hedefi. Hedef yoksa bileşen hiçbir şey çizmez. */}
+                <DirectionsLinks variant="buttons" name={detail.name}
+                                 lat={detail.location?.lat} lon={detail.location?.lon}
+                                 address={detail.address} district={detail.district} city={detail.city}/>
 
                 {(detail.brands.length > 0 || detail.categories.length > 0) && (
                     <div className="cluster">
