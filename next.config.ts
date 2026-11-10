@@ -17,6 +17,16 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+    /*
+     * TURBOPACK KÖKÜ — Turbopack proje kökünü lockfile (package-lock.json) arayarak bulur.
+     * Ev dizininde (~) başıboş bir package-lock.json olduğu için kökü yanlış (üst klasör)
+     * tahmin edip "Detected additional lockfiles" uyarısı veriyordu. Kökü bu dosyanın
+     * bulunduğu klasöre (__dirname = next.config.ts'in klasörü, mutlak yol) sabitliyoruz;
+     * böylece modül çözümleme ve dosya izleme yalnızca bu projeyle sınırlı kalır.
+     */
+    turbopack: {
+        root: __dirname,
+    },
     async headers() {
         return [{source: "/(.*)", headers: securityHeaders}];
     },

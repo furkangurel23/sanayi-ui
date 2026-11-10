@@ -77,8 +77,3 @@ export function errorMessage(err: unknown, fallback = "Bir şeyler ters gitti.")
     if (err instanceof Error && err.message) return err.message;
     return fallback;
 }
-
-/** Hata belirli bir koda mı ait? (UI'da davranış dallandırmak için) */
-export function isErrorCode(err: unknown, code: string): boolean {
-    return err instanceof ApiError && err.code === code;
-}

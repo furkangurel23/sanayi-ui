@@ -159,19 +159,12 @@ export function subscribe(fn: () => void): () => void {
 }
 
 /**
- * fetch çağrılarına yaymak için hazır header objesi.
- * Spread ile kullanılır: headers: { "Content-Type": "...", ...authHeader() }
- * Token yoksa boş obje döner -> spread hiçbir şey eklemez (koşulsuz yazılabilir).
- */
-export function authHeader(): Record<string, string> {
-    const t = getToken();
-    return t ? {Authorization: `Bearer ${t}`} : {};
-}
-
-/**
- * Korumalı istekler için ÖNERİLEN header: önce ensureFreshToken ile access token'ı
+ * Korumalı istekler için header: önce ensureFreshToken ile access token'ı
  * (gerekirse refresh ederek) tazeler, sonra Bearer olarak döner. Access token 15 dk
  * ömürlü olduğundan uzun oturumlarda istek ANINDA yenilenmiş token ile gider.
+ * Spread ile kullanılır: headers: { "Content-Type": "...", ...(await authHeaderFresh()) }
+ * Token yoksa boş obje döner -> spread hiçbir şey eklemez (koşulsuz yazılabilir).
+ * (Eskiden tazelemeyen senkron bir authHeader() kardeşi vardı; hiç kullanılmadığı için silindi.)
  */
 export async function authHeaderFresh(): Promise<Record<string, string>> {
     const t = await ensureFreshToken();

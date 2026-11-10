@@ -16,12 +16,12 @@
 
 ## Phase 1: Setup — çalışma ortamı ve bağımlılıklar
 
-- [ ] T001 Node 24 LTS kur ve sabitle: `nvm install 24`; repo köküne `.nvmrc` (içerik `24`); `package.json`'a `"engines": { "node": ">=24 <25" }`
-- [ ] T002 `.github/workflows/ci.yml`: `node-version: "20"` → `node-version-file: .nvmrc`; yorumu "Node 24 LTS, .nvmrc tek kaynak" olarak güncelle
-- [ ] T003 `package.json`: `next` 16.4.6, `eslint-config-next` 16.4.6, `react`/`react-dom` 19.3.1, `@types/react`/`@types/react-dom` ^19.3.0, `@types/node` ^24, `@types/leaflet` ^1.9.22, `@stomp/stompjs` ^7.5.0, `eslint` ^9.39.5, `typescript` `~6.0.3`; `zod` ve `react-leaflet` kaldır; `npm install` ile `package-lock.json` yenile
-- [ ] T004 Yükseltilmiş dokümanları oku (`node_modules/next/dist/docs/01-app/**/error.md`, `**/upgrading/version-16.md`, turbopack config sayfası): (a) `unstable_retry` 16.4.6'da hâlâ var mı (16.2.10'da `error.md:117`'de var) → varsa RouteError onu kullanır; (b) `turbopack.root` anahtarı. Kararları en alttaki "Uygulama Notları"na yaz
-- [ ] T005 `next.config.ts`: T004'te doğrulanan kök ayarını ekle (`turbopack: { root: __dirname }`); `npm run build` çıktısında "Detected additional lockfiles" uyarısı kalmasın (R18). `~/package-lock.json`'a DOKUNMA
-- [ ] T006 Kapı: `npm run lint` (0 hata, ≤7 uyarı) + `npm run build`
+- [x] T001 Node 24 LTS kur ve sabitle: `nvm install 24`; repo köküne `.nvmrc` (içerik `24`); `package.json`'a `"engines": { "node": ">=24 <25" }`
+- [x] T002 `.github/workflows/ci.yml`: `node-version: "20"` → `node-version-file: .nvmrc`; yorumu "Node 24 LTS, .nvmrc tek kaynak" olarak güncelle
+- [x] T003 `package.json`: `next` 16.4.6, `eslint-config-next` 16.4.6, `react`/`react-dom` 19.3.1, `@types/react`/`@types/react-dom` ^19.3.0, `@types/node` ^24, `@types/leaflet` ^1.9.22, `@stomp/stompjs` ^7.5.0, `eslint` ^9.39.5, `typescript` `~6.0.3`; `zod` ve `react-leaflet` kaldır; `npm install` ile `package-lock.json` yenile
+- [x] T004 Yükseltilmiş dokümanları oku (`node_modules/next/dist/docs/01-app/**/error.md`, `**/upgrading/version-16.md`, turbopack config sayfası): (a) `unstable_retry` 16.4.6'da hâlâ var mı (16.2.10'da `error.md:117`'de var) → varsa RouteError onu kullanır; (b) `turbopack.root` anahtarı. Kararları en alttaki "Uygulama Notları"na yaz
+- [x] T005 `next.config.ts`: T004'te doğrulanan kök ayarını ekle (`turbopack: { root: __dirname }`); `npm run build` çıktısında "Detected additional lockfiles" uyarısı kalmasın (R18). `~/package-lock.json`'a DOKUNMA
+- [x] T006 Kapı: `npm run lint` (0 hata, ≤7 uyarı) + `npm run build`
 
 ---
 
@@ -31,11 +31,11 @@
 
 **Independent Test**: `npm outdated` + grep'ler + lint/build.
 
-- [ ] T007 [P] [US4] Ölü dosyaları sil: `public/file.svg`, `public/globe.svg`, `public/next.svg`, `public/vercel.svg`, `public/window.svg`, `postcss.config.mjs`; çalışma ağacındaki `.DS_Store`'lar (git'te izlenmiyor). Önce her biri için `grep -rnw <ad> src public next.config.ts` = 0
-- [ ] T008 [P] [US4] Kullanılmayan export'ları sil: `src/lib/auth.ts` `authHeader()` (dikkat: `authHeaderFresh` ayrı fonksiyon, kalır), `src/lib/apiError.ts` `isErrorCode()` — önce `grep -rnw "authHeader\|isErrorCode" src` yalnızca tanımları göstermeli
-- [ ] T009 [P] [US4] `src/app/globals.css`: `.mono`, `.stack-lg`, `.field-error`, `.alert-info`, `.chat-pending`, `.divider` kurallarını sil. Doğrulama: `grep -rnw -- "mono\|stack-lg\|field-error\|alert-info\|chat-pending\|divider" src --include=*.tsx --include=*.ts` sınıf kullanımı göstermemeli (`brand-logo-mono`, `chat-day-divider` farklı sınıflardır, `-w` bunları ayırır — sonucu tek tek kontrol et); başka kural değişmesin
-- [ ] T010 [US4] `src/app/layout.tsx`: `Geist_Mono` import'unu, `geistMono` sabitini ve `body` className'deki mono değişkenini kaldır (`.mono` artık yok); mono/"turuncu" yorumlarını güncelle
-- [ ] T011 [US4] Kapı: `npm outdated` → yalnızca `typescript`, `eslint`, `@types/node`; `grep -rn "zod\|react-leaflet" src package.json` = 0; lint + build → **Commit C1** (`chore(ui): Node 24, Next 16.4.6, remove unused deps and dead code`)
+- [x] T007 [P] [US4] Ölü dosyaları sil: `public/file.svg`, `public/globe.svg`, `public/next.svg`, `public/vercel.svg`, `public/window.svg`, `postcss.config.mjs`; çalışma ağacındaki `.DS_Store`'lar (git'te izlenmiyor). Önce her biri için `grep -rnw <ad> src public next.config.ts` = 0
+- [x] T008 [P] [US4] Kullanılmayan export'ları sil: `src/lib/auth.ts` `authHeader()` (dikkat: `authHeaderFresh` ayrı fonksiyon, kalır), `src/lib/apiError.ts` `isErrorCode()` — önce `grep -rnw "authHeader\|isErrorCode" src` yalnızca tanımları göstermeli
+- [x] T009 [P] [US4] `src/app/globals.css`: `.mono`, `.stack-lg`, `.field-error`, `.alert-info`, `.chat-pending`, `.divider` kurallarını sil. Doğrulama: `grep -rnw -- "mono\|stack-lg\|field-error\|alert-info\|chat-pending\|divider" src --include=*.tsx --include=*.ts` sınıf kullanımı göstermemeli (`brand-logo-mono`, `chat-day-divider` farklı sınıflardır, `-w` bunları ayırır — sonucu tek tek kontrol et); başka kural değişmesin
+- [x] T010 [US4] `src/app/layout.tsx`: `Geist_Mono` import'unu, `geistMono` sabitini ve `body` className'deki mono değişkenini kaldır (`.mono` artık yok); mono/"turuncu" yorumlarını güncelle
+- [x] T011 [US4] Kapı: `npm outdated` → yalnızca `typescript`, `eslint`, `@types/node`; `grep -rn "zod\|react-leaflet" src package.json` = 0; lint + build → **Commit C1** (`chore(ui): Node 24, Next 16.4.6, remove unused deps and dead code`)
 
 ---
 
@@ -151,3 +151,8 @@ Task: "T043 forgot-password page + ForgotPasswordForm"
 ## Uygulama Notları
 
 (T004, T045 kararları ve uygulama sırasında öğrenilenler buraya yazılır.)
+
+### T004 — Next 16.4.6 doküman kontrolü
+- (a) **`unstable_retry` artık yok, yerine kararlı `retry` var.** `node_modules/next/dist/docs/01-app/03-api-reference/03-file-conventions/error.md` Version History: "v16.2.0 `unstable_retry` prop added", "v16.3.0 `retry` prop became stable". Çalışma zamanı (`dist/client/components/error-boundary.js`) `retry = () => startTransition(() => { router.refresh(); reset(); })` — yani bizim yedek planımızın birebir aynısı, resmi API olarak. **Karar**: RouteError ve global-error `retry` prop'unu kullanır; elle `router.refresh()` yazılmaz. Ayrıca prop tipi `error: unknown` (istemci bileşeninde `throw` edilen değer `Error` olmayabilir) → `digest` okunmadan önce `instanceof Error` ile daraltılır.
+- (b) **`turbopack.root`** 16.4.6'da geçerli üst düzey anahtar (`05-config/01-next-config-js/turbopack.md`: "Sets the application root directory. Should be an absolute path."). **Karar**: `turbopack: { root: __dirname }` (next.config.ts derlenirken `__dirname` tanımlı; doküman örneği de `__dirname` kullanıyor).
+- Not: `npm install` sonrası `npm audit` 13 bulgu (9 moderate, 4 high) gösteriyor; hepsi geliştirme araçlarının geçişli bağımlılıkları (brace-expansion, browserslist, @humanfs/node, baseline-browser-mapping …). Görev kapsamında olmadığı için `npm audit fix` çalıştırılmadı — ayrı bakım işi.

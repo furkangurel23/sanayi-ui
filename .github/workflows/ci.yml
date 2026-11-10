@@ -16,7 +16,8 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"     # Next 16 min Node 20
+          # Node 24 LTS, .nvmrc tek kaynak: yerel (nvm use) ve CI aynı sürümü okur.
+          node-version-file: .nvmrc
           cache: npm
 
       # npm ci: package-lock.json'a birebir sadık, deterministik kurulum (CI standardı).

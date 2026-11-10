@@ -15,13 +15,14 @@
  *    olabildiğince aşağıda tutulur (bundle küçük kalır).
  */
 import type {Metadata} from "next";
-import {Geist, Geist_Mono} from "next/font/google";
+import {Geist} from "next/font/google";
 import "./globals.css";
 import React from "react";
 import Header from "@/components/Header";
 
+// Tek font: Geist (sans). Eskiden ikinci bir mono font (Geist_Mono) da yükleniyordu ama
+// onu kullanan .mono sınıfı hiçbir yerde kullanılmıyordu -> boşuna indirilen font dosyası.
 const geistSans = Geist({variable: "--font-geist-sans", subsets: ["latin"]});
-const geistMono = Geist_Mono({variable: "--font-geist-mono", subsets: ["latin"]});
 
 export const metadata: Metadata = {
     title: {default: "Sanayi — Ankara usta & servis platformu", template: "%s | Sanayi"},
@@ -29,7 +30,7 @@ export const metadata: Metadata = {
 };
 
 // Tema tercihini ilk boyamadan önce uygula (FOUC önleme).
-// Varsayılan KOYU tema: siyah + turuncu marka kimliğimiz; kullanıcı toggle'la
+// Varsayılan KOYU tema: koyu zemin + nötr (grafit) vurgu rengi; kullanıcı toggle'la
 // değiştirirse tercihi localStorage'da kalıcıdır.
 const themeInit = `(function(){try{var t=localStorage.getItem("sanayiTheme")||"dark";document.documentElement.dataset.theme=t}catch(e){document.documentElement.dataset.theme="dark"}})()`;
 
@@ -39,7 +40,7 @@ export default function RootLayout({children}: { children: React.ReactNode }) {
         <head>
             <script dangerouslySetInnerHTML={{__html: themeInit}}/>
         </head>
-        <body className={`${geistSans.variable} ${geistMono.variable}`}>
+        <body className={geistSans.variable}>
         <Header/>
         {children}
         <footer className="site-footer">
