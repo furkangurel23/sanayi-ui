@@ -11,6 +11,8 @@
  * URL'e ?page YAZILMAZ — admin URL'leri değişmez); log paneli elle yazılmış perde yerine
  * ortak <Dialog> (Escape kapatır, odak içeride döner, kapanınca "Log" butonuna geri gelir —
  * FR-010). Tablo .table-wrap içinde: dar ekranda yatay kaydırma TABLO KABINDA kalır.
+ * T041: iki datetime-local alanı .toolbar-inputs-dates ile 480 px altında ALT ALTA dizilir
+ * (yan yana ~160 px'e düşünce tarih/saat değerinin saat kısmı kırpılıyordu).
  */
 
 import {adminDeleteRating, adminListLogs, adminListRatings, adminRestoreRating} from "@/lib/adminApi";
@@ -147,7 +149,7 @@ function RatingsAdmin() {
                     </div>
                     <input className="input" value={q} onChange={e => setQ(e.target.value)}
                            placeholder="Yorum içinde ara" aria-label="Yorum içinde ara"/>
-                    <div className="toolbar-inputs">
+                    <div className="toolbar-inputs toolbar-inputs-dates">
                         <input className="input" type="datetime-local" value={from} aria-label="Başlangıç tarihi"
                                onChange={e => setFrom(e.target.value)}/>
                         <input className="input" type="datetime-local" value={to} aria-label="Bitiş tarihi"

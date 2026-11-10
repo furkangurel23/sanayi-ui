@@ -24,12 +24,21 @@
  * kalın yazıyla da belli olur (globals.css .seg [data-active]). Sıralama yönü ve
  * "Temizle" metin karakterleri yerine ikon (ArrowUp/ArrowDown, Close — FR-006).
  * Davranış ve URL'ler aynı (FR-017).
+ *
+ * Klavye (T041 inceleme düzeltmesi): puan ve sıralama segmentleri role="radiogroup"
+ * olduğu için WAI-ARIA radyo grubu gibi davranır — ortak `useRovingRadio` hook'u:
+ *  - Grup başına TEK sekme durağı (seçili segment); ok tuşları/Home/End segmentler
+ *    arasında odağı gezdirir, Space/Enter seçer (= eskisi gibi URL'e yazar).
+ *  - followFocus: false — ok tuşu SEÇMEZ, yalnızca odağı taşır. Neden: seçim burada
+ *    bir sayfa gezintisi (router.push + `key` ile remount); her ok basışında gezinti
+ *    hem pahalı olur hem de remount odağı kaybettirir. Ayrıntı hook'un yorumunda.
  */
 
 import {useRouter} from "next/navigation";
 import type {IdName} from "@/lib/types";
 import {useState} from "react";
 import {ArrowDown, ArrowUp, Close} from "@/components/icons";
+import {useRovingRadio} from "@/lib/useRovingRadio";
 
 export type FilterInitial = {
     brandId: string;
@@ -95,6 +104,19 @@ export default function FilterBar({brands, categories, initial}: Props) {
     // Aktif puan preset'i initial'daki min/max'ten türetilir (state tutmaya gerek yok).
     const activePreset = SCORE_PRESETS.find(p => p.min === initial.minScore && p.max === initial.maxScore)?.id ?? null;
 
+    // Radyo grubu klavye kalıbı (bkz. dosya başı "Klavye"). onSelect verilmez: ok tuşu
+    // seçmediği için seçim (URL'e yazma) eskisi gibi düğmenin onClick'inde kalır.
+    const scoreRadio = useRovingRadio({
+        count: SCORE_PRESETS.length,
+        selectedIndex: SCORE_PRESETS.findIndex(p => p.id === activePreset),
+        followFocus: false,
+    });
+    const sortRadio = useRovingRadio({
+        count: SORT_FIELDS.length,
+        selectedIndex: SORT_FIELDS.findIndex(s => s.value === initial.sortField),
+        followFocus: false,
+    });
+
     const hasActiveFilter = Boolean(
         initial.brandId || initial.categoryId || initial.city || initial.district ||
         initial.minScore || initial.maxScore
@@ -153,10 +175,11 @@ export default function FilterBar({brands, categories, initial}: Props) {
                 {/* Puan: segmented hızlı seçim */}
                 <div className="toolbar-field">
                     <span className="toolbar-label">Puan</span>
-                    <div className="seg" role="radiogroup" aria-label="Puan filtresi">
-                        {SCORE_PRESETS.map(p => (
+                    <div className="seg" role="radiogroup" aria-label="Puan filtresi" {...scoreRadio.groupProps}>
+                        {SCORE_PRESETS.map((p, i) => (
                             <button
                                 key={p.id}
+                                {...scoreRadio.getItemProps(i)}
                                 type="button"
                                 role="radio"
                                 aria-checked={activePreset === p.id}
@@ -173,10 +196,11 @@ export default function FilterBar({brands, categories, initial}: Props) {
                 <div className="toolbar-field">
                     <span className="toolbar-label">Sıralama</span>
                     <div className="cluster">
-                        <div className="seg" role="radiogroup" aria-label="Sıralama alanı">
-                            {SORT_FIELDS.map(s => (
+                        <div className="seg" role="radiogroup" aria-label="Sıralama alanı" {...sortRadio.groupProps}>
+                            {SORT_FIELDS.map((s, i) => (
                                 <button
                                     key={s.value}
+                                    {...sortRadio.getItemProps(i)}
                                     type="button"
                                     role="radio"
                                     aria-checked={initial.sortField === s.value}

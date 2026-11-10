@@ -109,6 +109,15 @@ export default function ChatRoom({brandId, brandName}: { brandId: number; brandN
     // Kendi userId'miz: "bu mesaj benim mi?" kararı displayName gibi kırılgan bir
     // alanla değil, id ile verilir (GET /api/user/me).
     const [myId, setMyId] = useState<number | null>(null);
+    // Oda (brandId) değişince önceki odanın hata/kilit notu taşınmasın. "Render sırasında
+    // state ayarlama" kalıbı (react.dev "You Might Not Need an Effect"): önceki brandId'yi
+    // state'te tut, farklıysa HEMEN sıfırla — effect + setState'in fazladan render'ı yok.
+    const [prevBrandId, setPrevBrandId] = useState(brandId);
+    if (brandId !== prevBrandId) {
+        setPrevBrandId(brandId);
+        setError(null);
+        setLocked(false);
+    }
     const bodyRef = useRef<HTMLDivElement>(null);
     const fileRef = useRef<HTMLInputElement>(null);
 
@@ -167,6 +176,7 @@ export default function ChatRoom({brandId, brandName}: { brandId: number; brandN
         if (!content || sending) return;
         setSending(true);
         setError(null);
+        setLocked(false); // hata sıfırlanınca kilit notu da sıfırlanır (ikisi birlikte yaşar)
         try {
             const m = await sendChatMessage(brandId, {content});
             pushMessage(m); // WS yayınını beklemeden anında göster (optimistic-benzeri)
@@ -185,6 +195,7 @@ export default function ChatRoom({brandId, brandName}: { brandId: number; brandN
         if (!file || uploading) return;
         setUploading(true);
         setError(null);
+        setLocked(false); // hata sıfırlanınca kilit notu da sıfırlanır (ikisi birlikte yaşar)
         try {
             // İki adım: 1) dosyayı yükle (URL döner)  2) mesajı o URL ile gönder.
             const up = await uploadChatAttachment(file);
@@ -207,10 +218,10 @@ export default function ChatRoom({brandId, brandName}: { brandId: number; brandN
     if (!user) {
         return (
             <div className="chat-locked">
-                {/* Sayfanın ana başlığı (ekran okuyucu/başlık gezintisi için); görsel başlık EmptyState'te */}
-                <h1 className="sr-only">{brandName} odası</h1>
+                {/* EmptyState başlığı sayfanın h1'i (titleAs) — ayrı sr-only kopyaya gerek yok */}
                 <EmptyState
                     icon={<Lock/>}
+                    titleAs="h1"
                     title={`${brandName} odası üyelere özel`}
                     description="Sohbete katılmak için giriş yapman gerekiyor."
                     action={<>

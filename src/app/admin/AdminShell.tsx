@@ -14,6 +14,7 @@
  * 002: başlık ortak PageHeader; yetkisiz ekran EmptyState + Shield ikonu (emoji yok);
  * sekmeler .seg — aktif sekme D10 kuralıyla (zemin + kenar + kalınlık) ve
  * aria-current="page" ile (ekran okuyucu "geçerli sayfa" der). Satır içi stil yok.
+ * T041: yetkisiz ekranın h1'i EmptyState başlığının kendisi (titleAs="h1").
  */
 
 import Link from "next/link";
@@ -37,9 +38,9 @@ export default function AdminShell({children}: { children: ReactNode }) {
     if (!user?.roles.includes("ADMIN")) {
         return (
             <main className="container page">
-                <h1 className="sr-only">Admin paneli</h1>
                 <EmptyState
                     icon={<Shield/>}
+                    titleAs="h1"
                     title="Bu sayfa yöneticilere özel"
                     description="Devam etmek için admin hesabıyla giriş yap."
                     action={<Link href="/login" className="btn btn-primary">Giriş yap</Link>}

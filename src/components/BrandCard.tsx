@@ -18,6 +18,8 @@
  * 002: satır içi stiller sınıflara taşındı (.brand-card-id/.brand-card-text,
  * .brand-provider-link); "Sohbet" bağlantısı Chat ikonu taşır. Başlık bloğu dar
  * ekranda eylemlerin alt satıra inmesine izin verir (375 px taşma düzeltmesi — T026).
+ * T041: "Sohbet" ve "Ustalar" aynı varyant (btn-outline btn-sm); eylemler alt satıra
+ * inince sola hizalanır (globals.css .brand-card-actions esneme notu).
  */
 
 import Link from "next/link";
@@ -42,7 +44,8 @@ export default function BrandCard({brand}: { brand: BrandDto }) {
                 </div>
             }
             actions={
-                <Link href={`/chat/${brand.id}`} className="btn btn-ghost btn-sm">
+                // btn-outline: yanındaki "Ustalar" düğmesiyle AYNI varyant (T041) — iki eşit eylem
+                <Link href={`/chat/${brand.id}`} className="btn btn-outline btn-sm">
                     <Chat size="sm"/> Sohbet
                 </Link>
             }

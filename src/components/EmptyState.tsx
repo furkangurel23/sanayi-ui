@@ -11,6 +11,16 @@
  *  - `compact`: sayfa içi küçük boş durumlar (ör. kapalı harita) için daha az iç boşluk.
  *  - `role` verilebilir: hata ekranında "alert", diğerlerinde gerekmez (ekran okuyucu
  *    sayfa yüklendiğinde metni zaten okur).
+ *  - `titleAs` (T041): başlığın HTML etiketi. Varsayılan <p> (sayfa içi küçük durumlar
+ *    sayfanın başlık hiyerarşisine karışmasın). Boş durum SAYFANIN KENDİSİ olduğunda
+ *    (404, kilitli sohbet, yetkisiz admin) "h1" verilir -> ayrı bir sr-only <h1>
+ *    kopyasına gerek kalmaz; görünüm .empty-state-title'dan gelir (etiketten bağımsız).
+ *    Öğrenme notu: `const Title = titleAs` — JSX'te büyük harfle başlayan değişken
+ *    bileşen/etiket olarak kullanılabilir (<Title>); "h1" gibi bir string de olur.
+ *  - `live` (T041): başlık + açıklama bir aria-live="polite" bölgesine sarılır. Durumu
+ *    değişen boş durumlarda (NearLocate: konum alınıyor -> reddedildi) ekran okuyucu
+ *    YALNIZCA yeni durum metnini okur; eylem alanı (form/düğmeler) bölgenin dışında
+ *    kalır, yazarken/tıklarken gereksiz duyuru olmaz.
  */
 import type {ReactNode} from "react";
 
@@ -21,14 +31,20 @@ type Props = {
     action?: ReactNode;
     compact?: boolean;
     role?: "status" | "alert";
+    titleAs?: "h1" | "h2" | "p";
+    live?: boolean;
 };
 
-export default function EmptyState({icon, title, description, action, compact, role}: Props) {
+export default function EmptyState({icon, title, description, action, compact, role, titleAs = "p", live}: Props) {
+    const Title = titleAs;
+    const text = <>
+        <Title className="empty-state-title">{title}</Title>
+        {description && <p className="empty-state-desc">{description}</p>}
+    </>;
     return (
         <div className={`empty-state${compact ? " empty-state-compact" : ""}`} role={role}>
             <span className="empty-state-icon">{icon}</span>
-            <p className="empty-state-title">{title}</p>
-            {description && <p className="empty-state-desc">{description}</p>}
+            {live ? <div className="empty-state-live" aria-live="polite">{text}</div> : text}
             {action && <div className="empty-state-action">{action}</div>}
         </div>
     );

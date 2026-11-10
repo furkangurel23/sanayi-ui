@@ -21,7 +21,12 @@
  * Davranış aynı (aynı buton, aynı URL); yalnızca durumu daha net ANLATIYORUZ.
  * Öğrenme notu — "ayrık durum" (union string) tek bir state'te tutulur: loading/err gibi
  * birbirini dışlayan iki ayrı boolean yerine tek değişken -> imkânsız kombinasyon olmaz.
- * aria-live="polite": durum değişince ekran okuyucu yeni başlığı (sırası gelince) okur.
+ * aria-live="polite" (EmptyState `live`): YALNIZCA başlık + açıklama canlı bölgede; durum
+ * değişince ekran okuyucu yeni durumu (sırası gelince) okur. Yarıçap alanı ve düğme
+ * bölgenin dışında -> yazarken her tuşta duyuru yapılmaz.
+ * denied/error açıklaması HEP bizim Türkçe metnimiz: tarayıcının e.message'ı İngilizce ve
+ * tarayıcıya göre değişen teknik bir metin ("User denied Geolocation") -> kullanıcıya
+ * gösterilmez, geliştirici için console'a yazılır.
  */
 
 import {type ReactNode, useState} from "react";
@@ -35,11 +40,8 @@ export default function NearLocate({initialRadiusKm = 10}: { initialRadiusKm?: n
     const router = useRouter();
     const [radius, setRadius] = useState<number>(initialRadiusKm);
     const [status, setStatus] = useState<Status>("idle");
-    const [detail, setDetail] = useState<string | null>(null); // tarayıcının hata metni (varsa)
 
     const locate = () => {
-        setDetail(null);
-
         if (!navigator.geolocation) {
             setStatus("unsupported");
             return;
@@ -60,7 +62,8 @@ export default function NearLocate({initialRadiusKm = 10}: { initialRadiusKm?: n
             (e) => {
                 // e.code: 1 = PERMISSION_DENIED, 2 = POSITION_UNAVAILABLE, 3 = TIMEOUT
                 setStatus(e.code === e.PERMISSION_DENIED ? "denied" : "error");
-                setDetail(e.message || null);
+                // Tarayıcının (İngilizce) teknik metni yalnız geliştiriciye: console.
+                console.warn("Geolocation hatası:", e.code, e.message);
             },
             {enableHighAccuracy: true, timeout: 10000}
         );
@@ -72,39 +75,38 @@ export default function NearLocate({initialRadiusKm = 10}: { initialRadiusKm?: n
         locating: {icon: <Clock/>, title: "Konum alınıyor…", desc: "Tarayıcın izin isterse onayla."},
         denied: {
             icon: <Alert/>, title: "Konum izni reddedildi",
-            desc: detail ?? "Tarayıcı ayarlarından bu site için konum iznini açıp tekrar dene.",
+            desc: "Tarayıcı ayarlarından bu site için konum iznini açıp tekrar dene.",
         },
         unsupported: {icon: <Alert/>, title: "Konum desteklenmiyor", desc: "Tarayıcınız konum desteğini sunmuyor."},
-        error: {icon: <Alert/>, title: "Konum alınamadı", desc: detail ?? "Biraz sonra tekrar dene."},
+        error: {icon: <Alert/>, title: "Konum alınamadı", desc: "Biraz sonra tekrar dene."},
     };
     const v = view[status];
     const loading = status === "locating";
 
     return (
-        <div aria-live="polite">
-            <EmptyState
-                icon={v.icon}
-                title={v.title}
-                description={v.desc}
-                action={
-                    <div className="locate-form">
-                        <label className="field locate-radius">
-                            <span className="field-label">Yarıçap (km)</span>
-                            <input
-                                className="input"
-                                type="number"
-                                min={1}
-                                max={100}
-                                value={radius}
-                                onChange={(e) => setRadius(Math.max(1, Math.min(100, Number(e.target.value) || 1)))}
-                            />
-                        </label>
-                        <button type="button" onClick={locate} disabled={loading} className="btn btn-primary">
-                            <Pin size="sm"/> {loading ? "Alınıyor…" : "Konumumu al"}
-                        </button>
-                    </div>
-                }
-            />
-        </div>
+        <EmptyState
+            live
+            icon={v.icon}
+            title={v.title}
+            description={v.desc}
+            action={
+                <div className="locate-form">
+                    <label className="field locate-radius">
+                        <span className="field-label">Yarıçap (km)</span>
+                        <input
+                            className="input"
+                            type="number"
+                            min={1}
+                            max={100}
+                            value={radius}
+                            onChange={(e) => setRadius(Math.max(1, Math.min(100, Number(e.target.value) || 1)))}
+                        />
+                    </label>
+                    <button type="button" onClick={locate} disabled={loading} className="btn btn-primary">
+                        <Pin size="sm"/> {loading ? "Alınıyor…" : "Konumumu al"}
+                    </button>
+                </div>
+            }
+        />
     );
 }

@@ -11,7 +11,7 @@
  *
  * 002 tasarım notları (Apple Pro sayfası dili):
  *  - Vitrin: .display başlık (375 px'te 40, 1440 px'te 72 px — FR-002), .lead açıklama
- *    (≤ 62ch) ve birincil CTA İLK EKRANDA (375×667 ve 1440×900). Arka planda yalnızca
+ *    (≤ 48ch — --measure) ve birincil CTA İLK EKRANDA (375×667 ve 1440×900). Arka planda yalnızca
  *    belirteçle çizilmiş çok hafif bir vurgu ışığı (.hero::before) — tek seferlik renk yok.
  *  - Bölümler .sections kabında: arada mobil 64 px, masaüstü 96 px (FR-002: ≥56 / ≥96).
  *  - "Tümü" / "Ustaları gör" yanındaki metin okları ikonla değişti (ChevronRight — FR-006).

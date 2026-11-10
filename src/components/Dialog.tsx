@@ -14,6 +14,11 @@
  *  - Escape: kapatır (onClose). Perdeye (scrim) tıklamak da kapatır.
  *  - KAPANINCA: odak, dialog'u açan öğeye (tetikleyici) geri döner — klavye kullanıcısı
  *    sayfada kaldığı yeri kaybetmez.
+ *  - AÇIKKEN arka plan KAYMAZ (T041): <html> öğesine overflow: hidden verilir; temizlikte
+ *    ÖNCEKİ değer geri yazılır (boş string = stil yok). Aksi halde dialog içinde tekerlek/
+ *    dokunma ile kaydırma sınıra gelince alttaki sayfa kayar ("scroll chaining").
+ *    Neden <body> değil <html>? Sayfanın kaydırma kabı kök öğe (document.documentElement);
+ *    body'de overflow bazı tarayıcılarda kökün kaydırmasını durdurmaz.
  *
  * Öğrenme notları:
  *  - useRef<HTMLDivElement>(null): DOM düğümüne "kalıcı kutu"; render'lar arasında değişmez.
@@ -50,6 +55,11 @@ export default function Dialog({open, onClose, labelledBy, children}: Props) {
         const panel = panelRef.current;
         const focusables = () => Array.from(panel?.querySelectorAll<HTMLElement>(FOCUSABLE) ?? []);
 
+        // Arka plan kaydırma kilidi (bkz. dosya başı); eski değer temizlikte geri yazılır.
+        const root = document.documentElement;
+        const prevOverflow = root.style.overflow;
+        root.style.overflow = "hidden";
+
         // Açılışta ilk odaklanabilir öğe (yoksa panelin kendisi — tabIndex=-1)
         (focusables()[0] ?? panel)?.focus();
 
@@ -78,6 +88,7 @@ export default function Dialog({open, onClose, labelledBy, children}: Props) {
         document.addEventListener("keydown", onKey);
         return () => {
             document.removeEventListener("keydown", onKey);
+            root.style.overflow = prevOverflow; // kaydırma kilidini kaldır
             trigger?.focus(); // odak tetikleyiciye döner
         };
     }, [open]);

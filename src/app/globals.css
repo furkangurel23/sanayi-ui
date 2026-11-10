@@ -802,7 +802,14 @@ a.chip:hover, button.chip:hover { background: var(--surface-2); border-color: va
     background: var(--neutral-soft);
     color: var(--fg-muted);
 }
-.empty-state-title { color: var(--fg); font-size: var(--type-body); font-weight: var(--type-headline-wt); }
+/* Başlık h1/h2 de olabilir (titleAs): h1/h2 varsayılan satır yüksekliği ve harf aralığı
+   devralınarak sıfırlanır -> etiket ne olursa olsun görünüm aynı. */
+.empty-state-title {
+    color: var(--fg); font-size: var(--type-body); font-weight: var(--type-headline-wt);
+    line-height: inherit; letter-spacing: inherit;
+}
+/* live: başlık + açıklamayı saran canlı bölge; .empty-state ile aynı dizilim. */
+.empty-state-live { display: grid; justify-items: center; gap: var(--space-2); }
 .empty-state-desc { max-inline-size: var(--measure); }
 .empty-state-action { margin-top: var(--space-3); display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-2); }
 .empty-state-compact { padding: var(--space-5); }
@@ -1133,11 +1140,16 @@ table.data tr:last-child td { border-bottom: 0; }
 .brand-card-head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3) var(--space-4); }
 .brand-card-id {
     display: flex; align-items: center; gap: var(--space-3);
-    flex: 1 1 calc(var(--space-10) + var(--space-8));
+    flex: 999 1 calc(var(--space-10) + var(--space-8)); /* 999: bkz. .brand-card-actions */
     min-width: 0;
 }
 .brand-card-text { min-width: 0; }
-.brand-card-actions { display: flex; align-items: center; gap: var(--space-2); margin-inline-start: auto; }
+/* Eylemler: aynı satırdayken SAĞDA, sığmayıp kendi satırına inince SOLDA (375 px).
+   "Satıra indi mi?" CSS'te sorgulanamaz; esneme oranıyla çözülür: kimlik bloğu 999,
+   eylemler 1 pay büyür. Aynı satırda boşluğun ~tamamını kimlik bloğu alır -> eylemler
+   sağa itilir; tek başına bir satırdaysa eylem kabı satırı doldurur ve içerik
+   justify-content: flex-start ile SOLA dizilir (media query'siz, her genişlikte doğru). */
+.brand-card-actions { display: flex; flex: 1 0 auto; flex-wrap: wrap; align-items: center; justify-content: flex-start; gap: var(--space-2); }
 /* Aç/kapa okunun dönmesi: durum aria-expanded'dan okunur (tek doğruluk kaynağı) */
 .toggle-chevron { transition: transform var(--dur) var(--ease-standard); }
 [aria-expanded="true"] > .toggle-chevron { transform: rotate(180deg); }
@@ -1263,6 +1275,9 @@ table.data tr:last-child td { border-bottom: 0; }
 .admin-tabs { max-width: 100%; overflow-x: auto; }
 .admin-toolbar { display: grid; gap: var(--space-4); padding: var(--space-4) var(--space-5); }
 .admin-filters { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-3); }
+/* Tarih aralığı: datetime-local değeri ("gg.aa.yyyy ss:dd") yan yana iki alana dar ekranda
+   sığmaz, saat kısmı kırpılır -> 480 px altında alanlar alt alta, her biri tam genişlik. */
+@media (max-width: 479px) { .toolbar-inputs-dates { flex-direction: column; } }
 @media (min-width: 900px) { .admin-filters { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 .admin-search { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); padding: var(--space-4); }
 .admin-search .input { flex: 1 1 calc(var(--space-10) * 1.5); min-width: 0; }

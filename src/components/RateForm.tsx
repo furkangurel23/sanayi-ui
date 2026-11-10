@@ -29,15 +29,19 @@
  *  - Sol/Yukarı ok önceki, Sağ/Aşağı ok sonraki değer (uçlarda başa/sona sarar); Home −5, End +5.
  *    Ok tuşu odağı TAŞIR ve değeri SEÇER (radyo grubunda seçim odağı izler).
  *  - Seçili değer yalnız renkle değil (D10): kalın sayı + köşede Check ikonu + kenar.
- *  - pickRefs: düğmelerin DOM referansları dizisi; klavyeyle seçilen düğmeye
- *    .focus() çağırmak için (React'te DOM'a imperatif erişim = ref).
+ *  - Klavye mantığı (roving tabindex + ok/Home/End + .focus() için DOM ref'leri) ortak
+ *    `useRovingRadio` hook'unda (src/lib/useRovingRadio.ts); FilterBar segmentleri de
+ *    aynı hook'u kullanır -> sitedeki tüm radyo grupları aynı davranır.
+ *  - useId(): grup etiketinin id'si. Sabit "score-label" yazsaydık sayfada iki form
+ *    olduğunda id ÇAKIŞIRDI; useId sunucu ve istemcide AYNI, benzersiz id üretir
+ *    (hidrasyon uyumsuzluğu olmaz — Math.random bunu sağlayamaz).
  *
  * Hata standardı:
  *  - postRating başarısız olursa ApiError fırlatır; err.code'a göre dallanır,
  *    err.message backend'den gelen hazır Türkçe metindir (messages.properties).
  */
 
-import React, {useEffect, useMemo, useRef, useState, useSyncExternalStore} from "react";
+import React, {useEffect, useId, useMemo, useState, useSyncExternalStore} from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import {useRouter} from "next/navigation";
@@ -47,6 +51,7 @@ import {ensureFreshToken} from "@/lib/auth";
 import {ApiError, errorMessage} from "@/lib/apiError";
 import {Check} from "@/components/icons";
 import {formatScore} from "@/components/ScoreBadge";
+import {useRovingRadio} from "@/lib/useRovingRadio";
 
 // Dinamik (ayrı chunk) ve yalnız istemcide; bkz. dosya başı "reCAPTCHA (performans)".
 const RecaptchaField = dynamic(() => import("@/components/RecaptchaField"), {ssr: false});
@@ -70,21 +75,17 @@ export default function RateForm({providerId}: { providerId: number }) {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [okMsg, setOkMsg] = useState<string | null>(null);
-    // Puan düğmelerinin DOM referansları (klavyeyle odak taşımak için)
-    const pickRefs = useRef<Array<HTMLButtonElement | null>>([]);
+    // Grup etiketinin benzersiz id'si (aria-labelledby hedefi) — bkz. dosya başı "useId".
+    const scoreLabelId = useId();
 
-    /** Ok/Home/End tuşları: yeni değeri seç ve odağı ona taşı (radio group kalıbı). */
-    const onPickerKey = (e: React.KeyboardEvent, index: number) => {
-        let next: number | null = null;
-        if (e.key === "ArrowRight" || e.key === "ArrowDown") next = (index + 1) % SCORES.length;
-        else if (e.key === "ArrowLeft" || e.key === "ArrowUp") next = (index - 1 + SCORES.length) % SCORES.length;
-        else if (e.key === "Home") next = 0;
-        else if (e.key === "End") next = SCORES.length - 1;
-        if (next === null) return;
-        e.preventDefault(); // sayfa kaydırmasını engelle
-        setScore(SCORES[next]);
-        pickRefs.current[next]?.focus();
-    };
+    // Radio group klavye kalıbı (ortak hook): ok tuşu değeri SEÇER ve odağı taşır
+    // (followFocus varsayılanı true — seçim yalnızca yerel state, ucuz).
+    // indexOf -> seçim yoksa (null) -1 döner; hook bunu "seçim yok, durak ilk öğe" sayar.
+    const roving = useRovingRadio({
+        count: SCORES.length,
+        selectedIndex: score === null ? null : SCORES.indexOf(score),
+        onSelect: i => setScore(SCORES[i]),
+    });
 
     // reCAPTCHA yalnızca anonim kullanıcıya gösterilir (üye için gereksiz sürtünme).
     const siteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || "";
@@ -186,30 +187,25 @@ export default function RateForm({providerId}: { providerId: number }) {
             {/* role="radiogroup" + aria-checked: ekran okuyucular için "tek seçimli grup" semantiği.
                 aria-labelledby: grubun adı görünen etiketten gelir (tek kaynak). */}
             <div className="field">
-                <span id="score-label" className="field-label">Puanın (-5 çok kötü · +5 mükemmel)</span>
-                <div className="score-picker" role="radiogroup" aria-labelledby="score-label">
+                <span id={scoreLabelId} className="field-label">Puanın (-5 çok kötü · +5 mükemmel)</span>
+                <div className="score-picker" role="radiogroup" aria-labelledby={scoreLabelId} {...roving.groupProps}>
                     {SCORES.map((s, i) => {
                         const checked = score === s;
-                        // Roving tabindex: seçili olan (hiç seçim yoksa ilki) sekme durağıdır.
-                        const tabStop = score === null ? i === 0 : checked;
                         const f = formatScore(s, 0);
                         const word = s > 0 ? "artı " : s < 0 ? "eksi " : "";
                         return (
                             <button
                                 key={s}
-                                ref={el => {
-                                    pickRefs.current[i] = el;
-                                }}
+                                // ref + tabIndex (roving: seçili ya da hiç seçim yoksa ilki 0) + onKeyDown
+                                {...roving.getItemProps(i)}
                                 type="button" // önemli: default "submit"tir, formu göndermesin!
                                 role="radio"
                                 aria-checked={checked}
                                 aria-label={`${word}${f.value}`}
-                                tabIndex={tabStop ? 0 : -1}
                                 className="score-pick"
                                 // data-tone: CSS'te seçili tonun rengi ([aria-checked="true"][data-tone])
                                 data-tone={s === 0 ? "zero" : s > 0 ? "pos" : "neg"}
                                 onClick={() => setScore(s)}
-                                onKeyDown={e => onPickerKey(e, i)}
                             >
                                 {f.sign}{f.value}
                                 {checked && <span className="score-pick-check"><Check size="sm"/></span>}
