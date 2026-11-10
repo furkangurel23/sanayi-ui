@@ -45,7 +45,7 @@
 
 ```text
 specs/002-premium-dark-redesign/
-├── spec.md, plan.md, research.md (D1–D9), quickstart.md
+├── spec.md, plan.md, research.md (D1–D12), quickstart.md
 ├── contracts/design-tokens.md      # belirteç sözleşmesi (bileşenlerin kullanabileceği tek yüzey)
 ├── screenshots/                    # SC-001 kanıtları
 └── tasks.md
@@ -55,6 +55,9 @@ src/app/globals.css                                     # belirteçler + temel +
 src/app/theme.ts                                        # theme-color hex'leri yeni --bg'ye güncellenir
 src/components/icons/*.tsx                              # YENİ ikon seti
 src/components/{PageHeader,EmptyState,Dialog,SkeletonBlocks}.tsx   # YENİ
+src/components/ProvidersMap.css                                   # YENİ harita stilleri (koyu filtre, kontroller, isolation)
+src/components/{BrandProvidersToggle,ProviderMapClient}.tsx       # 001 çıktıları — satır içi stil temizliği
+src/app/providers/(list)/{page,loading,error}.tsx                 # 001 route group
 src/components/{Pagination,ScoreBadge,RatingItem,ProviderCard,BrandLogo,BrandCard,
                Header,ThemeToggle,FilterBar,MapSection,ProvidersMap,MiniHistogram,
                RateForm,RecaptchaField,ChatRoom,NearLocate,ConfirmButton,RouteError}.tsx
@@ -65,11 +68,11 @@ src/app/admin/AdminShell.tsx, admin/*/page.tsx
 ## Implementation Phases
 
 1. **Araçlar** — `contrast-check.mjs`, `token-lint.mjs`; mevcut durumun raporu (önce).
-2. **Temel** — belirteçler (D2) iki tema, reset/tipografi/boşluk, `.btn/.card/.input/.seg/.chip` vb. bileşen sınıflarının belirteçlere taşınması; ikon seti; PageHeader, EmptyState, ScoreBadge; Header (cam üst bar, mobil menü, kullanıcı çipi) + footer; `theme.ts` hex güncellemesi.
+2. **Temel** — belirteçler (D2, D10, D11, D12) iki tema, `.map-frame { isolation: isolate }`, `ProvidersMap.css` + OSM politika düzeltmeleri (D3), reset/tipografi/boşluk, `.btn/.card/.input/.seg/.chip` vb. bileşen sınıflarının belirteçlere taşınması; ikon seti; PageHeader, EmptyState, ScoreBadge; Header (cam üst bar, mobil menü, kullanıcı çipi) + footer; `theme.ts` hex güncellemesi.
 3. **Referans ekranlar** — ana sayfa (vitrin), dükkan listesi (FilterBar, ProviderCard, Pagination url modu, harita + koyu filtre), dükkan detayı (başlık, ScoreBadge, histogram, RateForm radio group, yorumlar, harita). Ölçüm: FR-002 değişmezleri, kontrast betiği, ekran görüntüleri (2 tema × 375/1440).
-4. **🚦 Tasarım onay kapısı (FR-021)** — belirteç tablosu + 12 ekran görüntüsü + D1 alternatifi (gümüş vurgu) kullanıcıya sunulur. Onay yoksa geri bildirim → Faz 2/3 tekrar. Onay tarihi tasks.md'ye.
+4. **🚦 Tasarım onay kapısı (FR-021)** — belirteç tablosu + kontrast raporu + referans ekranlar (ana sayfa, liste, detay × 2 tema × 375/1440) + üst bar/mobil menü + **D1 alternatifi (gümüş vurgu) gerçek ekran görüntüleriyle** (alternatif belirteç seti geçici olarak uygulanarak) kullanıcıya sunulur. Faz 2–3 commit'leri onaya kadar **push edilmez** (paylaşılan sınıflar değiştiği için diğer rotalar geçici olarak yarı tasarımda). Onay yoksa geri bildirim → Faz 2/3 tekrar. Onay tarihi tasks.md'ye.
 5. **Yayılım** — markalar, yakınımdakiler (konum durumları), sohbet listesi + oda (kilitli, yükleniyor, ekler, bağlantı durumu, en-boy korumalı görsel), kimlik akışları (tüm durumlar), admin (PageHeader, tablolar, Pagination callback, Dialog log paneli, yetkisiz ekran), 404/hata/global-error, tüm loading iskeletleri, reCAPTCHA teması; satır içi stil temizliği (D8).
-6. **Doğrulama** — token-lint 0, satır içi ≤10, kontrast 0 ihlal, Lighthouse a11y ≥95 + axe 0 serious/critical (5 rota × 2 tema), FR-018 bütçeleri (`measure.sh`), 320 px yatay kaydırma kontrolü, ekran görüntüsü seti tamam, quickstart akışları; frontend-reviewer (code) + converge.
+6. **Doğrulama** — token-lint 0, satır içi (`style=\{`) ≤10, emoji/metin oku taraması 0, dokunma hedefi ≥44 px (DevTools/axe target-size), kontrast 0 ihlal, Lighthouse a11y ≥95 + axe 0 serious/critical (5 rota × 2 tema), FR-018 bütçeleri (`measure.sh`), 320 px yatay kaydırma kontrolü, ekran görüntüsü seti tamam, quickstart akışları; frontend-reviewer (code) + converge.
 
 Commit dilimleri: (1) araçlar+temel, (2) referans ekranlar [onay öncesi], (3) yayılım, (4) doğrulama/doküman.
 

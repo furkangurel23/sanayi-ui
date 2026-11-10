@@ -90,7 +90,7 @@ Açık temayı seçen kullanıcı, aynı kalite ve aynı değişmezlerle tasarla
 - Formlar: gönderiliyor/devre dışı, alan hatası, `.alert` başarı/hata/bilgi.
 - Boş durumlar: sonuç yok (filtre), yorum yok, boş sohbet odası.
 - Yükleniyor iskeletleri ve 001'in ortak hata/404 ekranları (yeniden stillenir).
-- Sohbet: kilitli (giriş yok / e-posta doğrulanmamış), dosya yükleniyor, görsel ve video eki, bağlantı koptu/yeniden bağlanıyor.
+- Sohbet: kilitli (giriş yok / e-posta doğrulanmamış), dosya yükleniyor, görsel ve video eki. (Bağlantı koptu/yeniden bağlanıyor göstergesi bugün yok — yeni davranış olacağı için kapsam dışı; Out of Scope.)
 - Yakınımdakiler: konum izni bekleniyor, reddedildi, desteklenmiyor, konum alınıyor.
 - Kimlik: kayıt sonrası "postanı kontrol et", e-posta doğrulama bekliyor/başarılı/hata, şifre sıfırlama başarılı/hata.
 - Admin: yetkisiz ekran, log paneli açık.
@@ -106,7 +106,8 @@ Açık temayı seçen kullanıcı, aynı kalite ve aynı değişmezlerle tasarla
 - **FR-002**: Tasarım aşağıdaki **ölçülebilir değişmezleri** sağlamalıdır; somut değerler plan.md'deki belirteç tablosunda tanımlanır ve SC'ler bunlara göre ölçülür:
   - Vurgu tonu sayısı = 1 (olumlu/olumsuz/nötr anlam renkleri bu sayıya dahil değildir).
   - Belirteç dışı renk, boşluk, köşe yarıçapı, gölge ve süre değeri = 0 (istisnalar: `0`, `1px` ince çizgi, çalışma anında hesaplanan değerler).
-  - Yüzey katman sayısı ≥3 (zemin, yükseltilmiş, en üst/üst bar); katmanlar arası açıklık farkı plan.md'de sayısal tanımlıdır ve her iki temada aynı oranı izler.
+  - Yüzey katman sayısı ≥3 (zemin, yükseltilmiş, en üst/üst bar); ardışık katmanlar arası açıklık farkı |ΔL| her iki temada aynı aralıktadır ([0.02, 0.05]); yön temaya göre değişebilir (koyuda yükselme = açıklaşma, açıkta yükselme = beyaz + gölge).
+  - Seçili/aktif durum yalnızca renkle (zemin tonu) gösterilmez; ek bir gösterge (kenar, ikon, alt çizgi veya kalınlık) taşır.
   - Vitrin başlığı 375 px'te ≥40 px, 1440 px'te ≥72 px; büyük başlıklarda negatif harf aralığı.
   - Gövde satır uzunluğu ≤75 karakter, gövde satır yüksekliği ≥1.5.
   - Boşluk ölçeği tek bir modüler diziden gelir (ör. 4'ün katları); bölüm arası boşluk masaüstünde ≥96 px, mobilde ≥56 px.
@@ -164,4 +165,5 @@ Açık temayı seçen kullanıcı, aynı kalite ve aynı değişmezlerle tasarla
 - Logo/marka kimliği tasarımı.
 - Sayfalamanın bağlantı tabanlı (JS'siz) yapıya çevrilmesi.
 - Animasyon kütüphanesi, UI kütüphanesi, ikon paketi veya CSS çerçevesi eklenmesi.
+- Sohbet bağlantı durumu göstergesi (koptu/yeniden bağlanıyor) — `chat.ts` bugün durum bildirmiyor; yeni davranış, ayrı özellik.
 - Geniş kullanıcı testi (isteğe bağlı; yapılırsa protokolü ayrıca yazılır).
