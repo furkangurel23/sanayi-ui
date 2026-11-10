@@ -201,4 +201,5 @@ Task: "T043 forgot-password page + ForgotPasswordForm"
 
 ## Phase 8: Convergence
 
-- [ ] T054 Harita rotalarında (`/providers`, `/providers/[id]`) ve `/brands`'te LCP ≤2.5 sn hedefini karşıla per SC-004 (partial) — LCP öğesi OSM karosu / logo ızgarası; görsel değişiklik gerektirdiği için **002-premium-dark-redesign T015 (harita kabı/yer tutucu) + T038 (bütçe ölçümü)** kapsamında ele alınır; ölçüm `baseline.md` "Sonra"
+- [x] T054 Harita rotalarında (`/providers`, `/providers/[id]`) ve `/brands`'te LCP ≤2.5 sn hedefini karşıla per SC-004 (partial) — LCP öğesi OSM karosu / logo ızgarası; görsel değişiklik gerektirdiği için **002-premium-dark-redesign T015 (harita kabı/yer tutucu) + T038 (bütçe ölçümü)** kapsamında ele alınır; ölçüm `baseline.md` "Sonra"
+  - ✅ Kapandı (2026-11-10): 002 rev 3 (US5, `e8dc1a6` + `f696a9a`) — mobilde harita varsayılan kapalı; mobil laboratuvar LCP `/providers` 4631→2494 ms, `/providers/1058` 5234→2493 ms (`specs/002-premium-dark-redesign/measurements.md`). Not: tek koşularda 2.6–2.8 sn görülebiliyor; medyan hedefin hemen altında.
