@@ -3,6 +3,9 @@
  * varsayılan | APPROVED | REJECTED | WITHDRAWN | ALL), `district` (25 ilçe), `q` (≥2), `page`
  * ve seçili öneri `id`'sini doğrular, client'a prop indirir; client URL'den türetilen `key`
  * ile kurulur (geri/ileri senkronu). Kategori/marka adları ISR (düzeltme formu için).
+ * `key` YALNIZ filtreler + sayfadan türetilir; seçili `id` prop olarak iner ama key'e girmez:
+ * "İncele"/"Ayrıntıyı kapat" kuyruğu yeniden kurmamalı (liste yeniden çekilip "Yükleniyor…"
+ * yanıp sönüyor, odak gövdeye düşüyordu). Geri/ileri ile `id` değişimi yine prop'la yansır.
  */
 import type {Metadata} from "next";
 import {parseEnum, parsePage, parsePositiveId, parseQuery} from "@/lib/params";
@@ -27,7 +30,7 @@ export default async function AdminSuggestionsPage({searchParams}: {
     const [categories, brands] = await Promise.all([getCategoriesAllSorted(), getBrandsAllSorted()]);
     return (
         <AdminShell>
-            <AdminSuggestionsClient key={`${status}|${district ?? ""}|${q ?? ""}|${page}|${selected ?? ""}`}
+            <AdminSuggestionsClient key={`${status}|${district ?? ""}|${q ?? ""}|${page}`}
                                     status={status} district={district} q={q} page={page} selected={selected}
                                     categories={categories} brands={brands}/>
         </AdminShell>

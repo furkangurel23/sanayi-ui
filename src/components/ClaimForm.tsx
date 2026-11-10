@@ -94,6 +94,25 @@ export default function ClaimForm({providerId, providerName}: Props) {
         if (alertSeq > 0) alertRef.current?.focus();
     }, [alertSeq]);
 
+    // Sayfadan ayrılınca (bileşen kalkınca) süren isteği iptal et: aksi halde XHR arka planda
+    // tamamlanır ve kullanıcı vazgeçtiğini sanırken talep OLUŞUR. `cancelRef` ön kontrol
+    // aşamasını (XHR henüz yokken) da durdurur. Boş bağımlılık dizisi = temizlik yalnız unmount'ta.
+    // (Ref'ler DOM'a bağlı değil, değerleri bilerek "o anki" haliyle okunur.)
+    useEffect(() => () => {
+        cancelRef.current = true;
+        abortRef.current?.();
+    }, []);
+
+    // Yükleme sürerken sekme kapatma / yenileme / adres çubuğuyla ayrılma: tarayıcının kendi
+    // "Siteden ayrılınsın mı?" uyarısı (metni tarayıcı belirler; `preventDefault` yeterli).
+    const busySending = progress !== null;
+    useEffect(() => {
+        if (!busySending) return;
+        const warn = (e: BeforeUnloadEvent) => e.preventDefault();
+        window.addEventListener("beforeunload", warn);
+        return () => window.removeEventListener("beforeunload", warn);
+    }, [busySending]);
+
     const showAlert = (text: string) => {
         setAlert(text);
         setAlertSeq(n => n + 1);

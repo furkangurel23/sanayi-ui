@@ -44,7 +44,14 @@ export default function ChipMultiSelect({label, hint, options, selected, onChang
             {hint && <span className="field-hint">{hint}</span>}
             <input className="input" type="search" placeholder={`${label} içinde ara`}
                    aria-label={`${label} içinde ara`} value={query}
-                   onChange={e => setQuery(e.target.value)}/>
+                   onChange={e => setQuery(e.target.value)}
+                   onKeyDown={e => {
+                       // Kutu bir <form> içinde (ProviderEditForm): tarayıcı Enter'da formu
+                       // ÖRTÜK gönderir (sahip düzenlemesi anında yayına girer; öneri, "Bu dükkan
+                       // zaten olabilir" denetimi bitmeden gidebilir). Arama süzgeci Enter'a
+                       // ihtiyaç duymaz (yazdıkça süzer) -> varsayılan davranışı iptal et.
+                       if (e.key === "Enter") e.preventDefault();
+                   }}/>
             <div className="chip-cluster chip-select" role="group" aria-labelledby={`${id}-label`}
                  aria-describedby={error ? errId : undefined}>
                 {visible.map(o => {

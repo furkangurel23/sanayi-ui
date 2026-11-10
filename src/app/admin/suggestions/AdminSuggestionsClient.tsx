@@ -11,7 +11,7 @@
  *   tekrar işaretçileri) ve tekrarların MESAFELİ METİN listesi (harita tek bilgi kaynağı değil).
  */
 import {useRouter} from "next/navigation";
-import {useState} from "react";
+import {useEffect, useRef, useState} from "react";
 import type {IdName} from "@/lib/types";
 import {useAuthedData} from "@/lib/useAuthedData";
 import {adminSuggestions} from "@/lib/adminApi";
@@ -49,11 +49,36 @@ export default function AdminSuggestionsClient({status, district, q, page, selec
         t => adminSuggestions(t, {status, district, q, page, size: 20}));
 
     /** URL'i tıklama anında güncelle; `resetPage` filtre değişiminde sayfayı 1'e döndürür. */
-    function apply(patch: Record<string, string | undefined>, resetPage = true) {
+    function apply(patch: Record<string, string | undefined>, resetPage = true, scroll = true) {
         const params = new URLSearchParams(window.location.search);
         Object.entries(patch).forEach(([k, v]) => (v ? params.set(k, v) : params.delete(k)));
         if (resetPage) params.delete("page");
-        router.push(`?${params.toString()}`, {scroll: !patch.id});
+        router.push(`?${params.toString()}`, {scroll});
+    }
+
+    /*
+     * Ayrıntı aç/kapat — yalnız URL'deki `id` değişir; sayfa kaydırılmaz (`scroll: false`).
+     * page.tsx `key`'inde `id` OLMADIĞI için bu bileşen yeniden kurulmaz: liste verisi, yükseklik
+     * ve odak korunur (eskiden her "İncele" tüm kuyruğu sıfırlayıp yeniden çekiyordu). Panel
+     * açılınca odağı kendi başlığına taşır (useRevealOnReady); kapanınca odak, paneli açan
+     * "İncele" düğmesine döner. Dönüş, URL güncellenip panel DOM'dan kalktıktan SONRA effect'te
+     * yapılır — panel kalkınca liste yukarı kayar; `focus()` düğmeyi o anki yerinde görünür yapar.
+     * Geri/ileri ile kapanışta (returnFocusTo boş) odağa dokunulmaz.
+     */
+    const returnFocusTo = useRef<number | null>(null);
+    useEffect(() => {
+        if (selected !== undefined || returnFocusTo.current === null) return;
+        document.querySelector<HTMLElement>(`[data-review-trigger="${returnFocusTo.current}"]`)?.focus();
+        returnFocusTo.current = null;
+    }, [selected]);
+
+    function openReview(id: number) {
+        apply({id: String(id)}, false, false);
+    }
+
+    function closeReview() {
+        returnFocusTo.current = selected ?? null;
+        apply({id: undefined}, false, false);
     }
 
     const applyQ = () => apply({q: qText.trim().length >= 2 ? qText.trim() : undefined, id: undefined});
@@ -89,8 +114,8 @@ export default function AdminSuggestionsClient({status, district, q, page, selec
             </div>
 
             {selected !== undefined && (
-                <SuggestionReview id={selected} categories={categories} brands={brands}
-                                  onClose={() => apply({id: undefined}, false)}
+                <SuggestionReview key={selected} id={selected} categories={categories} brands={brands}
+                                  onClose={closeReview}
                                   onDecided={() => list.reload()}/>
             )}
 
@@ -124,7 +149,8 @@ export default function AdminSuggestionsClient({status, district, q, page, selec
                                 <div className="row-actions request-actions">
                                     <button type="button" className="btn btn-outline btn-sm"
                                             aria-current={s.id === selected ? "true" : undefined}
-                                            onClick={() => apply({id: String(s.id)}, false)}>
+                                            data-review-trigger={s.id}
+                                            onClick={() => openReview(s.id)}>
                                         İncele<span className="sr-only">: {s.name}</span>
                                     </button>
                                 </div>

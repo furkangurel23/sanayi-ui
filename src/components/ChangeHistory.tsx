@@ -27,6 +27,12 @@ type Props = {
     onAcknowledge?: (id: number) => Promise<void>;
     /** Dikkat kuyruğunda dükkan adını bağlantı olarak göster. */
     showProvider?: boolean;
+    /**
+     * Başarı mesajı kaydın İÇİNDE mi gösterilsin (varsayılan evet)? Dikkat kuyruğunun "Açık"
+     * görünümünde işlem gören kayıt listeden çıkar -> mesajı liste düzeyinde AttentionClient
+     * gösterir; kayıt içi mesaj hem kaybolur hem çift duyurulurdu. Hatalar her zaman kayıtta.
+     */
+    itemNotices?: boolean;
     emptyText?: string;
 };
 
@@ -40,7 +46,7 @@ function actorText(c: ChangeSet): string {
     return c.actorEmail ? `Sahip (${c.actorEmail})` : "Sahip";
 }
 
-function ChangeItem({c, categories, brands, onRevert, onAcknowledge, showProvider}: Omit<Props, "items" | "emptyText"> & {
+function ChangeItem({c, categories, brands, onRevert, onAcknowledge, showProvider, itemNotices = true}: Omit<Props, "items" | "emptyText"> & {
     c: ChangeSet
 }) {
     const [error, setError] = useState<string | null>(null);
@@ -48,13 +54,15 @@ function ChangeItem({c, categories, brands, onRevert, onAcknowledge, showProvide
     const ctx = {categories, brands};
     const fields = Object.entries(c.changes ?? {});
     const openAttention = c.attention && !c.attentionResolvedAt;
+    // Satır düğmelerinin ekran okuyucu devamı: "Geri al: kayıt #12, Usta Oto" (hepsi aynı adlı olmasın)
+    const itemName = `kayıt #${c.id}${c.providerName ? `, ${c.providerName}` : ""}`;
 
     async function run(fn: () => Promise<void>, ok: string) {
         setError(null);
         setInfo(null);
         try {
             await fn();
-            setInfo(ok);
+            if (itemNotices) setInfo(ok);
         } catch (e) {
             setError(errorMessage(e, "İşlem başarısız."));
         }
@@ -119,12 +127,12 @@ function ChangeItem({c, categories, brands, onRevert, onAcknowledge, showProvide
                     {onAcknowledge && openAttention && (
                         <button type="button" className="btn btn-outline btn-sm"
                                 onClick={() => run(() => onAcknowledge(c.id), "İncelendi olarak işaretlendi.")}>
-                            İncelendi
+                            İncelendi<span className="sr-only">: {itemName}</span>
                         </button>
                     )}
                     {onRevert && !c.revertedById && (
                         <ConfirmButton label="Geri al" confirmLabel="Bu değişiklik geri alınsın mı?"
-                                       className="btn btn-outline btn-sm"
+                                       className="btn btn-outline btn-sm" srLabel={itemName}
                                        onConfirm={() => run(() => onRevert(c.id), "Değişiklik geri alındı.")}/>
                     )}
                 </div>

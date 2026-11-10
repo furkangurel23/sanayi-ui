@@ -8,9 +8,14 @@
  * kopyası; useSearchParams yok). Sayfa değişimi ortak `Pagination mode="url"`.
  * Her kayıtta önce/sonra tablosu, "İncelendi" (204) ve "Geri al" (201; 409'da backend'in
  * çakışan alan mesajı). İşlemden sonra liste ve sekme rozetleri yenilenir.
+ *
+ * Odak ve duyuru: "Açık" görünümde işlem gören kayıt listeden ÇIKAR (yeniden yüklemede gelmez);
+ * kaydın içindeki başarı mesajı ve odaklı düğme de onunla birlikte kaybolur (odak gövdeye düşer).
+ * Bu yüzden mesaj LİSTE düzeyinde (`role="status"`) gösterilir ve odak liste başlığına
+ * (tabIndex=-1) taşınır. "Çözülen" görünümde kayıt yerinde kalır -> mesaj kaydın içinde.
  */
 import {useRouter} from "next/navigation";
-import {useState} from "react";
+import {useRef, useState} from "react";
 import type {IdName} from "@/lib/types";
 import {useAuthedData} from "@/lib/useAuthedData";
 import {acknowledgeChangeSet, attentionQueue, revertChangeSet} from "@/lib/adminApi";
@@ -53,9 +58,19 @@ export default function AttentionClient({attention, district, q, page, categorie
         router.push(`?${params.toString()}`);
     }
 
-    const after = () => {
+    const [notice, setNotice] = useState<string | null>(null);
+    const listHeading = useRef<HTMLHeadingElement>(null);
+    // Kayıt listeden çıkacak mı? (yalnız "Açık" görünümde — çözülen kayıt orada kalır)
+    const leavesList = attention === "open";
+
+    const after = (message: string) => {
         queue.reload();
         notifyQueueCountsChanged();
+        if (leavesList) {
+            setNotice(message);
+            // Başlık her durumda DOM'da (liste boşalsa da) -> odak güvenle oraya taşınır
+            listHeading.current?.focus();
+        }
     };
 
     return (
@@ -87,6 +102,12 @@ export default function AttentionClient({attention, district, q, page, categorie
 
             {queue.error ? <div className="alert alert-error" role="alert">{errorMessage(queue.error, "Kuyruk alınamadı.")}</div> : null}
             {queue.loading && !queue.data && <p className="muted" role="status">Yükleniyor…</p>}
+            {queue.data && (
+                <h2 ref={listHeading} tabIndex={-1} className="callout list-heading">
+                    {attention === "open" ? "Açık kayıtlar" : "Çözülen kayıtlar"}
+                </h2>
+            )}
+            {notice && <div className="alert alert-success" role="status">{notice}</div>}
             {queue.data && queue.data.content.length === 0 && (
                 <EmptyState icon={<Flag/>}
                             title={attention === "open" ? "İncelenecek değişiklik yok" : "Çözülmüş kayıt yok"}
@@ -96,14 +117,15 @@ export default function AttentionClient({attention, district, q, page, categorie
                 <>
                     <p className="caption muted" role="status">{queue.data.totalElements} kayıt</p>
                     <ChangeHistory items={queue.data.content} categories={categories} brands={brands} showProvider
+                                   itemNotices={!leavesList}
                                    onAcknowledge={async id => {
                                        await acknowledgeChangeSet(await token(), id);
-                                       after();
+                                       after(`Kayıt #${id} incelendi olarak işaretlendi.`);
                                    }}
                                    onRevert={async id => {
                                        const t = await token();
                                        const created = await revertChangeSet(t, id);
-                                       after();
+                                       after(`Kayıt #${id} geri alındı.`);
                                        void revalidateProviderViews(created.providerId, t);
                                    }}/>
                     <Pagination mode="url" page={page} totalPages={queue.data.totalPages}/>

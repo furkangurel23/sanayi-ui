@@ -21,7 +21,7 @@ import {formatDateTime} from "@/components/ChangeHistory";
 import {useAuthedData} from "@/lib/useAuthedData";
 import {myClaims, withdrawClaim} from "@/lib/accountApi";
 import {ensureFreshToken} from "@/lib/auth";
-import {errorMessage} from "@/lib/apiError";
+import {ApiError, errorMessage} from "@/lib/apiError";
 import type {Claim, Page} from "@/lib/types";
 import {File as FileIcon, Shield} from "@/components/icons";
 
@@ -34,6 +34,13 @@ const FILTERS: Array<{ value: string; label: string }> = [
     {value: "WITHDRAWN", label: "Geri çekildi"},
     {value: "EXPIRED", label: "Süresi doldu"},
 ];
+
+/** Taze belirteç; yoksa açık 401 (eskiden `!` ile "Bearer null" gidebiliyordu). */
+async function token(): Promise<string> {
+    const t = await ensureFreshToken();
+    if (!t) throw new ApiError(401, "error.auth.unauthorized", "Oturumunuzun süresi doldu. Yeniden giriş yapın.");
+    return t;
+}
 
 function List({status, page}: { status: string; page: number }) {
     const router = useRouter();
@@ -61,7 +68,7 @@ function List({status, page}: { status: string; page: number }) {
     async function withdraw(id: number) {
         setActionError(null);
         try {
-            const updated = await withdrawClaim((await ensureFreshToken())!, id);
+            const updated = await withdrawClaim(await token(), id);
             data.mutate(p => ({...p, content: p.content.map(c => (c.id === id ? updated : c))}));
         } catch (e) {
             setActionError(errorMessage(e, "Geri çekilemedi."));
@@ -117,7 +124,9 @@ function List({status, page}: { status: string; page: number }) {
                             {c.status === "PENDING" && (
                                 <div className="row-actions request-actions">
                                     <ConfirmButton label="Geri çek" confirmLabel="Talep geri çekilsin mi? Belgeler silinir."
-                                                   className="btn btn-outline btn-sm" onConfirm={() => withdraw(c.id)}/>
+                                                   className="btn btn-outline btn-sm"
+                                                   srLabel={`talep #${c.id}, ${c.provider.name}`}
+                                                   onConfirm={() => withdraw(c.id)}/>
                                 </div>
                             )}
                         </li>

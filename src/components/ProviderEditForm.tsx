@@ -243,10 +243,11 @@ export default function ProviderEditForm({
             </fieldset>
 
             {withHours && (
-                <fieldset className="field form-fieldset">
+                <fieldset className="field form-fieldset"
+                          aria-describedby={errors.openingHours ? errId("openingHours") : undefined}>
                     <legend className="field-label">Çalışma saatleri</legend>
                     <OpeningHoursEditor value={values.openingHours} onChange={v => set("openingHours", v)}
-                                        errors={errors}/>
+                                        errors={errors} topErrorId={errId("openingHours")}/>
                     {conflictHint("openingHours")}
                 </fieldset>
             )}

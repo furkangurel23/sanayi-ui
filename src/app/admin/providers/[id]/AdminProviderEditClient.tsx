@@ -11,7 +11,13 @@
  *   yeniden kurulur — sürüm değişince yeni başlangıç değeri).
  * - Sahiplik kartı: `GET /api/admin/providers/{id}/ownership` (204 = sahip yok). "Sahipliği geri
  *   al" ReasonDialog ile (gerekçe zorunlu, `window.prompt` yok); eski sahibin düzenleme yetkisi
- *   hemen kalkar. Sonra görünüm + sahiplik yeniden çekilir ve liste önbellekleri tazelenir.
+ *   hemen kalkar. Sonra YALNIZ sahiplik yeniden çekilir ve liste önbellekleri tazelenir.
+ * - Form `key`'i görünümün sürümüdür (`form-${v.version}`) ve görünüm YALNIZ "Geri al"dan
+ *   sonra yeniden çekilir — form yalnız o zaman yeniden kurulur (geri alınan değerler gelsin;
+ *   kullanıcı onay adımında bunu bilerek seçti). Sahiplik geri alma görünümü ÇEKMEZ: dükkan
+ *   alanlarını değiştirmez ve sahiplik kartı kendi verisini (`ownership`) kullanır. Eskiden
+ *   görünüm de çekiliyordu; bir kayıttan sonra (`savedVersion` > görünüm sürümü) gelen yeni
+ *   sürüm key'i değiştirip formdaki KAYDEDİLMEMİŞ taslağı sessizce siliyordu.
  */
 import {useState} from "react";
 import Link from "next/link";
@@ -98,7 +104,6 @@ export default function AdminProviderEditClient({id, categories, brands}: Props)
                                       setRevoking(false);
                                       setOwnerInfo("Sahiplik geri alındı.");
                                       ownership.reload();
-                                      view.reload();
                                       void revalidateProviderViews(id, t);
                                   }}/>
                 )}

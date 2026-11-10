@@ -25,12 +25,19 @@ type Props = {
     value: Hours | null;
     onChange: (v: Hours | null) => void;
     errors?: Record<string, string>;
+    /**
+     * Üst düzey (`openingHours`) hata öğesinin id'si. Çağıran (ProviderEditForm) kendi
+     * "Çalışma saatleri" fieldset'ini bu id'ye `aria-describedby` ile bağlar; verilmezse
+     * bileşen kendi id'sini üretir (yine de en yakın kontrol bu id'ye bağlanır).
+     */
+    topErrorId?: string;
 };
 
 const WEEKDAYS: Day[] = ["TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"];
 
-export default function OpeningHoursEditor({value, onChange, errors = {}}: Props) {
+export default function OpeningHoursEditor({value, onChange, errors = {}, topErrorId}: Props) {
     const id = useId();
+    const topErrId = topErrorId ?? `${id}-top-err`;
     // Kaldırılan son taslak — kutu tekrar işaretlenince geri yüklenir (render'ı etkilemez -> ref).
     const lastDraft = useRef<Hours | null>(null);
     const topError = errors["openingHours"];
@@ -40,11 +47,12 @@ export default function OpeningHoursEditor({value, onChange, errors = {}}: Props
             <div className="stack-sm">
                 <label className="checkbox">
                     <input type="checkbox" checked={false}
+                           aria-describedby={topError ? topErrId : undefined}
                            onChange={() => onChange(lastDraft.current ?? emptyHoursDraft())}/>
                     <span>Çalışma saatlerini belirt</span>
                 </label>
                 <p className="field-hint">İşaretlemezseniz dükkan sayfasında &ldquo;Çalışma saati bilgisi yok&rdquo; yazar.</p>
-                {topError && <span className="field-error">{topError}</span>}
+                {topError && <span id={topErrId} className="field-error">{topError}</span>}
             </div>
         );
     }
@@ -67,18 +75,22 @@ export default function OpeningHoursEditor({value, onChange, errors = {}}: Props
                     Saat bilgisini kaldır
                 </button>
             </div>
-            {topError && <span className="field-error">{topError}</span>}
+            {topError && <span id={topErrId} className="field-error">{topError}</span>}
 
             {DAYS.map(d => {
                 const ranges = value[d] ?? [];
                 const open = ranges.length > 0;
                 const dayErr = errors[`openingHours.${d}`];
+                const dayErrId = `${id}-${d}-err`;
+                // Gün düzeyindeki hata (ör. aralıklar çakışıyor) hem gün fieldset'ine hem günün ilk
+                // kontrolüne ("Açık") bağlanır: ekran okuyucu gruba girerken ya da kutuya gelince okur.
                 return (
-                    <fieldset key={d} className="hours-day">
+                    <fieldset key={d} className="hours-day" aria-describedby={dayErr ? dayErrId : undefined}>
                         <legend className="hours-day-name">{DAY_LABELS[d]}</legend>
                         <div className="hours-day-controls">
                             <label className="checkbox">
                                 <input type="checkbox" checked={open}
+                                       aria-describedby={dayErr ? dayErrId : undefined}
                                        onChange={e => setDay(d, e.target.checked ? [{open: "", close: ""}] : [])}/>
                                 <span>Açık</span>
                             </label>
@@ -109,8 +121,13 @@ export default function OpeningHoursEditor({value, onChange, errors = {}}: Props
                                         </label>
                                         <label className="field">
                                             <span className="field-label">Kapanış{labelSuffix}</span>
+                                            {/* "24:00" time girdisinde gösterilemez -> salt okunur METİN girdisi:
+                                                etiket ("Kapanış") gerçek bir kontrole bağlı kalır, ekran okuyucu
+                                                "Kapanış, 24:00, salt okunur" der. Değiştirmek için yandaki kutu. */}
                                             {midnight ? (
-                                                <span className="input hours-midnight">24:00</span>
+                                                <input className="input hours-midnight" type="text" readOnly value="24:00"
+                                                       aria-invalid={err ? true : undefined}
+                                                       aria-describedby={err ? errId : undefined}/>
                                             ) : (
                                                 <input className="input" type="time" step={300} value={r.close}
                                                        aria-invalid={err ? true : undefined}
@@ -141,7 +158,7 @@ export default function OpeningHoursEditor({value, onChange, errors = {}}: Props
                                 İkinci aralık ekle<span className="sr-only">: {DAY_LABELS[d]}</span>
                             </button>
                         )}
-                        {dayErr && <span className="field-error">{dayErr}</span>}
+                        {dayErr && <span id={dayErrId} className="field-error">{dayErr}</span>}
                     </fieldset>
                 );
             })}

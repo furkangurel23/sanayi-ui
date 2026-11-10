@@ -19,6 +19,7 @@ import {useEffect, useRef, useState} from "react";
 import Link from "next/link";
 import type {IdName} from "@/lib/types";
 import {useAuthedData} from "@/lib/useAuthedData";
+import {useRevealOnReady} from "@/lib/useRevealOnReady";
 import {adminSuggestion, approveSuggestion, rejectSuggestion} from "@/lib/adminApi";
 import {ensureFreshToken} from "@/lib/auth";
 import {ApiError, errorMessage} from "@/lib/apiError";
@@ -82,6 +83,12 @@ export default function SuggestionReview({id, categories, brands, onClose, onDec
     const [error, setError] = useState<string | null>(null);
     const [approvedId, setApprovedId] = useState<number | null>(null);
     const headingRef = useRef<HTMLHeadingElement>(null);
+    const panelRef = useRef<HTMLElement>(null);
+
+    // Panel açılınca (veri ya da hata ilk kez gelince) görünür yap + odağı başlığa taşı. Liste
+    // artık yeniden kurulmadığı için (page.tsx key'inde `id` yok) panel listenin üstünde açılır;
+    // kaydırılmış sayfada ekran dışında kalmasın. Başka öneri seçilince `key={id}` ile yeniden kurulur.
+    useRevealOnReady(review.data !== undefined || review.error !== undefined, headingRef, panelRef);
 
     // Karar verilince (PENDING -> başka durum) odak başlığa: karar düğmeleri DOM'dan kalktığı için
     // diyalog kapanınca odak gövdeye düşerdi.
@@ -224,7 +231,8 @@ export default function SuggestionReview({id, categories, brands, onClose, onDec
     }
 
     return (
-        <section className="card review-panel" aria-labelledby={review.data ? "review-title" : undefined}
+        <section ref={panelRef} tabIndex={-1} className="card review-panel"
+                 aria-labelledby={review.data ? "review-title" : undefined}
                  aria-label={review.data ? undefined : "Öneri ayrıntısı"}>
             <div className="review-close">
                 <button type="button" className="btn btn-ghost btn-sm" onClick={onClose}>

@@ -264,7 +264,15 @@ export default function LocationPicker({
                     : "Henüz konum seçilmedi."}
                 {geoStatus && <> {geoStatus}</>}
             </p>
-            {shownError && <span id={ownErrorId} className="field-error" role="alert">{shownError}</span>}
+            {/* Form düzeyindeki hata (`error`) formun üstündeki uyarıda zaten duyurulur -> burada
+                role YOK (iki kez okunmasın); alan `aria-describedby` ile bağlı kalır. Yalnız bu
+                bileşenin KENDİ ürettiği hata (elle girilen koordinat geçersiz) anında duyurulur:
+                `key` kaynağa göre değişir -> yeni öğe DOM'a role="alert" ile eklenir (var olan bir
+                öğeye sonradan role eklemek ekran okuyucularda güvenilir duyurulmaz). */}
+            {shownError && (
+                <span key={localError ? "local" : "form"} id={ownErrorId} className="field-error"
+                      role={localError ? "alert" : undefined}>{shownError}</span>
+            )}
             <details className="picker-manual">
                 <summary>Enlem ve boylamı elle girin</summary>
                 <div className="picker-manual-fields">

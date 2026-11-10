@@ -6,7 +6,7 @@
  * Satırda "İtiraz" rozeti (aynı dükkanın sahibi ya da bekleyen başka talebi varken gelen talep).
  */
 import {useRouter} from "next/navigation";
-import {useState} from "react";
+import {useEffect, useRef, useState} from "react";
 import {useAuthedData} from "@/lib/useAuthedData";
 import {adminClaims} from "@/lib/adminApi";
 import {errorMessage} from "@/lib/apiError";
@@ -40,11 +40,36 @@ export default function AdminClaimsClient({status, kind, district, q, page, sele
     const list = useAuthedData(`admin-claims:${status}:${kind ?? ""}:${district ?? ""}:${q ?? ""}:${page}`,
         t => adminClaims(t, {status, kind, district, q, page, size: 20}));
 
-    function apply(patch: Record<string, string | undefined>, resetPage = true) {
+    function apply(patch: Record<string, string | undefined>, resetPage = true, scroll = true) {
         const params = new URLSearchParams(window.location.search);
         Object.entries(patch).forEach(([k, v]) => (v ? params.set(k, v) : params.delete(k)));
         if (resetPage) params.delete("page");
-        router.push(`?${params.toString()}`, {scroll: !patch.id});
+        router.push(`?${params.toString()}`, {scroll});
+    }
+
+    /*
+     * Ayrıntı aç/kapat — yalnız URL'deki `id` değişir; sayfa kaydırılmaz (`scroll: false`).
+     * page.tsx `key`'inde `id` OLMADIĞI için bu bileşen yeniden kurulmaz: liste verisi, yükseklik
+     * ve odak korunur (eskiden her "İncele" tüm kuyruğu sıfırlayıp yeniden çekiyordu). Panel
+     * açılınca odağı kendi başlığına taşır (useRevealOnReady); kapanınca odak, paneli açan
+     * "İncele" düğmesine döner. Dönüş, URL güncellenip panel DOM'dan kalktıktan SONRA effect'te
+     * yapılır — panel kalkınca liste yukarı kayar; `focus()` düğmeyi o anki yerinde görünür yapar.
+     * Geri/ileri ile kapanışta (returnFocusTo boş) odağa dokunulmaz.
+     */
+    const returnFocusTo = useRef<number | null>(null);
+    useEffect(() => {
+        if (selected !== undefined || returnFocusTo.current === null) return;
+        document.querySelector<HTMLElement>(`[data-review-trigger="${returnFocusTo.current}"]`)?.focus();
+        returnFocusTo.current = null;
+    }, [selected]);
+
+    function openReview(id: number) {
+        apply({id: String(id)}, false, false);
+    }
+
+    function closeReview() {
+        returnFocusTo.current = selected ?? null;
+        apply({id: undefined}, false, false);
     }
 
     const applyQ = () => apply({q: qText.trim().length >= 2 ? qText.trim() : undefined, id: undefined});
@@ -88,7 +113,7 @@ export default function AdminClaimsClient({status, kind, district, q, page, sele
             </div>
 
             {selected !== undefined && (
-                <ClaimReview id={selected} onClose={() => apply({id: undefined}, false)} onDecided={() => list.reload()}/>
+                <ClaimReview key={selected} id={selected} onClose={closeReview} onDecided={() => list.reload()}/>
             )}
 
             {list.error ? <div className="alert alert-error" role="alert">{errorMessage(list.error, "Kuyruk alınamadı.")}</div> : null}
@@ -119,7 +144,8 @@ export default function AdminClaimsClient({status, kind, district, q, page, sele
                                 <div className="row-actions request-actions">
                                     <button type="button" className="btn btn-outline btn-sm"
                                             aria-current={c.id === selected ? "true" : undefined}
-                                            onClick={() => apply({id: String(c.id)}, false)}>
+                                            data-review-trigger={c.id}
+                                            onClick={() => openReview(c.id)}>
                                         İncele<span className="sr-only">: talep #{c.id}, {c.provider.name}</span>
                                     </button>
                                 </div>

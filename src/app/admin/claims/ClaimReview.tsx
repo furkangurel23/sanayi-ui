@@ -15,6 +15,7 @@
 import {useEffect, useRef, useState} from "react";
 import Link from "next/link";
 import {useAuthedData} from "@/lib/useAuthedData";
+import {useRevealOnReady} from "@/lib/useRevealOnReady";
 import {adminClaim, approveClaim, rejectClaim, revokeOwnership} from "@/lib/adminApi";
 import {ensureFreshToken} from "@/lib/auth";
 import {ApiError, errorMessage} from "@/lib/apiError";
@@ -42,6 +43,12 @@ export default function ClaimReview({id, onClose, onDecided}: Props) {
     const [error, setError] = useState<string | null>(null);
     const [info, setInfo] = useState<string | null>(null);
     const headingRef = useRef<HTMLHeadingElement>(null);
+    const panelRef = useRef<HTMLElement>(null);
+
+    // Panel açılınca (veri ya da hata ilk kez gelince) görünür yap + odağı başlığa taşı. Liste
+    // artık yeniden kurulmadığı için (page.tsx key'inde `id` yok) panel listenin üstünde açılır;
+    // kaydırılmış sayfada ekran dışında kalmasın. Başka talep seçilince `key={id}` ile yeniden kurulur.
+    useRevealOnReady(claim.data !== undefined || claim.error !== undefined, headingRef, panelRef);
 
     // Karar verilince (PENDING -> başka durum) odak başlığa: karar düğmeleri DOM'dan kalktı.
     const status = claim.data?.status;
@@ -193,7 +200,8 @@ export default function ClaimReview({id, onClose, onDecided}: Props) {
     }
 
     return (
-        <section className="card review-panel" aria-labelledby={claim.data ? "claim-review-title" : undefined}
+        <section ref={panelRef} tabIndex={-1} className="card review-panel"
+                 aria-labelledby={claim.data ? "claim-review-title" : undefined}
                  aria-label={claim.data ? undefined : "Talep ayrıntısı"}>
             <div className="review-close">
                 <button type="button" className="btn btn-ghost btn-sm" onClick={onClose}>

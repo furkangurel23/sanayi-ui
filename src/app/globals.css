@@ -1546,6 +1546,15 @@ table.data a.btn:hover { text-decoration: none; }
 .detail-secondary { display: flex; flex-wrap: wrap; gap: var(--space-2); }
 .review-panel h2[tabindex="-1"]:focus { outline: none; }
 .review-panel h2[tabindex="-1"]:focus-visible { outline: var(--ring-width) solid var(--ring); }
+/* Liste başlığı (dikkat kuyruğu) — işlemden sonra programatik odak hedefi */
+.list-heading { margin: 0; font-weight: var(--type-headline-wt); }
+.list-heading[tabindex="-1"]:focus { outline: none; }
+.list-heading[tabindex="-1"]:focus-visible { outline: var(--ring-width) solid var(--ring); }
+/* Panelin kendisi yalnız programatik odak hedefi (başlık yokken, ör. hata) — halka başlıktaki gibi */
+.review-panel[tabindex="-1"]:focus { outline: none; }
+.review-panel[tabindex="-1"]:focus-visible { outline: var(--ring-width) solid var(--ring); }
+/* Açılan panel ve odağın döndüğü "İncele" düğmesi yapışkan üst barın altında kalmasın */
+.review-panel, .request-actions .btn { scroll-margin-top: calc(var(--header-h) + var(--space-4)); }
 /* Metin içi bağlantı (KVKK cümlesi): satır akışında kalsın — 44 px kutusu cümleyi bölüyordu.
    WCAG 2.5.8 "satır içi" istisnası: cümle içindeki bağlantının hedef boyutu metin satırıdır. */
 .kvkk-box .callout .link-accent { display: inline; min-height: 0; padding: 0; }

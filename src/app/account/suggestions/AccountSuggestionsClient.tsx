@@ -22,7 +22,7 @@ import {formatDateTime} from "@/components/ChangeHistory";
 import {useAuthedData} from "@/lib/useAuthedData";
 import {mySuggestions, withdrawSuggestion} from "@/lib/accountApi";
 import {ensureFreshToken} from "@/lib/auth";
-import {errorMessage} from "@/lib/apiError";
+import {ApiError, errorMessage} from "@/lib/apiError";
 import type {Page, Suggestion} from "@/lib/types";
 import {Plus, Pin} from "@/components/icons";
 import {useState} from "react";
@@ -37,6 +37,13 @@ const FILTERS: Array<{ value: string; label: string }> = [
 ];
 
 type Props = { status: string; page: number; sent: boolean };
+
+/** Taze belirteç; yoksa açık 401 (eskiden `!` ile "Bearer null" gidebiliyordu). */
+async function token(): Promise<string> {
+    const t = await ensureFreshToken();
+    if (!t) throw new ApiError(401, "error.auth.unauthorized", "Oturumunuzun süresi doldu. Yeniden giriş yapın.");
+    return t;
+}
 
 function List({status, page}: Omit<Props, "sent">) {
     const router = useRouter();
@@ -65,7 +72,7 @@ function List({status, page}: Omit<Props, "sent">) {
     async function withdraw(id: number) {
         setActionError(null);
         try {
-            const updated = await withdrawSuggestion((await ensureFreshToken())!, id);
+            const updated = await withdrawSuggestion(await token(), id);
             data.mutate(p => ({...p, content: p.content.map(s => (s.id === id ? updated : s))}));
         } catch (e) {
             setActionError(errorMessage(e, "Geri çekilemedi."));
@@ -113,7 +120,8 @@ function List({status, page}: Omit<Props, "sent">) {
                                 )}
                                 {s.status === "PENDING" && (
                                     <ConfirmButton label="Geri çek" confirmLabel="Öneri geri çekilsin mi?"
-                                                   className="btn btn-outline btn-sm" onConfirm={() => withdraw(s.id)}/>
+                                                   className="btn btn-outline btn-sm" srLabel={s.name}
+                                                   onConfirm={() => withdraw(s.id)}/>
                                 )}
                             </div>
                         </li>

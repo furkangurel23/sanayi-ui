@@ -3,6 +3,9 @@
  * (PENDING varsayılan | APPROVED | REJECTED | WITHDRAWN | EXPIRED | ALL), `kind` (NORMAL |
  * DISPUTE), `district` (25 ilçe), `q` (≥2), `page` ve seçili talep `id`'sini doğrular;
  * client'a prop indirir; client URL'den türetilen `key` ile kurulur.
+ * `key` YALNIZ filtreler + sayfadan türetilir; seçili `id` prop olarak iner ama key'e girmez:
+ * "İncele"/"Ayrıntıyı kapat" kuyruğu yeniden kurmamalı (liste yeniden çekilip "Yükleniyor…"
+ * yanıp sönüyor, odak gövdeye düşüyordu). Geri/ileri ile `id` değişimi yine prop'la yansır.
  */
 import type {Metadata} from "next";
 import {parseEnum, parsePage, parsePositiveId, parseQuery} from "@/lib/params";
@@ -27,7 +30,7 @@ export default async function AdminClaimsPage({searchParams}: {
     const selected = parsePositiveId(sp.id);
     return (
         <AdminShell>
-            <AdminClaimsClient key={`${status}|${kind}|${district ?? ""}|${q ?? ""}|${page}|${selected ?? ""}`}
+            <AdminClaimsClient key={`${status}|${kind}|${district ?? ""}|${q ?? ""}|${page}`}
                                status={status} kind={kind === "ANY" ? undefined : kind} district={district} q={q}
                                page={page} selected={selected}/>
         </AdminShell>

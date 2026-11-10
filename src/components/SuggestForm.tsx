@@ -12,7 +12,7 @@
  * Hatalar: 403 (e-posta doğrulanmamış) ve 429 ("24 saatte en fazla 5 öneri") backend'in Türkçe
  * mesajıyla formun üstünde gösterilir (ProviderEditForm). Başarıda çağıran yönlendirir.
  */
-import {useRef, useState} from "react";
+import {useEffect, useRef, useState} from "react";
 import type {IdName, SimilarProvider, Suggestion} from "@/lib/types";
 import {ensureFreshToken} from "@/lib/auth";
 import {ApiError} from "@/lib/apiError";
@@ -31,6 +31,14 @@ export default function SuggestForm({categories, brands, onSubmitted}: Props) {
     const [similar, setSimilar] = useState<SimilarProvider[]>([]);
     const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const seq = useRef(0);
+
+    // Unmount'ta bekleyen 600 ms'lik denetimi iptal et (sayfadan ayrılınca boşuna istek
+    // gitmesin) ve uçuştaki yanıtı geçersiz kıl (`seq` artar -> eski yanıt setState yapmaz).
+    // Ref'ler zamanlayıcı/sayaç tutar (DOM değil) -> temizlikte güncel değerin okunması doğru.
+    useEffect(() => () => {
+        if (timer.current) clearTimeout(timer.current);
+        seq.current++;
+    }, []);
 
     function checkSimilar(name: string, location: ProviderFormValues["location"]) {
         if (timer.current) clearTimeout(timer.current);

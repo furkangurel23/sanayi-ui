@@ -130,7 +130,15 @@ export function submitClaim(token: string, providerId: number, data: ClaimSubmit
         };
         xhr.onload = () => {
             if (xhr.status >= 200 && xhr.status < 300) {
-                resolve(JSON.parse(xhr.responseText) as Claim);
+                // Başarılı yanıtın gövdesi bozuksa JSON.parse fırlatır; olay işleyicisinde
+                // yakalanmayan hata Promise'i HİÇ sonuçlandırmaz -> form "Gönderiliyor…"da
+                // takılırdı. Bu yüzden ayrıştırma hatası da ApiError sözleşmesiyle reddedilir.
+                try {
+                    resolve(JSON.parse(xhr.responseText) as Claim);
+                } catch {
+                    reject(new ApiError(xhr.status, "error.unknown",
+                        "Sunucu yanıtı okunamadı. Talebinizin durumunu Taleplerim sayfasından kontrol edin."));
+                }
                 return;
             }
             try {
