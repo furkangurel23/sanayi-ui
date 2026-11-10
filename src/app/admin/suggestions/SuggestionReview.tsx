@@ -6,9 +6,10 @@
  * - Ayrıntı her açılışta CANLI çekilir: olası tekrarlar gönderimden sonra eklenen dükkanları da
  *   içerir (backend yeniden hesaplar).
  * - Harita (salt okunur LocationPicker): ayrı görünümlü "Önerilen konum" işaretçisi + tekrar
- *   işaretçileri. Tekrar DTO'su koordinat taşımadığı için işaretçi konumları dükkanların GENEL
- *   detay ucundan (`/api/providers/{id}`) okunur; okunamayan tekrar haritada çizilmez ama METİN
- *   listesinde mesafesiyle her zaman yer alır (harita tek bilgi kaynağı değil).
+ *   işaretçileri. Tekrar DTO'su (SimilarProviderDto) artık `lat`/`lon` taşır -> işaretçiler
+ *   DOĞRUDAN yanıttan kurulur (eskiden her tekrar için ayrı `/api/providers/{id}` isteği vardı:
+ *   N tekrar = N+1 istek). Koordinatı olmayan (ör. eski backend yanıtı) tekrar haritada çizilmez
+ *   ama METİN listesinde mesafesiyle her zaman yer alır (harita tek bilgi kaynağı değil).
  * - Kararlar: "Olduğu gibi onayla" (overrides null), "Düzelterek onayla" (ProviderEditForm
  *   öneri-onay modu — tam alan seti `overrides` olarak gider; not alanı yönetici notudur),
  *   "Reddet" (ReasonDialog — gerekçe zorunlu, üyeye e-postayla gider).
@@ -36,8 +37,6 @@ import {distanceText} from "@/components/SimilarShopsNotice";
 import {formatDateTime} from "@/components/ChangeHistory";
 import {Close} from "@/components/icons";
 
-const BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080/api";
-
 type Props = {
     id: number;
     categories: IdName[];
@@ -52,25 +51,20 @@ async function token(): Promise<string> {
     return t;
 }
 
-/** Öneri + tekrarların harita işaretçileri (tekrar konumları genel detay ucundan). */
+/**
+ * Öneri + harita işaretçileri: önerilen konum ve olası tekrarlar (konumları DTO'dan, ek istek yok).
+ * `Number.isFinite` süzgeci: koordinatı eksik/bozuk tekrar işaretçi üretmez (metin listesi yine gösterir).
+ * Type guard `(m): m is PickerMarker` -> `filter` sonrası dizi tipi daralır (null kalmaz).
+ */
 async function loadReview(t: string, id: number) {
     const s = await adminSuggestion(t, id);
-    const dupMarkers = await Promise.all(s.possibleDuplicates.map(async d => {
-        try {
-            const res = await fetch(`${BASE}/providers/${d.id}`, {cache: "no-store"});
-            if (!res.ok) return null;
-            const detail = await res.json() as { location?: { lat: number; lon: number } | null };
-            return detail.location
-                ? {lat: detail.location.lat, lon: detail.location.lon, label: `${d.name} (${distanceText(d.distanceMeters)})`,
-                    kind: "duplicate" as const}
-                : null;
-        } catch {
-            return null;
-        }
-    }));
+    const dupMarkers = s.possibleDuplicates.map((d): PickerMarker | null =>
+        Number.isFinite(d.lat) && Number.isFinite(d.lon)
+            ? {lat: d.lat, lon: d.lon, label: `${d.name} (${distanceText(d.distanceMeters)})`, kind: "duplicate"}
+            : null);
     const markers: PickerMarker[] = [
         {lat: s.lat, lon: s.lon, label: "Önerilen konum", kind: "suggested"},
-        ...dupMarkers.filter((m): m is NonNullable<typeof m> => m !== null),
+        ...dupMarkers.filter((m): m is PickerMarker => m !== null),
     ];
     return {s, markers};
 }

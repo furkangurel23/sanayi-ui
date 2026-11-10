@@ -255,7 +255,10 @@ export type ChangeSet = {
     id: number;
     providerId: number;
     providerName?: string | null;
-    /** Sahip yolunda yönetici kayıtlarında null (UI "Yönetici" yazar). */
+    /**
+     * Sahip yolunda sahibin KENDİ kayıtları dışındaki tüm kayıtlarda null (yönetici ve önceki sahipler;
+     * UI "Yönetici" / "Önceki sahip" yazar). Yönetici yolunda maskesiz.
+     */
     actorEmail?: string | null;
     actorRole: "OWNER" | "ADMIN";
     kind: "EDIT" | "REVERT";
@@ -293,6 +296,9 @@ export type SimilarProvider = {
     district?: string | null;
     address?: string | null;
     distanceMeters: number;
+    /** Ekleyici alanlar (backend 003 inceleme): yönetici öneri haritasında tekrar işaretçisi için konum. */
+    lat: number;
+    lon: number;
 };
 
 export type SuggestionStatus = "PENDING" | "APPROVED" | "REJECTED" | "WITHDRAWN";

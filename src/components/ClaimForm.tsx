@@ -25,7 +25,9 @@ import type {Claim} from "@/lib/types";
 import {ensureFreshToken} from "@/lib/auth";
 import {ApiError, errorMessage} from "@/lib/apiError";
 import {myClaims, ownerProviders, submitClaim} from "@/lib/accountApi";
-import {CLAIM_FILE_ACCEPT, MAX_CLAIM_FILE_BYTES, MAX_CLAIM_FILES, MAX_NOTE_LENGTH} from "@/lib/limits";
+import {
+    CLAIM_FILE_ACCEPT, MAX_CLAIM_FILE_BYTES, MAX_CLAIM_FILE_MB, MAX_CLAIM_FILES, MAX_CLAIM_IMAGE_MEGAPIXELS, MAX_CLAIM_REQUEST_MB, MAX_NOTE_LENGTH,
+} from "@/lib/limits";
 import {CLAIM_PRIVACY_VERSION} from "@/lib/legal";
 import {CLAIM_PRIVACY_SUMMARY} from "@/content/claim-privacy-2026-11-10";
 import {CheckCircle, File as FileIcon, Upload} from "@/components/icons";
@@ -46,7 +48,12 @@ function mapClaimError(e: unknown): { alert: string; fields: Record<string, stri
     }
     switch (e.code) {
         case "error.upload.too-large":
-            return {alert: "Dosya 10 MB'tan büyük. Daha küçük bir dosya seçin.", fields: {files: "Dosya 10 MB'tan büyük."}};
+            // 413 iki yerden gelir: dosya başı sınır (10 MB) ya da isteğin tamamı (31 MB, gövde hiç
+            // ayrıştırılmadan). Backend metni aşılan sınırı sayıyla söyler -> alan altında o gösterilir.
+            return {
+                alert: `Belgeler çok büyük: her biri en fazla ${MAX_CLAIM_FILE_MB} MB, toplamı en fazla ${MAX_CLAIM_REQUEST_MB} MB olabilir.`,
+                fields: {files: e.message},
+            };
         case "error.claim.document-type":
             return {alert: `Yalnız JPG, PNG veya PDF yükleyebilirsiniz. ${e.message}`, fields: {files: e.message}};
         case "error.claim.document-corrupt":
@@ -54,7 +61,7 @@ function mapClaimError(e: unknown): { alert: string; fields: Record<string, stri
         case "error.claim.document-count":
             return {alert: "En fazla 3 belge yükleyebilirsiniz.", fields: {files: e.message}};
         case "error.claim.image-too-large":
-            return {alert: "Görsel çok büyük (en fazla 40 megapiksel). Daha küçük bir görsel seçin.", fields: {files: e.message}};
+            return {alert: `Görsel çok büyük (en fazla ${MAX_CLAIM_IMAGE_MEGAPIXELS} megapiksel). Daha küçük bir görsel seçin.`, fields: {files: e.message}};
         case "error.claim.already-pending":
             return {alert: "Bu dükkan için incelemede bir talebiniz var.", fields: {}};
         case "error.claim.already-owner":
@@ -176,8 +183,9 @@ export default function ClaimForm({providerId, providerName}: Props) {
             const token = await ensureFreshToken();
             if (!token) throw new ApiError(401, "error.auth.unauthorized", "Oturumunuzun süresi doldu. Yeniden giriş yapın.");
 
-            // 1) Ön kontrol — dosyalar yüklenmeden (gereksiz yükleme yok)
-            const [mine, owned] = await Promise.all([myClaims(token, 1, 200), ownerProviders(token)]);
+            // 1) Ön kontrol — dosyalar yüklenmeden (gereksiz yükleme yok). Yalnız BEKLEYEN talepler
+            //    sunucuda süzülerek istenir (`status=PENDING`): eski/kapanmış talepler sayfayı doldurmaz.
+            const [mine, owned] = await Promise.all([myClaims(token, 1, 200, "PENDING"), ownerProviders(token)]);
             if (owned.some(o => o.providerId === providerId)) {
                 setProgress(null);
                 showAlert("Bu dükkanın sahibi zaten sizsiniz.");

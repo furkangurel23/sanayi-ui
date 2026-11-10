@@ -3,8 +3,8 @@
 /*
  * TALEPLERİM — liste (003 / T115).
  *
- * Durum süzgeci Önerilerim ile aynı yöntemle (backend `/api/claims/mine` durum almaz; seçiliyken
- * en yeni 200 talep çekilip tarayıcıda süzülür; üye başına talep sayısı küçük: 24 saatte en çok 3).
+ * Durum süzgeci Önerilerim ile aynı yöntemle SUNUCUDA: `GET /api/claims/mine?status=&page=&size=`
+ * (süzme + sayfalama backend'de; "ALL" gönderilmez).
  * Satır: dükkan, tür ("İtiraz" rozeti), durum ("Süresi doldu" dahil), tarih, gerekçe, belge
  * ADLARI — indirme bağlantısı YOK (belgeler yalnız yöneticiye açık; silinen "silindi").
  * İncelemedeyken "Geri çek" (belgeler hemen silinir).
@@ -22,11 +22,13 @@ import {useAuthedData} from "@/lib/useAuthedData";
 import {myClaims, withdrawClaim} from "@/lib/accountApi";
 import {ensureFreshToken} from "@/lib/auth";
 import {ApiError, errorMessage} from "@/lib/apiError";
-import type {Claim, Page} from "@/lib/types";
+import type {ClaimStatus} from "@/lib/types";
 import {File as FileIcon, Shield} from "@/components/icons";
 
 const PAGE_SIZE = 20;
-const FILTERS: Array<{ value: string; label: string }> = [
+/** Süzgeç değeri: bir talep durumu ya da "ALL" (hepsi; backend'e gönderilmez). */
+type Filter = ClaimStatus | "ALL";
+const FILTERS: Array<{ value: Filter; label: string }> = [
     {value: "ALL", label: "Tümü"},
     {value: "PENDING", label: "İncelemede"},
     {value: "APPROVED", label: "Onaylandı"},
@@ -42,23 +44,13 @@ async function token(): Promise<string> {
     return t;
 }
 
-function List({status, page}: { status: string; page: number }) {
+function List({status, page}: { status: Filter; page: number }) {
     const router = useRouter();
     const [actionError, setActionError] = useState<string | null>(null);
     const filtered = status !== "ALL";
-    const data = useAuthedData(`my-claims:${status}:${page}`, async (t): Promise<Page<Claim>> => {
-        if (!filtered) return myClaims(t, page, PAGE_SIZE);
-        const all = (await myClaims(t, 1, 200)).content.filter(c => c.status === status);
-        return {
-            content: all.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
-            totalElements: all.length,
-            totalPages: Math.max(1, Math.ceil(all.length / PAGE_SIZE)),
-            size: PAGE_SIZE,
-            number: page - 1,
-        };
-    });
+    const data = useAuthedData(`my-claims:${status}:${page}`, t => myClaims(t, page, PAGE_SIZE, status));
 
-    function setFilter(value: string) {
+    function setFilter(value: Filter) {
         const params = new URLSearchParams(window.location.search);
         if (value === "ALL") params.delete("status"); else params.set("status", value);
         params.delete("page");
@@ -138,7 +130,7 @@ function List({status, page}: { status: string; page: number }) {
     );
 }
 
-export default function AccountClaimsClient({status, page}: { status: string; page: number }) {
+export default function AccountClaimsClient({status, page}: { status: Filter; page: number }) {
     return (
         <AccountShell title="Taleplerim" requireVerified={false}
                       subtitle="Sahiplenme taleplerinizin durumu. Belgeleri yalnız yöneticiler görür.">

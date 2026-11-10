@@ -6,8 +6,11 @@
  * - Her kayıt: tarih, kim (rol + e-posta), tür (düzenleme / geri alma), dikkat nedenleri,
  *   ve ÖNCE/SONRA tablosu (`.table-wrap` — dar ekranda tablo kendi kabında kayar, sayfa kaymaz).
  * - Alan adları Türkçe; kategori/marka id'leri ADLA, saatler gün gün, konum "enlem, boylam".
- * - Sahip yolunda backend yönetici kaydının e-postasını null döner -> "Yönetici" yazılır
- *   (yönetici kimliği sahibe sızmaz — research R6).
+ * - Sahip yolunda (`viewer="owner"`) backend, sahibin KENDİ kayıtları dışındaki TÜM kayıtlarda
+ *   e-postayı null döner: yönetici kimliği (research R6) ve devirden önceki sahibin e-postası (KVKK)
+ *   sızmaz. Bu yüzden sahip görünümünde "OWNER + e-posta yok" her zaman BAŞKA (önceki) bir sahiptir
+ *   -> "Önceki sahip"; "ADMIN + e-posta yok" -> "Yönetici". Yönetici görünümü (`viewer="admin"`,
+ *   varsayılan) maskesizdir; orada e-postası kayıtlı olmayan kayıt yalnız rol adıyla yazılır.
  * - `onRevert` verilirse (yalnız yönetici) "Geri al" düğmesi; 409 (alan sonradan değişti /
  *   zaten geri alınmış) mesajı kaydın altında gösterilir. `onAcknowledge` = dikkat "İncelendi".
  */
@@ -33,6 +36,11 @@ type Props = {
      * gösterir; kayıt içi mesaj hem kaybolur hem çift duyurulurdu. Hatalar her zaman kayıtta.
      */
     itemNotices?: boolean;
+    /**
+     * Kim bakıyor? Etiket kuralı buna göre değişir (bkz. `actorText`). Varsayılan "admin": yönetici
+     * ekranları değişmeden çalışır; yalnız sahip düzenleme sayfası `viewer="owner"` verir.
+     */
+    viewer?: "admin" | "owner";
     emptyText?: string;
 };
 
@@ -41,12 +49,19 @@ export function formatDateTime(iso: string | null | undefined): string {
     return new Date(iso).toLocaleString("tr-TR", {timeZone: "Europe/Istanbul", dateStyle: "medium", timeStyle: "short"});
 }
 
-function actorText(c: ChangeSet): string {
+/**
+ * Kaydı yapanın etiketi. E-posta varsa her zaman parantez içinde gösterilir (sahip görünümünde bu
+ * yalnız sahibin KENDİ kayıtlarında olur). E-posta yoksa: yönetici -> "Yönetici"; sahip rolü ->
+ * sahip görünümünde "Önceki sahip" (backend başka sahiplerin e-postasını maskeler), yönetici
+ * görünümünde "Sahip" (yönetici görünümü maskesiz; null yalnız e-postası kayıtlı olmayan kayıtta olur).
+ */
+function actorText(c: Pick<ChangeSet, "actorRole" | "actorEmail">, viewer: "admin" | "owner" = "admin"): string {
     if (c.actorRole === "ADMIN") return c.actorEmail ? `Yönetici (${c.actorEmail})` : "Yönetici";
-    return c.actorEmail ? `Sahip (${c.actorEmail})` : "Sahip";
+    if (c.actorEmail) return `Sahip (${c.actorEmail})`;
+    return viewer === "owner" ? "Önceki sahip" : "Sahip";
 }
 
-function ChangeItem({c, categories, brands, onRevert, onAcknowledge, showProvider, itemNotices = true}: Omit<Props, "items" | "emptyText"> & {
+function ChangeItem({c, categories, brands, onRevert, onAcknowledge, showProvider, itemNotices = true, viewer = "admin"}: Omit<Props, "items" | "emptyText"> & {
     c: ChangeSet
 }) {
     const [error, setError] = useState<string | null>(null);
@@ -78,7 +93,7 @@ function ChangeItem({c, categories, brands, onRevert, onAcknowledge, showProvide
                         </Link>
                     )}
                     <span className="callout">
-                        {c.kind === "REVERT" ? "Geri alma" : "Düzenleme"} &middot; {actorText(c)}
+                        {c.kind === "REVERT" ? "Geri alma" : "Düzenleme"} &middot; {actorText(c, viewer)}
                     </span>
                     <span className="caption muted">
                         <time dateTime={c.createdAt}>{formatDateTime(c.createdAt)}</time> &middot; Kayıt #{c.id}

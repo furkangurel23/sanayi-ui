@@ -85,7 +85,7 @@ function Editor({id, categories, brands}: Props) {
                 {history.error
                     ? <div className="alert alert-error" role="alert">{errorMessage(history.error)}</div>
                     : history.data
-                        ? <ChangeHistory items={history.data.content} categories={categories} brands={brands}/>
+                        ? <ChangeHistory items={history.data.content} categories={categories} brands={brands} viewer="owner"/>
                         : <p className="muted" role="status">Yükleniyor…</p>}
                 {history.data && (
                     <Pagination mode="callback" page={historyPage} totalPages={history.data.totalPages}

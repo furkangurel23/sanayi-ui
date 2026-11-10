@@ -3,10 +3,11 @@
 /*
  * ÖNERİLERİM — liste (003 / T107).
  *
- * Durum süzgeci: backend `/api/suggestions/mine` durum parametresi ALMAZ (yalnız sayfalı liste).
- * Üye başına öneri sayısı küçüktür (24 saatte en çok 5), bu yüzden süzgeç seçiliyken en yeni
- * 200 öneri tek istekte çekilir, süzme ve sayfalama tarayıcıda yapılır; süzgeç yokken sayfalama
- * backend'dedir. Her iki durumda sayfa numarası URL'dedir (`Pagination mode="url"`).
+ * Durum süzgeci SUNUCUDA: `GET /api/suggestions/mine?status=&page=&size=` (backend durumu
+ * büyük/küçük harf duyarsız okur; "ALL"/yok = hepsi). Süzme ve sayfalama tek istekte backend'de
+ * yapılır — eskiden süzgeç seçiliyken en yeni 200 kayıt çekilip tarayıcıda süzülüyordu (201.
+ * kayıttan sonrası hiç görünmezdi). Durum ve sayfa URL'dedir (`Pagination mode="url"`); sunucu
+ * `page.tsx` ikisini de doğrular, geçersiz durum backend'e hiç gitmez (anayasa III).
  *
  * Satır: ad + ilçe, durum rozeti (StatusChip), gönderim tarihi; reddedilende gerekçe;
  * onaylananda oluşan dükkanın bağlantısı; incelemedeyken "Geri çek" (iki aşamalı onay).
@@ -23,12 +24,14 @@ import {useAuthedData} from "@/lib/useAuthedData";
 import {mySuggestions, withdrawSuggestion} from "@/lib/accountApi";
 import {ensureFreshToken} from "@/lib/auth";
 import {ApiError, errorMessage} from "@/lib/apiError";
-import type {Page, Suggestion} from "@/lib/types";
+import type {SuggestionStatus} from "@/lib/types";
 import {Plus, Pin} from "@/components/icons";
 import {useState} from "react";
 
 const PAGE_SIZE = 20;
-const FILTERS: Array<{ value: string; label: string }> = [
+/** Süzgeç değeri: bir öneri durumu ya da "ALL" (hepsi; backend'e gönderilmez). */
+type Filter = SuggestionStatus | "ALL";
+const FILTERS: Array<{ value: Filter; label: string }> = [
     {value: "ALL", label: "Tümü"},
     {value: "PENDING", label: "İncelemede"},
     {value: "APPROVED", label: "Onaylandı"},
@@ -36,7 +39,7 @@ const FILTERS: Array<{ value: string; label: string }> = [
     {value: "WITHDRAWN", label: "Geri çekildi"},
 ];
 
-type Props = { status: string; page: number; sent: boolean };
+type Props = { status: Filter; page: number; sent: boolean };
 
 /** Taze belirteç; yoksa açık 401 (eskiden `!` ile "Bearer null" gidebiliyordu). */
 async function token(): Promise<string> {
@@ -49,19 +52,10 @@ function List({status, page}: Omit<Props, "sent">) {
     const router = useRouter();
     const [actionError, setActionError] = useState<string | null>(null);
     const filtered = status !== "ALL";
-    const data = useAuthedData(`my-suggestions:${status}:${page}`, async (t): Promise<Page<Suggestion>> => {
-        if (!filtered) return mySuggestions(t, page, PAGE_SIZE);
-        const all = (await mySuggestions(t, 1, 200)).content.filter(s => s.status === status);
-        return {
-            content: all.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
-            totalElements: all.length,
-            totalPages: Math.max(1, Math.ceil(all.length / PAGE_SIZE)),
-            size: PAGE_SIZE,
-            number: page - 1,
-        };
-    });
+    // Anahtar durum + sayfa içerir: biri değişince useAuthedData yeniden çeker (sırasız yanıt korumalı).
+    const data = useAuthedData(`my-suggestions:${status}:${page}`, t => mySuggestions(t, page, PAGE_SIZE, status));
 
-    function setFilter(value: string) {
+    function setFilter(value: Filter) {
         const params = new URLSearchParams(window.location.search);
         if (value === "ALL") params.delete("status"); else params.set("status", value);
         params.delete("page");

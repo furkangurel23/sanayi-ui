@@ -14,8 +14,8 @@
 "use client";
 
 import type {
-    ChangeSet, Claim, ClaimSubmitRequest, OwnedProvider, Page, ProviderEditRequest, ProviderEditView, SimilarProvider, SpringPage, Suggestion,
-    SuggestionCreateRequest,
+    ChangeSet, Claim, ClaimStatus, ClaimSubmitRequest, OwnedProvider, Page, ProviderEditRequest, ProviderEditView, SimilarProvider, SpringPage,
+    Suggestion, SuggestionCreateRequest, SuggestionStatus,
 } from "@/lib/types";
 import {normalizePage} from "@/lib/page";
 import {ApiError, toApiError} from "@/lib/apiError";
@@ -66,7 +66,7 @@ export function updateProvider(token: string, id: number, req: ProviderEditReque
     return authedJson("PUT", `${BASE}/owner/providers/${id}`, token, req);
 }
 
-/** Değişiklik geçmişi (en yeni önce; yönetici kayıtlarında e-posta null). */
+/** Değişiklik geçmişi (en yeni önce; sahibin KENDİ kayıtları dışındaki tüm kayıtlarda e-posta null). */
 export async function ownerHistory(token: string, id: number, page = 1, size = 20): Promise<Page<ChangeSet>> {
     return normalizePage(await authedJson<SpringPage<ChangeSet>>(
         "GET", `${BASE}/owner/providers/${id}/changes?${pageQuery(page, size)}`, token));
@@ -85,10 +85,17 @@ export function submitSuggestion(token: string, req: SuggestionCreateRequest): P
     return authedJson("POST", `${BASE}/suggestions`, token, req);
 }
 
-/** Önerilerim (en yeni önce). Backend durum filtresi almaz (bkz. AccountSuggestionsClient). */
-export async function mySuggestions(token: string, page = 1, size = 20): Promise<Page<Suggestion>> {
+/**
+ * Önerilerim (en yeni önce). `status` SUNUCUDA süzülür (backend: büyük/küçük harf duyarsız; yok
+ * veya "ALL" = hepsi; geçersiz değer 400 `error.suggestion.status-invalid`). Sayfalama da sunucuda.
+ * "ALL" hiç gönderilmez: `pageQuery` undefined değeri sorguya eklemez -> URL kısa ve eski
+ * backend'lerle uyumlu kalır.
+ */
+export async function mySuggestions(token: string, page = 1, size = 20,
+                                    status?: SuggestionStatus | "ALL"): Promise<Page<Suggestion>> {
+    const extra = {status: status === "ALL" ? undefined : status};
     return normalizePage(await authedJson<SpringPage<Suggestion>>(
-        "GET", `${BASE}/suggestions/mine?${pageQuery(page, size)}`, token));
+        "GET", `${BASE}/suggestions/mine?${pageQuery(page, size, extra)}`, token));
 }
 
 export function getSuggestion(token: string, id: number): Promise<Suggestion> {
@@ -156,9 +163,15 @@ export function submitClaim(token: string, providerId: number, data: ClaimSubmit
     return {promise, abort: () => xhr.abort()};
 }
 
-/** Taleplerim (en yeni önce). Backend durum filtresi almaz (bkz. AccountClaimsClient). */
-export async function myClaims(token: string, page = 1, size = 20): Promise<Page<Claim>> {
-    return normalizePage(await authedJson<SpringPage<Claim>>("GET", `${BASE}/claims/mine?${pageQuery(page, size)}`, token));
+/**
+ * Taleplerim (en yeni önce). `status` sunucuda süzülür (mySuggestions ile aynı kurallar; geçersiz
+ * değer 400 `error.claim.status-invalid`), sayfalama sunucuda. "ALL" gönderilmez.
+ */
+export async function myClaims(token: string, page = 1, size = 20,
+                               status?: ClaimStatus | "ALL"): Promise<Page<Claim>> {
+    const extra = {status: status === "ALL" ? undefined : status};
+    return normalizePage(await authedJson<SpringPage<Claim>>(
+        "GET", `${BASE}/claims/mine?${pageQuery(page, size, extra)}`, token));
 }
 
 export function getClaim(token: string, id: number): Promise<Claim> {
