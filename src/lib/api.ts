@@ -83,9 +83,12 @@ export async function getBrands(opts: {
     return normalizePage(await res.json() as SpringPage<BrandDto>);
 }
 
+// 002 (R6b): yalnız AD listesi isteyen çağrılar (ana sayfa, sohbet, filtreler) `withProviders=false`
+// gönderir — her kategorinin tüm dükkan özetleri artık ~2.900 kayıtla yüzlerce KB tutuyor.
 export async function getCategoriesAllSorted(): Promise<IdName[]> {
     const params = toQuery({page: 0, size: 200});
     params.append("sort", "name,asc");
+    params.append("withProviders", "false");
     const url = `${BASE}/categories?${params.toString()}`;
     const res = await fetch(url, {next: {revalidate: 300}});
     if (!res.ok) {
@@ -98,6 +101,7 @@ export async function getCategoriesAllSorted(): Promise<IdName[]> {
 export async function getBrandsAllSorted(): Promise<IdName[]> {
     const params = toQuery({page: 0, size: 200});
     params.append("sort", "name,asc");
+    params.append("withProviders", "false");
     const url = `${BASE}/brands?${params.toString()}`;
     const res = await fetch(url, {next: {revalidate: 300}});
     if (!res.ok) {

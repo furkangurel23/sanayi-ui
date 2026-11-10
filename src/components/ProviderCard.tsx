@@ -30,6 +30,7 @@ import type {ReactNode} from "react";
 import type {ProviderListItem} from "@/lib/types";
 import Link from "next/link";
 import ScoreBadge from "@/components/ScoreBadge";
+import {formatPhoneTR} from "@/lib/phone";
 import {Pin} from "@/components/icons";
 
 type Props = { p: ProviderListItem; distanceKm?: number; footer?: ReactNode };
@@ -46,7 +47,7 @@ export default function ProviderCard({p, distanceKm, footer}: Props) {
                         <Pin size="sm"/>
                         <span className="truncate">{location || "Konum bilgisi yok"}</span>
                     </div>
-                    {p.phone && <div className="caption faint">{p.phone}</div>}
+                    {p.phone && <div className="caption faint">{formatPhoneTR(p.phone)}</div>}
                     {distanceKm !== undefined && (
                         <span className="chip provider-card-extra">{distanceKm.toFixed(1)} km uzakta</span>
                     )}

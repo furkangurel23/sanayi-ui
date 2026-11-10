@@ -29,7 +29,8 @@ import BrandProvidersToggle from "@/components/BrandProvidersToggle";
 import {Chat} from "@/components/icons";
 
 export default function BrandCard({brand}: { brand: BrandDto }) {
-    const providerCount = brand.providers?.length ?? 0;
+    // 002: sayı backend'in providerCount alanından (görünür dükkanlar); eski backend'de liste boyu.
+    const providerCount = brand.providerCount ?? brand.providers?.length ?? 0;
 
     return (
         <BrandProvidersToggle
@@ -49,7 +50,7 @@ export default function BrandCard({brand}: { brand: BrandDto }) {
                     <Chat size="sm"/> Sohbet
                 </Link>
             }
-            hasList={providerCount > 0}
+            hasList={(brand.providers?.length ?? 0) > 0}
             listId={`brand-${brand.id}-providers`}
         >
             {(brand.providers ?? []).map((p) => (

@@ -11,7 +11,7 @@
 
 "use client";
 
-import type {AdminRatingItem, AdminUserItem, ModerationLogItem, Page, ProviderListItem, SpringPage} from "@/lib/types";
+import type {AdminProviderItem, AdminRatingItem, AdminUserItem, ModerationLogItem, Page, SpringPage} from "@/lib/types";
 import {normalizePage} from "@/lib/page";
 import {toApiError} from "@/lib/apiError";
 
@@ -72,15 +72,18 @@ export async function adminListLogs(token: string, ratingId: number, page = 0, s
 }
 
 // ---------------- DÜKKANLAR ----------------
-// Not: Listeleme için genel /api/providers ucunu kullanıyoruz (admin token gerekmez,
-// public zaten), silme ise admin token ister.
+// 002: liste artık YÖNETİCİ ucundan (GET /api/admin/providers, ROLE_ADMIN). Genel /api/providers
+// sentetik (demo) dükkanları gizler; admin onları `synthetic: true` etiketiyle görür ve
+// `includeSynthetic=false` ile gizleyebilir. Sıralama alanı backend'de beyaz listeli (name/createdAt/id/ratingCount).
 export async function adminListProviders(token: string, params: {
-    q?: string; city?: string; district?: string; page?: number; size?: number;
-}): Promise<Page<ProviderListItem>> {
+    q?: string; district?: string; includeSynthetic?: boolean; page?: number; size?: number;
+}): Promise<Page<AdminProviderItem>> {
     const p0 = Math.max(0, (params.page ?? 1) - 1);
-    const query = qs({q: params.q, city: params.city, district: params.district, page: p0, size: params.size ?? 20});
-    // sort=name,asc -> admin listesi alfabetik okunsun
-    return normalizePage(await getJson<SpringPage<ProviderListItem>>(`${BASE}/providers?${query}&sort=name,asc`, token));
+    const query = qs({
+        q: params.q, district: params.district, page: p0, size: params.size ?? 20,
+        includeSynthetic: params.includeSynthetic === false ? "false" : undefined,
+    });
+    return normalizePage(await getJson<SpringPage<AdminProviderItem>>(`${BASE}/admin/providers?${query}&sort=name,asc`, token));
 }
 
 export function adminDeleteProvider(token: string, providerId: number, reason?: string) {

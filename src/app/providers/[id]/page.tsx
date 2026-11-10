@@ -30,6 +30,8 @@
  *    ProviderMapClient sarmalayıcısı kaldırıldı (tek harita kalıbı). Harita kabının
  *    yüksekliği (--map-h) MapSection'da çalışma anı değeri olarak verilir.
  */
+import {formatPhoneTR} from "@/lib/phone";
+import {sourceLabel} from "@/lib/sources";
 import type {Page as PageType, ProviderDetailDto, ProviderListItem, RatingDto} from "@/lib/types";
 import {getProviderDetail, getProviderRatings} from "@/lib/api";
 import Link from "next/link";
@@ -134,10 +136,18 @@ export default async function ProviderDetailPage({
                             <Pin size="sm"/>
                             <span>{addressLine || "Adres bilgisi yok"}</span>
                         </div>
+                        {/* tel: bağlantısı E.164 kalır (aranabilir biçim); görünen metin gruplanmış (002). */}
                         {detail.phone && (
                             <a className="link-accent" href={`tel:${detail.phone}`}>
-                                {detail.phone}
+                                {formatPhoneTR(detail.phone)}
                             </a>
+                        )}
+                        {/* 002 / US3-AS2: verinin kaynağı (birleşmişse hepsi). Kaynaksız (elle eklenmiş)
+                            dükkanda ya da alanı göndermeyen eski backend'de satır hiç çizilmez. */}
+                        {detail.sources && detail.sources.length > 0 && (
+                            <p className="caption muted detail-source">
+                                Kaynak: {detail.sources.map(sourceLabel).join(", ")}
+                            </p>
                         )}
                     </div>
                     <ScoreBadge score={detail.avgScore} count={detail.ratingCount} size="lg"/>

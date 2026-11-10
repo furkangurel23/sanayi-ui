@@ -25,6 +25,7 @@
 import type {Metadata} from "next";
 import "./globals.css";
 import React from "react";
+import {DATA_ATTRIBUTIONS} from "@/lib/sources";
 import Header from "@/components/Header";
 import {THEME_COLOR, themeInit} from "./theme";
 import {geist} from "./fonts";
@@ -62,6 +63,18 @@ export default function RootLayout({children}: { children: React.ReactNode }) {
                     <span>Sanayi — Ankara usta &amp; servis platformu</span>
                 </span>
                 <span>Puanla · Yorumla · Sohbet et</span>
+                {/* 002 / SC-007: açık veri lisanslarının istediği atıf (OSM ODbL, Overture CDLA,
+                    Foursquare Apache 2.0 — Overture kayıtlarının bir kısmı Foursquare üst kaynaklı). */}
+                <p className="footer-attribution">
+                    İşletme verisi:{" "}
+                    {DATA_ATTRIBUTIONS.map((a, i) => (
+                        <span key={a.holder}>
+                            {a.holderHref ? <a href={a.holderHref} rel="noopener noreferrer">{a.holder}</a> : a.holder}
+                            {" "}(<a href={a.licenseHref} rel="noopener noreferrer license">{a.license}</a>)
+                            {i < DATA_ATTRIBUTIONS.length - 1 ? ", " : ""}
+                        </span>
+                    ))}
+                </p>
             </div>
         </footer>
         </body>

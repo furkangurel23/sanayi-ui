@@ -25,6 +25,9 @@ export type BrandDto = {
     id: number;
     name: string;
     providers: ProviderMiniDto[];
+    // 002: görünür (sentetik olmayan) dükkan sayısı. Opsiyonel: eski backend'le de çalışsın.
+    // `withProviders=false` çağrılarında `providers` boş gelir, sayı buradadır.
+    providerCount?: number;
 };
 
 export type Page<T> = {
@@ -53,6 +56,7 @@ export type CategoryDto = {
     id: number;
     name: string;
     providers: ProviderMiniDto[];
+    providerCount?: number;
 };
 
 export type IdName = {
@@ -79,6 +83,9 @@ export type ProviderDetailDto = {
     categories: IdName[];
     recentRatings?: RatingDto[];
     scoreHistogram?: Record<string, number>;
+    // 002: verinin kaynak kodları ("openstreetmap" | "overture" | "foursquare"), benzersiz ve alfabetik.
+    // Opsiyonel: eski backend alanı göndermez.
+    sources?: string[];
 };
 
 export type RatingDto = {
@@ -101,6 +108,30 @@ export type NearItem = {
     distanceKm: number;
     lat?: number | null;
     lon?: number | null;
+};
+
+// 002: GET /api/admin/providers satırı — sentetik dükkanlar da gelir (`synthetic: true`).
+export type ProviderSourceItem = {
+    source: string;
+    sourceId?: string | null;
+    sourceVersion?: string | null;
+    importedAt: string;
+};
+
+export type AdminProviderItem = {
+    id: number;
+    name: string;
+    address?: string | null;
+    city?: string | null;
+    district?: string | null;
+    phone?: string | null;
+    lat?: number | null;
+    lon?: number | null;
+    avgScore?: number | null;
+    ratingCount: number;
+    synthetic: boolean;
+    createdAt?: string | null;
+    sources: ProviderSourceItem[];
 };
 
 export type AdminRatingItem = {

@@ -3,9 +3,11 @@
 /*
  * ADMIN · DÜKKANLAR — listele, ara, sil.
  *
- * Listeleme public /api/providers ucundan (admin token gerekmez); silme ise
- * /api/admin/providers/{id} (ROLE_ADMIN). Silinen dükkanın yorumları cascade gider,
- * moderation_logs'a iz yazılır (backend).
+ * Listeleme 002'den beri YÖNETİCİ ucundan (GET /api/admin/providers): genel uç sentetik
+ * (demo) dükkanları gizler, burada "Sentetik" rozetiyle görünürler; "Yalnız gerçek" filtresi
+ * onları gizler (sentetik bayrağını değiştirmek kapsam dışı). Silme /api/admin/providers/{id}
+ * (ROLE_ADMIN): yorumlar cascade gider, moderation_logs'a iz ve içe aktarılmış kayıtsa
+ * kaynak kimlikleri engel listesine yazılır (backend).
  *
  * Arama URL'de DEĞİL local state'te: admin ekranı tam SPA, paylaşılabilir link
  * gereği yok; her tuşta URL'i kirletmemek için "Ara" tetikli.
@@ -20,7 +22,8 @@ import {useCallback, useEffect, useState} from "react";
 import {adminDeleteProvider, adminListProviders} from "@/lib/adminApi";
 import {ensureFreshToken} from "@/lib/auth";
 import {errorMessage} from "@/lib/apiError";
-import type {Page, ProviderListItem} from "@/lib/types";
+import type {AdminProviderItem, Page} from "@/lib/types";
+import {sourceLabel} from "@/lib/sources";
 import ConfirmButton from "@/components/ConfirmButton";
 import AdminShell from "@/app/admin/AdminShell";
 import Pagination from "@/components/Pagination";
@@ -28,24 +31,33 @@ import Pagination from "@/components/Pagination";
 function ProvidersAdmin() {
     const [q, setQ] = useState("");
     const [page, setPage] = useState(1);
-    const [data, setData] = useState<Page<ProviderListItem> | null>(null);
+    const [data, setData] = useState<Page<AdminProviderItem> | null>(null);
+    // true = sentetikler de listelenir (backend varsayılanı); false = yalnız gerçek dükkanlar.
+    const [includeSynthetic, setIncludeSynthetic] = useState(true);
     const [loading, setLoading] = useState(false);
     const [err, setErr] = useState<string | null>(null);
 
-    const load = useCallback(async (nextPage = page, query = q) => {
+    const load = useCallback(async (nextPage = page, query = q, withSynthetic = includeSynthetic) => {
         const token = await ensureFreshToken();
         if (!token) return;
         setLoading(true);
         setErr(null);
         try {
-            setData(await adminListProviders(token, {q: query || undefined, page: nextPage, size: 20}));
+            setData(await adminListProviders(token, {
+                q: query || undefined, includeSynthetic: withSynthetic, page: nextPage, size: 20,
+            }));
             setPage(nextPage);
         } catch (e: unknown) {
             setErr(errorMessage(e, "Liste alınamadı."));
         } finally {
             setLoading(false);
         }
-    }, [page, q]);
+    }, [page, q, includeSynthetic]);
+
+    function toggleSynthetic(next: boolean) {
+        setIncludeSynthetic(next);
+        load(1, q, next);
+    }
 
     // İlk yükleme
     useEffect(() => {
@@ -78,6 +90,13 @@ function ProvidersAdmin() {
                     setQ("");
                     load(1, "");
                 }}>Temizle</button>}
+                {/* Sentetik filtresi: seçili düğme D10 gereği zemin + kenar + kalınlık (.seg[data-active]) ve aria-pressed */}
+                <div className="seg" role="group" aria-label="Sentetik kayıtlar">
+                    <button type="button" data-active={includeSynthetic} aria-pressed={includeSynthetic}
+                            onClick={() => toggleSynthetic(true)}>Tümü</button>
+                    <button type="button" data-active={!includeSynthetic} aria-pressed={!includeSynthetic}
+                            onClick={() => toggleSynthetic(false)}>Yalnız gerçek</button>
+                </div>
             </div>
 
             {err && <div className="alert alert-error" role="alert">{err}</div>}
@@ -88,6 +107,7 @@ function ProvidersAdmin() {
                     <thead>
                     <tr>
                         <th>Dükkan</th>
+                        <th>Kaynak</th>
                         <th>Konum</th>
                         <th>Puan</th>
                         <th>Oy</th>
@@ -97,7 +117,7 @@ function ProvidersAdmin() {
                     <tbody>
                     {!data?.content.length && !loading && (
                         <tr>
-                            <td colSpan={5} className="muted">Kayıt yok.</td>
+                            <td colSpan={6} className="muted">Kayıt yok.</td>
                         </tr>
                     )}
                     {data?.content.map(p => (
@@ -107,6 +127,12 @@ function ProvidersAdmin() {
                                     {p.name}
                                 </Link>
                                 <div className="caption faint">#{p.id}</div>
+                                {p.synthetic && <span className="chip">Sentetik</span>}
+                            </td>
+                            <td className="callout muted">
+                                {p.sources.length
+                                    ? [...new Set(p.sources.map(s => sourceLabel(s.source)))].join(", ")
+                                    : "—"}
                             </td>
                             <td className="callout muted">{[p.district, p.city].filter(Boolean).join(", ")}</td>
                             <td className="cell-strong">

@@ -463,6 +463,12 @@ h2, h3, .headline {
 }
 .footer-inner { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2) var(--space-5); }
 .footer-brand { display: inline-flex; align-items: center; gap: var(--space-2); color: var(--fg); font-weight: var(--type-headline-wt); }
+/* 002 veri atfı: tam satır; bağlantılar metinle aynı renkte ama ALTI ÇİZİLİ (renk tek ayırt edici olmasın). */
+.footer-attribution { flex-basis: 100%; margin: 0; }
+.footer-attribution a { color: var(--fg-muted); text-decoration: underline; text-underline-offset: var(--space-1); }
+.footer-attribution a:hover { color: var(--fg); }
+/* 002 detay "Kaynak:" satırı */
+.detail-source { margin: 0; }
 
 /* ---------- butonlar ----------
    Yükseklik --control-h (44). Küçük (.btn-sm, 36) ve ikon (.btn-icon, 36) butonlarda
