@@ -1,36 +1,35 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Sanayi UI
 
-## Getting Started
+Ankara'daki sanayi ustalarını (usta/servis) marka ve kategoriye göre keşfetme, **-5..+5** puanlama, yorum ve marka sohbet odaları platformunun web arayüzü. Backend: [`../sanayi`](../sanayi) (Spring Boot + Kotlin, `:8080`).
 
-First, run the development server:
+## Gereksinimler
+
+- **Node 24 LTS** — sürüm `.nvmrc`'de (`nvm use`); `package.json` `engines` alanı da bunu ister.
+- Çalışan backend API (yerelde `http://localhost:8080/api`).
+
+## Kurulum ve çalıştırma
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+nvm use
+npm ci
+npm run dev     # http://localhost:3000 (Turbopack)
+npm run build   # üretim derlemesi
+npm run start   # üretim sunucusu
+npm run lint
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Ortam değişkenleri (`.env.local`)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| Değişken | Varsayılan | Açıklama |
+|---|---|---|
+| `NEXT_PUBLIC_API_URL` | `http://localhost:8080/api` | Backend REST adresi |
+| `NEXT_PUBLIC_WS_URL` | API origin + `/ws` | Sohbet WebSocket (STOMP) adresi |
+| `NEXT_PUBLIC_RECAPTCHA_SITE_KEY` | — | Anonim oylarda reCAPTCHA (prod) |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Teknoloji
 
-## Learn More
+Next.js 16 (App Router) · React 19 · TypeScript 6 · el yazımı CSS tasarım sistemi (UI kütüphanesi yok) · Leaflet (harita) · @stomp/stompjs (canlı sohbet).
 
-To learn more about Next.js, take a look at the following resources:
+## Geliştirme akışı
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Yeni özellikler Spec Kit ile geliştirilir: `docs/CALISMA_REHBERI.md`, kurallar `.specify/memory/constitution.md`, mimari ve konvansiyonlar `CLAUDE.md`.

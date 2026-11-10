@@ -20,13 +20,19 @@
  */
 
 import {useEffect, useState} from "react";
-import {setThemeColorMeta} from "@/app/theme";
+import {applyStoredTheme, setThemeColorMeta} from "@/app/theme";
 
 /** data-theme'i html'e yazar; tercih localStorage'da saklanır. İlk boyama layout'taki inline script ile FOUC'suz yapılır. */
 export default function ThemeToggle() {
     const [theme, setTheme] = useState<"light" | "dark" | null>(null);
 
     useEffect(() => {
+        // Önce kayıtlı tercihi yeniden uygula: kök layout bir hatadan (global-error →
+        // retry) kurtarıldığında React <html>'i yeniden bağlar ve prop'taki
+        // data-theme="dark"ı yazar; inline script tekrar koşmaz. Bu çağrı olmadan açık
+        // temayı seçmiş kullanıcı yenilemeye kadar koyu temada kalırdı.
+        // (applyStoredTheme theme-color meta'larını da günceller.)
+        applyStoredTheme();
         const current = document.documentElement.dataset.theme === "dark" ? "dark" : "light";
         setTheme(current);
         // Hidrasyondan sonra React head'e ikinci bir theme-color meta'sı eklemiş olabilir

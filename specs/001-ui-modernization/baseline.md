@@ -35,9 +35,31 @@
 
 Gözlem: metin LCP'lerinde süre neredeyse tamamen "Render Delay" (yükleme değil); harita rotalarında LCP üçüncü taraf karo görseli. Render-blocking yalnızca 9 KB'lık tek CSS (~155 ms). Ana iş parçacığı: `/` 2144 ms, `/providers` 2284 ms.
 
-## Sonra
+## Sonra — 2026-11-10 (Next 16.4.6, Node 24, C1–C3 sonrası; aynı koşullar)
 
-(implement sonunda doldurulur)
+| Rota | Perf | LCP (ms) | CLS | TBT (ms) | JS transfer (KB) | Toplam transfer (KB) | leaflet/recaptcha/stomp |
+|---|---|---|---|---|---|---|---|
+| / | 98 | 2412 | 0.000 | 53 | 148.7 | 261.2 | - |
+| /providers | 81 | 5277 | 0.000 | 40 | 197.9 | 429.9 | - |
+| /providers/1058 | 79 | 5244 | 0.000 | 164 | 558.0 | 829.0 | recaptcha (anonim — beklenen) |
+| /chat | 97 | 2505 | 0.000 | 22 | 145.9 | 312.9 | - |
+| /login | 98 | 2348 | 0.000 | 19 | 147.3 | 226.6 | - |
+| /brands | 96 | 2727 | 0.000 | 21 | 148.6 | 281.8 | - |
+
+- Logo dosyaları: 38 WebP, toplam ≈64 KB (disk bloğu sayımıyla `du` 152 KB), en büyük `honda.webp` 2.7 KB.
+- SC-002 (5 koşu medyan TTFB): `/providers/1058` 8.2 ms ≤ max(API detay 2.2, yorumlar 3.2) + 50 ms ✓; `/providers` 8.4 ms ≤ max(API liste 15.0, brands 1.8, categories 2.1) + 50 ms ✓.
+
+## SC değerlendirmesi
+
+| SC | Hedef | Sonuç |
+|---|---|---|
+| SC-001 | `/chat` logolar <300 KB, tek ≤10 KB | ✅ ≈64 KB toplam (−%98), en büyük 2.7 KB; `/chat` toplam transfer 3135 → 313 KB |
+| SC-002 | veri toplama ≤ en yavaş istek + 50 ms | ✅ (yukarıda) |
+| SC-003 | `/`, `/login`, `/chat` ilk yükte harita/recaptcha/stomp yok; JS artmaz | ✅ hiçbirinde yok; JS tüm rotalarda azaldı (−5…−9 KB) |
+| SC-004 | LCP ≤2.5 sn, CLS <0.1, TBT artmaz | ⚠️ **Kısmi.** CLS her yerde 0. LCP: `/` 4210→2412 ✅, `/login` 2499→2348 ✅, `/chat` 3102→2505 (hedefin 5 ms üstü, ölçüm gürültüsü sınırında), `/brands` 3104→2727 ❌, `/providers` 5760→5277 ❌, `/providers/[id]` 5071→5244 ❌ (≈ aynı). Harita rotalarında LCP öğesi üçüncü taraf OSM karosu ve harita artık ayrı parça olarak yüklendiği için gecikiyor (T045 notları); düzeltmesi görsel değişiklik gerektirdiğinden 002'ye devredildi (harita yer tutucu/LCP adayı). TBT: `/` 22→53 ve detay 127→164 arttı (React 19.3 + Next 16.4 çalışma zamanı; mutlak değerler düşük, Perf puanları `/` 86→98). |
+| SC-005 | 404'ler, beyaz ekran/500 yok | ✅ (C2 kapısı, curl) |
+| SC-006 | kullanılmayan paket 0 | ✅ `npm outdated` yalnız typescript/eslint/@types/node |
+| SC-007 | lint 0 hata ≤7 uyarı, build, CI Node 24 | ✅ 0/7, build temiz; CI dosyası `.nvmrc` kullanıyor (uzak CI koşusu push edilmediği için doğrulanmadı) |
 
 ## LCP kök neden (T045, ön ölçüm — resmi "Sonra" tablosu T049'da)
 

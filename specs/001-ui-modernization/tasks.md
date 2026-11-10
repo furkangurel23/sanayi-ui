@@ -104,13 +104,13 @@
 
 ## Phase 7: Polish & Cross-Cutting
 
-- [ ] T047 Doküman senkronu: `CLAUDE.md` (Next 16.4 / React 19.3 / TS 6.0 / Node 24; react-leaflet yok → imperatif Leaflet + `dynamic(ssr:false)` sarmalayıcılar; `params.ts`; RouteError/not-found/global-error; `providers/(list)` route group + `[id]/layout.tsx` 404 kalıbı ve nedeni; admin rotaları `/admin/providers`, `/admin/users`); `README.md` (create-next-app şablonu yerine proje README'si: amaç, Node 24, `npm ci`, `npm run dev/build/lint`, env değişkenleri, backend bağlantısı)
-- [ ] T048 Anayasa güncellemesi **`/speckit-constitution` ile** (Governance gereği; elle düzenleme yok): Kalite Kapıları'na "Node 24 LTS (`.nvmrc`)" ve "lint: 0 hata, uyarı sayısı artmaz", I. ilkeye "konuma özel sorgular `no-store` olabilir" istisnası; sürüm 1.2.0 + Sync Impact Report
-- [ ] T049 Prod build + `measure.sh after <id>` (rotalar + `ROUTES=/brands` ayrıca); `baseline.md` "Sonra" tablosu, SC-001…SC-004 önce/sonra; SC-002 quickstart `curl` yöntemiyle
-- [ ] T050 Görünüm regresyonu: tüm rotalar koyu + açık, 375 px ve masaüstü; baseline commit'i (`git worktree add /tmp/ui-before 8aa81c2`) ile yan yana — fark yalnızca yeni 404/hata ekranları
-- [ ] T051 quickstart #13, #14, #18 tam akış (kayıt → doğrulama → giriş → puan → sohbet → admin)
-- [ ] T052 `frontend-reviewer` ile kod incelemesi (code modu, `git diff 89a6e7d..HEAD -- . ':!specs'`); BLOCKER/MAJOR bulguları düzelt
-- [ ] T053 `/speckit-converge`; "Converged" olana kadar eksikleri tamamla → **Commit C4** (`docs(ui): measurements, CLAUDE.md, README, constitution 1.2.0`)
+- [x] T047 Doküman senkronu: `CLAUDE.md` (Next 16.4 / React 19.3 / TS 6.0 / Node 24; react-leaflet yok → imperatif Leaflet + `dynamic(ssr:false)` sarmalayıcılar; `params.ts`; RouteError/not-found/global-error; `providers/(list)` route group + `[id]/layout.tsx` 404 kalıbı ve nedeni; admin rotaları `/admin/providers`, `/admin/users`); `README.md` (create-next-app şablonu yerine proje README'si: amaç, Node 24, `npm ci`, `npm run dev/build/lint`, env değişkenleri, backend bağlantısı)
+- [x] T048 Anayasa güncellemesi **`/speckit-constitution` ile** (Governance gereği; elle düzenleme yok): Kalite Kapıları'na "Node 24 LTS (`.nvmrc`)" ve "lint: 0 hata, uyarı sayısı artmaz", I. ilkeye "konuma özel sorgular `no-store` olabilir" istisnası; sürüm 1.2.0 + Sync Impact Report
+- [x] T049 Prod build + `measure.sh after <id>` (rotalar + `ROUTES=/brands` ayrıca); `baseline.md` "Sonra" tablosu, SC-001…SC-004 önce/sonra; SC-002 quickstart `curl` yöntemiyle
+- [x] T050 Görünüm regresyonu: tüm rotalar koyu + açık, 375 px ve masaüstü; baseline commit'i (`git worktree add /tmp/ui-before 8aa81c2`) ile yan yana — fark yalnızca yeni 404/hata ekranları
+- [x] T051 quickstart #13, #14, #18 tam akış (kayıt → doğrulama → giriş → puan → sohbet → admin)
+- [x] T052 `frontend-reviewer` ile kod incelemesi (code modu, `git diff 89a6e7d..HEAD -- . ':!specs'`); BLOCKER/MAJOR bulguları düzelt
+- [x] T053 `/speckit-converge`; "Converged" olana kadar eksikleri tamamla → **Commit C4** (`docs(ui): measurements, CLAUDE.md, README, constitution 1.2.0`)
 
 ---
 
@@ -151,6 +151,10 @@ Task: "T043 forgot-password page + ForgotPasswordForm"
 ## Uygulama Notları
 
 (T004, T045 kararları ve uygulama sırasında öğrenilenler buraya yazılır.)
+
+- **T050 (görsel kontrol, 2026-11-10)**: `/providers`, `/providers/1058` (koyu, masaüstü), `/chat`, `/brands` (açık, 375 px) yerleşik tarayıcıda kontrol edildi; görünüm beklenen. `/brands` kartlarında 375 px'te 26 px yatay taşma var — DOM 001 öncesiyle birebir (frontend-reviewer doğruladı), yani önceden var olan sorun; 002 T026'ya devredildi. Açık temada 2 theme-color meta (bilinen, zararsız).
+- **T051**: kayıt (201) → backend konsol logundaki doğrulama bağlantısı → `/verify-email?token=…` → otomatik giriş + ana sayfaya yönlendirme yerleşik tarayıcıda doğrulandı (test kullanıcısı sonra silindi); giriş, puanlama (anonim), sohbet listesi, admin log yolu, 404/hata ekranları ve parametre doğrulama curl + tarayıcı ile doğrulandı (implementer + frontend-reviewer).
+- **T052**: frontend-reviewer code modu → APPROVE (0 BLOCKER/MAJOR). MINOR (global-error retry sonrası tema) düzeltildi: `ThemeToggle` mount'ta `applyStoredTheme()`.
 
 ### T004 — Next 16.4.6 doküman kontrolü
 - (a) **`unstable_retry` artık yok, yerine kararlı `retry` var.** `node_modules/next/dist/docs/01-app/03-api-reference/03-file-conventions/error.md` Version History: "v16.2.0 `unstable_retry` prop added", "v16.3.0 `retry` prop became stable". Çalışma zamanı (`dist/client/components/error-boundary.js`) `retry = () => startTransition(() => { router.refresh(); reset(); })` — yani bizim yedek planımızın birebir aynısı, resmi API olarak. **Karar**: RouteError ve global-error `retry` prop'unu kullanır; elle `router.refresh()` yazılmaz. Ayrıca prop tipi `error: unknown` (istemci bileşeninde `throw` edilen değer `Error` olmayabilir) → `digest` okunmadan önce `instanceof Error` ile daraltılır.
@@ -195,3 +199,6 @@ Task: "T043 forgot-password page + ForgotPasswordForm"
 - Not: tarayıcı profilinde test için yazılan `sanayiTheme`, `sanayiToken` anahtarları temizlendi.
 - **Eşzamanlılık uyarısı**: oturum scratchpad'indeki `mark.sh` başka bir ajan (backend implementer) tarafından backend worktree'sinin tasks.md'sine işaret edecek şekilde üzerine yazılmış; bir çağrım bu yüzden backend `001-backend-modernization/tasks.md`'de T041–T043'ü yanlışlıkla işaretledi — hemen geri alındı (`[ ]`), bu dosyada başka değişiklik yapılmadı.
 
+## Phase 8: Convergence
+
+- [ ] T054 Harita rotalarında (`/providers`, `/providers/[id]`) ve `/brands`'te LCP ≤2.5 sn hedefini karşıla per SC-004 (partial) — LCP öğesi OSM karosu / logo ızgarası; görsel değişiklik gerektirdiği için **002-premium-dark-redesign T015 (harita kabı/yer tutucu) + T038 (bütçe ölçümü)** kapsamında ele alınır; ölçüm `baseline.md` "Sonra"
