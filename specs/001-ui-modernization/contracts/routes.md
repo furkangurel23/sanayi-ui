@@ -7,7 +7,7 @@ Kullanıcıya (tarayıcı ve arama motorları) açılan arayüz: rota → HTTP d
 | İstek | Önce | Sonra |
 |---|---|---|
 | `GET /providers/{id}` — var olan id | 200 | 200 |
-| `GET /providers/{id}` — backend 404 | 500 | **404** (not-found sayfası; kontrol `providers/[id]/layout.tsx`'te, loading sınırının üstünde) |
+| `GET /providers/{id}` — backend 404 | 500 | **404** (not-found sayfası; kontrol `providers/[id]/layout.tsx`'te; liste dosyaları `providers/(list)/` route group'unda olduğu için hiçbir loading sınırı bu layout'u sarmaz) |
 | `GET /providers/abc`, `/providers/0`, `/providers/-1` | 500 | **404** |
 | `GET /olmayan-sayfa` | 404 (Next varsayılanı, İngilizce) | **404** (Türkçe not-found) |
 | Herhangi bir rotada beklenmeyen sunucu hatası | Ham hata metni / İngilizce | Türkçe `RouteError` (rota) veya `global-error` (kök düzen) |

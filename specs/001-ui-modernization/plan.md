@@ -78,7 +78,7 @@ src/
 │   ├── error.tsx                   # YENİ (RouteError re-export)
 │   ├── global-error.tsx            # YENİ
 │   ├── brands/{page,error}.tsx
-│   ├── providers/{page,error}.tsx              # Promise.all + catch, params.ts
+│   ├── providers/(list)/{page,loading,error}.tsx  # route group'a taşındı (URL aynı) — [id] layout'u loading sınırı dışında kalsın; Promise.all + catch, params.ts
 │   ├── providers/[id]/layout.tsx              # YENİ: id doğrulama + cache()'li detay + notFound() (404 durum kodu, loading üstünde)
 │   ├── providers/[id]/{page,error}.tsx         # Promise.all, cache(), harita client sarmalayıcı
 │   ├── providers/near/{page,error}.tsx         # clamp gösterimi
