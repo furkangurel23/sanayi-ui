@@ -4,7 +4,8 @@
  *
  * Lisanslar: OpenStreetMap ODbL (atıf "© OpenStreetMap katkıcıları"), Overture Maps
  * CDLA-Permissive-2.0, Foursquare OS Places Apache-2.0 (Overture kayıtlarının bir kısmı
- * Foursquare üst kaynaklıdır — içe aktarma raporu: 224 kayıt).
+ * Foursquare üst kaynaklıdır — kayıt sayısı her içe aktarmada değişir; güncel sayı backend
+ * deposundaki docs/import-reports/ raporlarının "Üst kaynaklar" tablosunda, burada SABİT tutulmaz).
  */
 export const SOURCE_LABELS: Record<string, string> = {
     openstreetmap: "OpenStreetMap",
@@ -25,5 +26,6 @@ export const DATA_ATTRIBUTIONS: ReadonlyArray<{
         license: "ODbL", licenseHref: "https://opendatacommons.org/licenses/odbl/"},
     {holder: "Overture Maps Foundation", holderHref: "https://docs.overturemaps.org/attribution/",
         license: "CDLA-Permissive-2.0", licenseHref: "https://cdla.dev/permissive-2-0/"},
-    {holder: "Foursquare", license: "Apache 2.0", licenseHref: "https://www.apache.org/licenses/LICENSE-2.0"},
+    {holder: "Foursquare", holderHref: "https://opensource.foursquare.com/os-places/",
+        license: "Apache 2.0", licenseHref: "https://www.apache.org/licenses/LICENSE-2.0"},
 ];

@@ -12,13 +12,23 @@
  * Arama URL'de DEĞİL local state'te: admin ekranı tam SPA, paylaşılabilir link
  * gereği yok; her tuşta URL'i kirletmemek için "Ara" tetikli.
  *
+ * İKİ ayrı arama state'i (T091 incelemesi): `q` kutudaki YAZILAN metin, `appliedQ` en son
+ * GÖNDERİLEN (Ara/Enter) sorgu. Sentetik filtresi ve sayfalama `appliedQ` ile yükler: kullanıcı
+ * kutuya yazıp Ara'ya basmadan sayfa değiştirirse liste, ekrandaki sonuçlarla tutarlı kalır
+ * (eskiden yarım yazılmış metinle sorgu atılıyordu).
+ *
+ * Yarış koruması: hızlı tıklamalarda (sayfa 2 → 3 → filtre) yanıtlar sırasız dönebilir. Her
+ * istek `useRef` sayacından bir numara alır; yalnız EN SON isteğin yanıtı `setData` edilir —
+ * eski bir yanıt yeni sonucu ezemez. `useRef` = render'lar arasında yaşayan, değişince yeniden
+ * render TETİKLEMEYEN kutu (sayaç için ideal; useState olsaydı her artış render ederdi).
+ *
  * 002: satır içi stiller sınıflara (.admin-search, .cell-*); sayfalama ortak
  * <Pagination mode="callback">. Dükkan bağlantısı ham <a> yerine next/link <Link>
  * (yeni sekmede açılır — target="_blank" korunur; Link'in prefetch'i de gelir).
  */
 import Link from "next/link";
 
-import {useCallback, useEffect, useState} from "react";
+import {useCallback, useEffect, useRef, useState} from "react";
 import {adminDeleteProvider, adminListProviders} from "@/lib/adminApi";
 import {ensureFreshToken} from "@/lib/auth";
 import {errorMessage} from "@/lib/apiError";
@@ -29,34 +39,41 @@ import AdminShell from "@/app/admin/AdminShell";
 import Pagination from "@/components/Pagination";
 
 function ProvidersAdmin() {
-    const [q, setQ] = useState("");
+    const [q, setQ] = useState("");                 // kutudaki metin (yazılan)
+    const [appliedQ, setAppliedQ] = useState("");   // en son gönderilen sorgu (liste bunu gösterir)
     const [page, setPage] = useState(1);
+    const requestSeq = useRef(0);                   // yalnız son isteğin yanıtı yazılsın
     const [data, setData] = useState<Page<AdminProviderItem> | null>(null);
     // true = sentetikler de listelenir (backend varsayılanı); false = yalnız gerçek dükkanlar.
     const [includeSynthetic, setIncludeSynthetic] = useState(true);
     const [loading, setLoading] = useState(false);
     const [err, setErr] = useState<string | null>(null);
 
-    const load = useCallback(async (nextPage = page, query = q, withSynthetic = includeSynthetic) => {
+    const load = useCallback(async (nextPage = page, query = appliedQ, withSynthetic = includeSynthetic) => {
+        const seq = ++requestSeq.current;
         const token = await ensureFreshToken();
-        if (!token) return;
+        if (!token || seq !== requestSeq.current) return;
         setLoading(true);
         setErr(null);
         try {
-            setData(await adminListProviders(token, {
+            const result = await adminListProviders(token, {
                 q: query || undefined, includeSynthetic: withSynthetic, page: nextPage, size: 20,
-            }));
+            });
+            // Bu yanıt gelene kadar daha yeni bir istek başladıysa sonucu at (sırasız yanıt).
+            if (seq !== requestSeq.current) return;
+            setData(result);
             setPage(nextPage);
+            setAppliedQ(query);
         } catch (e: unknown) {
-            setErr(errorMessage(e, "Liste alınamadı."));
+            if (seq === requestSeq.current) setErr(errorMessage(e, "Liste alınamadı."));
         } finally {
-            setLoading(false);
+            if (seq === requestSeq.current) setLoading(false);
         }
-    }, [page, q, includeSynthetic]);
+    }, [page, appliedQ, includeSynthetic]);
 
     function toggleSynthetic(next: boolean) {
         setIncludeSynthetic(next);
-        load(1, q, next);
+        load(1, appliedQ, next);
     }
 
     // İlk yükleme
@@ -127,7 +144,8 @@ function ProvidersAdmin() {
                                     {p.name}
                                 </Link>
                                 <div className="caption faint">#{p.id}</div>
-                                {p.synthetic && <span className="chip">Sentetik</span>}
+                                {/* chip-accent: gerçek kayıtlardan ayrışsın diye vurgulu rozet (token renkleri) */}
+                                {p.synthetic && <span className="chip chip-accent">Sentetik</span>}
                             </td>
                             <td className="callout muted">
                                 {p.sources.length
@@ -150,7 +168,7 @@ function ProvidersAdmin() {
             </div>
 
             {/* Ortak sayfalama, callback modu: yerel state, URL'e ?page yazılmaz */}
-            <Pagination mode="callback" page={page} totalPages={total} onPage={n => load(n, q)}/>
+            <Pagination mode="callback" page={page} totalPages={total} onPage={n => load(n, appliedQ)}/>
         </>
     );
 }
