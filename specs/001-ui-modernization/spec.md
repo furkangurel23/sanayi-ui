@@ -153,6 +153,7 @@ Geliştirici projeyi kurduğunda desteklenen bir çalışma ortamında, yalnızc
 
 - Görsel yeniden tasarım: renkler, düzen, tipografi, ikonlar, koyu harita, satır içi stil temizliği ve **sohbet görsel eklerinde düzen kaymasının önlenmesi** (görünüm değişikliği gerektirir) → 002.
 - `typescript` 7.x (typescript-eslint peer `<6.1.0`), `eslint` 10.x (eslint-plugin-react/import/jsx-a11y peer `^9`), `leaflet` 2.x (beta; react-leaflet olmasa da API kırıcı) yükseltmeleri. Bu paketler `npm outdated` raporunda kalacaktır.
+- `@types/node` 26.x: çalışma ortamı Node 24 olduğu için `^24` hattında kalır (FR-006); `npm outdated` raporunda kalır.
 - `leaflet-defaulticon-compatibility` ve `react-google-recaptcha` bakımsız ama güncel; değiştirilmez.
 - Sayfalamanın bağlantı tabanlı (JS'siz) hale getirilmesi.
 - Mevcut 7 lint uyarısının giderilmesi.
