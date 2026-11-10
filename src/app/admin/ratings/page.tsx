@@ -5,6 +5,12 @@
  *
  * URL-state DEĞİL local state: admin tam SPA (paylaşılabilir link gereksiz),
  * useSearchParams kaldırıldı -> Suspense derdi de yok. Yetki + başlık AdminShell'de.
+ *
+ * 002: 17 satır içi stil sınıflara taşındı (.admin-toolbar/.admin-filters, .cell-*,
+ * .chip-pos/-neg, .row-actions); sayfalama ortak <Pagination mode="callback"> (yerel state,
+ * URL'e ?page YAZILMAZ — admin URL'leri değişmez); log paneli elle yazılmış perde yerine
+ * ortak <Dialog> (Escape kapatır, odak içeride döner, kapanınca "Log" butonuna geri gelir —
+ * FR-010). Tablo .table-wrap içinde: dar ekranda yatay kaydırma TABLO KABINDA kalır.
  */
 
 import {adminDeleteRating, adminListLogs, adminListRatings, adminRestoreRating} from "@/lib/adminApi";
@@ -14,6 +20,9 @@ import {ensureFreshToken} from "@/lib/auth";
 import {errorMessage} from "@/lib/apiError";
 import ConfirmButton from "@/components/ConfirmButton";
 import AdminShell from "@/app/admin/AdminShell";
+import Pagination from "@/components/Pagination";
+import Dialog from "@/components/Dialog";
+import {Close} from "@/components/icons";
 
 function formatDate(iso: string) {
     try {
@@ -124,12 +133,12 @@ function RatingsAdmin() {
             </div>
 
             {/* Filtreler */}
-            <div className="card stack" style={{padding: "1rem 1.25rem"}}>
-                <div className="grid-3" style={{gap: "0.75rem"}}>
-                    <div className="row" style={{gap: "0.5rem"}}>
+            <div className="card admin-toolbar">
+                <div className="admin-filters">
+                    <div className="toolbar-inputs">
                         <input className="input" value={providerId} onChange={e => setProviderId(e.target.value)}
-                               placeholder="Provider ID"/>
-                        <select className="select" style={{width: "9rem"}} value={status}
+                               placeholder="Provider ID" aria-label="Provider ID"/>
+                        <select className="select" value={status} aria-label="Durum"
                                 onChange={e => setStatus(e.target.value as "ACTIVE" | "DELETED" | "ALL")}>
                             <option value="ACTIVE">Aktif</option>
                             <option value="DELETED">Silinmiş</option>
@@ -137,15 +146,15 @@ function RatingsAdmin() {
                         </select>
                     </div>
                     <input className="input" value={q} onChange={e => setQ(e.target.value)}
-                           placeholder="Yorum içinde ara"/>
-                    <div className="row" style={{gap: "0.5rem"}}>
-                        <input className="input" type="datetime-local" value={from}
+                           placeholder="Yorum içinde ara" aria-label="Yorum içinde ara"/>
+                    <div className="toolbar-inputs">
+                        <input className="input" type="datetime-local" value={from} aria-label="Başlangıç tarihi"
                                onChange={e => setFrom(e.target.value)}/>
-                        <input className="input" type="datetime-local" value={to}
+                        <input className="input" type="datetime-local" value={to} aria-label="Bitiş tarihi"
                                onChange={e => setTo(e.target.value)}/>
                     </div>
                 </div>
-                <div className="row">
+                <div className="cluster">
                     <button onClick={applyFilters} className="btn btn-primary" disabled={loading}>Uygula</button>
                     <button
                         className="btn btn-ghost"
@@ -163,10 +172,11 @@ function RatingsAdmin() {
                 </div>
             </div>
 
-            {err && <div className="alert alert-error">{err}</div>}
+            {err && <div className="alert alert-error" role="alert">{err}</div>}
 
             {/* Liste */}
-            <div className="table-wrap">
+            {/* Kaydırılabilir kap klavyeyle de kaydırılabilsin: odaklanabilir bölge + ad */}
+            <div className="table-wrap" tabIndex={0} role="region" aria-label="Yorumlar tablosu">
                 <table className="data">
                     <thead>
                     <tr>
@@ -177,7 +187,7 @@ function RatingsAdmin() {
                         <th>IP</th>
                         <th>Tarih</th>
                         <th>Durum</th>
-                        <th></th>
+                        <th><span className="sr-only">İşlemler</span></th>
                     </tr>
                     </thead>
                     <tbody>
@@ -192,25 +202,24 @@ function RatingsAdmin() {
                             <tr key={it.id}>
                                 <td>
                                     <a href={`/providers/${it.providerId}`} target="_blank"
-                                       rel="noreferrer noopener"
-                                       style={{color: "var(--accent-text)", fontWeight: 550}}>
+                                       rel="noreferrer noopener">
                                         {it.providerName}
                                     </a>
-                                    <div className="text-xs faint">#{it.id}</div>
+                                    <div className="caption faint">#{it.id}</div>
                                 </td>
-                                <td style={{fontWeight: 700}}>{it.score > 0 ? `+${it.score}` : it.score}</td>
-                                <td style={{maxWidth: 340}}>{it.comment || <span className="faint">—</span>}</td>
+                                {/* Gerçek eksi işareti (U+2212) — ScoreBadge ile aynı yazım */}
+                                <td className="cell-strong">{it.score > 0 ? `+${it.score}` : it.score < 0 ? `\u2212${-it.score}` : "0"}</td>
+                                <td className="cell-comment">{it.comment || <span className="faint">—</span>}</td>
                                 <td>{who}</td>
                                 <td className="text-xs muted">{it.ip || "—"}</td>
                                 <td className="text-xs muted">{formatDate(it.createdAt)}</td>
                                 <td>
-                                    <span className="chip"
-                                          style={{color: it.deletedAt ? "var(--neg)" : "var(--pos)"}}>
+                                    <span className={`chip ${it.deletedAt ? "chip-neg" : "chip-pos"}`}>
                                         {it.deletedAt ? "Silinmiş" : "Aktif"}
                                     </span>
                                 </td>
-                                <td style={{whiteSpace: "nowrap", textAlign: "right"}}>
-                                    <span className="row" style={{gap: "0.35rem", justifyContent: "flex-end"}}>
+                                <td className="cell-actions">
+                                    <span className="row-actions">
                                         <button onClick={() => openLogs(it.id)}
                                                 className="btn btn-outline btn-sm">Log</button>
                                         {!it.deletedAt ? (
@@ -229,60 +238,40 @@ function RatingsAdmin() {
                 </table>
             </div>
 
-            {/* Sayfalama */}
-            <nav className="row" style={{justifyContent: "center"}} aria-label="Sayfalama">
-                <button className="btn btn-outline btn-sm" onClick={() => goPage(Math.max(1, page - 1))}
-                        disabled={page <= 1}>← Önceki
-                </button>
-                <span className="text-sm muted">Sayfa {page} / {data?.totalPages ? Math.max(1, data.totalPages) : 1}</span>
-                <button className="btn btn-outline btn-sm"
-                        onClick={() => goPage(Math.min(data?.totalPages || 1, page + 1))}
-                        disabled={page >= (data?.totalPages || 1)}>Sonraki →
-                </button>
-            </nav>
+            {/* Sayfalama: ortak görsel bileşen, callback modu (yerel state, URL değişmez) */}
+            <Pagination mode="callback" page={page} totalPages={data?.totalPages || 1} onPage={goPage}/>
 
-            {/* Log paneli */}
-            {logForId !== null && (
-                <div role="dialog" aria-modal="true"
-                     style={{
-                         position: "fixed", inset: 0, background: "oklch(0 0 0 / 0.45)",
-                         backdropFilter: "blur(4px)", display: "flex", zIndex: 200,
-                     }}
-                     onClick={() => setLogForId(null)}>
-                    <div className="card stack"
-                         style={{
-                             marginLeft: "auto", height: "100%", width: "100%", maxWidth: "34rem",
-                             borderRadius: 0, overflow: "auto",
-                         }}
-                         onClick={e => e.stopPropagation()}>
-                        <div className="row-between">
-                            <h2 className="section-title">Loglar · #{logForId}</h2>
-                            <button onClick={() => setLogForId(null)} className="btn btn-ghost btn-sm">Kapat</button>
-                        </div>
-
-                        {logsLoading && <div className="muted text-sm">Yükleniyor…</div>}
-                        {!logsLoading && !logs?.content?.length && (
-                            <div className="muted text-sm">Log bulunamadı.</div>
-                        )}
-
-                        <ul className="stack-sm">
-                            {logs?.content.map(l => (
-                                <li key={l.id} className="card" style={{padding: "0.7rem 0.9rem"}}>
-                                    <div className="row-between">
-                                        <b className="text-sm">{l.action}</b>
-                                        <span className="text-xs faint">{formatDate(l.createdAt)}</span>
-                                    </div>
-                                    <div className="text-xs muted" style={{marginTop: "0.25rem"}}>
-                                        actor: {l.actorEmail || (l.actorUserId ? `#${l.actorUserId}` : "?")}
-                                        {l.ipAddress ? ` · ip: ${l.ipAddress}` : ""}
-                                    </div>
-                                    {l.reason && <div className="text-xs" style={{marginTop: "0.25rem"}}>sebep: {l.reason}</div>}
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
+            {/* Log paneli: ortak Dialog (FR-010) — başlık id'si aria-labelledby ile bağlı */}
+            <Dialog open={logForId !== null} onClose={() => setLogForId(null)} labelledBy="log-title">
+                <div className="dialog-head">
+                    <h2 id="log-title" className="section-title">Loglar · #{logForId}</h2>
+                    <button type="button" onClick={() => setLogForId(null)} className="btn btn-ghost btn-icon"
+                            aria-label="Kapat">
+                        <Close/>
+                    </button>
                 </div>
-            )}
+
+                {logsLoading && <div className="muted callout" role="status">Yükleniyor…</div>}
+                {!logsLoading && !logs?.content?.length && (
+                    <div className="muted callout">Log bulunamadı.</div>
+                )}
+
+                <ul className="log-list">
+                    {logs?.content.map(l => (
+                        <li key={l.id} className="card log-item">
+                            <div className="row-between">
+                                <b className="callout">{l.action}</b>
+                                <span className="caption faint">{formatDate(l.createdAt)}</span>
+                            </div>
+                            <div className="log-meta">
+                                actor: {l.actorEmail || (l.actorUserId ? `#${l.actorUserId}` : "?")}
+                                {l.ipAddress ? ` · ip: ${l.ipAddress}` : ""}
+                            </div>
+                            {l.reason && <div className="caption">sebep: {l.reason}</div>}
+                        </li>
+                    ))}
+                </ul>
+            </Dialog>
         </>
     );
 }

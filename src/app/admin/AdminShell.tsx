@@ -10,12 +10,19 @@
  * useAuth: login/logout'ta otomatik render (useSyncExternalStore). Admin değilse
  * içerik hiç render edilmez -> yetkisiz kullanıcı tabloları görmez (backend zaten
  * 403 döner ama UI'da da göstermemek daha temiz).
+ *
+ * 002: başlık ortak PageHeader; yetkisiz ekran EmptyState + Shield ikonu (emoji yok);
+ * sekmeler .seg — aktif sekme D10 kuralıyla (zemin + kenar + kalınlık) ve
+ * aria-current="page" ile (ekran okuyucu "geçerli sayfa" der). Satır içi stil yok.
  */
 
 import Link from "next/link";
 import {usePathname} from "next/navigation";
 import {useAuth} from "@/lib/useAuth";
 import type {ReactNode} from "react";
+import PageHeader from "@/components/PageHeader";
+import EmptyState from "@/components/EmptyState";
+import {Shield} from "@/components/icons";
 
 const TABS = [
     {href: "/admin/ratings", label: "Yorumlar"},
@@ -30,28 +37,26 @@ export default function AdminShell({children}: { children: ReactNode }) {
     if (!user?.roles.includes("ADMIN")) {
         return (
             <main className="container page">
-                <div className="empty-state">
-                    <div style={{fontSize: "2rem"}} aria-hidden>🛡️</div>
-                    <b>Bu sayfa yöneticilere özel</b>
-                    <span>Devam etmek için admin hesabıyla giriş yap.</span>
-                    <Link href="/login" className="btn btn-primary">Giriş yap</Link>
-                </div>
+                <EmptyState
+                    icon={<Shield/>}
+                    title="Bu sayfa yöneticilere özel"
+                    description="Devam etmek için admin hesabıyla giriş yap."
+                    action={<Link href="/login" className="btn btn-primary">Giriş yap</Link>}
+                />
             </main>
         );
     }
 
     return (
         <main className="container page">
-            <div className="stack-sm">
-                <span className="eyebrow">Yönetim</span>
-                <h1 className="section-title" style={{fontSize: "var(--type-title)"}}>Admin paneli</h1>
-            </div>
+            <PageHeader eyebrow="Yönetim" title="Admin paneli"/>
 
-            {/* Sekme çubuğu: aktif sekme .seg[data-active] ile vurgulanır (tasarım sistemi) */}
-            <nav className="seg" aria-label="Admin bölümleri" style={{width: "fit-content"}}>
+            {/* Sekme çubuğu: aktif sekme .seg[data-active] ile vurgulanır (D10: zemin + kenar
+                + kalınlık); dar ekranda sığmazsa kendi içinde yatay kayar (.admin-tabs). */}
+            <nav className="seg admin-tabs" aria-label="Admin bölümleri">
                 {TABS.map(t => (
                     <Link key={t.href} href={t.href} data-active={pathname === t.href}
-                          style={{textDecoration: "none"}}>
+                          aria-current={pathname === t.href ? "page" : undefined}>
                         {t.label}
                     </Link>
                 ))}

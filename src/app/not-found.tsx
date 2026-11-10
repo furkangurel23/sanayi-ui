@@ -8,25 +8,29 @@
  *    kodu 404'tür — arama motorları sayfayı "yok" olarak bilir.
  *  - Kök layout (Header + footer) bu sayfayı da sarar; burada yalnız içerik var.
  *  - metadata.title layout'taki "%s | Sanayi" şablonuna oturur -> "Bulunamadı | Sanayi".
- *  - Yeni stil yok: mevcut .empty-state ve .btn sınıfları (tasarım sistemi).
+ *  - 002: büyüteç emojisi yerine ortak EmptyState + Search ikonu; yeni stil yok.
  */
 import type {Metadata} from "next";
 import Link from "next/link";
+import EmptyState from "@/components/EmptyState";
+import {Search} from "@/components/icons";
 
 export const metadata: Metadata = {title: "Bulunamadı"};
 
 export default function NotFound() {
     return (
         <main className="container page">
-            <div className="empty-state">
-                <div style={{fontSize: "2rem"}} aria-hidden>🔍</div>
-                <b>Sayfa bulunamadı</b>
-                <span>Aradığın sayfa taşınmış, silinmiş ya da hiç var olmamış olabilir.</span>
-                <div className="row" style={{justifyContent: "center", flexWrap: "wrap"}}>
+            {/* h1 yok: EmptyState başlığı <p>; sayfanın ana başlığı olsun diye ayrıca sr-only h1 */}
+            <h1 className="sr-only">Sayfa bulunamadı</h1>
+            <EmptyState
+                icon={<Search/>}
+                title="Sayfa bulunamadı"
+                description="Aradığın sayfa taşınmış, silinmiş ya da hiç var olmamış olabilir."
+                action={<>
                     <Link href="/" className="btn btn-primary">Ana sayfa</Link>
                     <Link href="/providers" className="btn btn-outline">Ustaları keşfet</Link>
-                </div>
-            </div>
+                </>}
+            />
         </main>
     );
 }

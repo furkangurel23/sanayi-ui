@@ -7,6 +7,10 @@
  * DELETE /api/admin/users/{id} — kullanıcının yorumları+sohbet mesajları cascade gider,
  * moderation_logs'a iz yazılır. Admin KENDİNİ silemez (backend 400 döner;
  * UI'da da kendi satırında sil butonu göstermiyoruz).
+ *
+ * 002: satır içi stiller sınıflara; rol/durum chip'leri ton + METİN (ADMIN chip'i
+ * .chip-accent, doğrulanmış .chip-pos, bekliyor .chip-neg); sayfalama ortak
+ * <Pagination mode="callback">.
  */
 
 import {useCallback, useEffect, useState} from "react";
@@ -17,6 +21,7 @@ import {useAuth} from "@/lib/useAuth";
 import type {AdminUserItem, Page} from "@/lib/types";
 import ConfirmButton from "@/components/ConfirmButton";
 import AdminShell from "@/app/admin/AdminShell";
+import Pagination from "@/components/Pagination";
 
 function fmt(iso?: string | null) {
     if (!iso) return "—";
@@ -68,8 +73,8 @@ function UsersAdmin() {
 
     return (
         <>
-            <div className="card row" style={{padding: "0.9rem 1rem", gap: "0.5rem"}}>
-                <input className="input" placeholder="E-posta / görünen ad ara…" value={q}
+            <div className="card admin-search" role="search">
+                <input className="input" placeholder="E-posta / görünen ad ara…" aria-label="E-posta / görünen ad ara" value={q}
                        onChange={e => setQ(e.target.value)}
                        onKeyDown={e => e.key === "Enter" && load(1, q)}/>
                 <button className="btn btn-primary" onClick={() => load(1, q)} disabled={loading}>
@@ -81,9 +86,10 @@ function UsersAdmin() {
                 }}>Temizle</button>}
             </div>
 
-            {err && <div className="alert alert-error">{err}</div>}
+            {err && <div className="alert alert-error" role="alert">{err}</div>}
 
-            <div className="table-wrap">
+            {/* Kaydırılabilir kap klavyeyle de kaydırılabilsin: odaklanabilir bölge + ad */}
+            <div className="table-wrap" tabIndex={0} role="region" aria-label="Kullanıcılar tablosu">
                 <table className="data">
                     <thead>
                     <tr>
@@ -92,7 +98,7 @@ function UsersAdmin() {
                         <th>Durum</th>
                         <th>Kayıt</th>
                         <th>Son giriş</th>
-                        <th></th>
+                        <th><span className="sr-only">İşlemler</span></th>
                     </tr>
                     </thead>
                     <tbody>
@@ -106,27 +112,24 @@ function UsersAdmin() {
                         return (
                             <tr key={u.id}>
                                 <td>
-                                    <div style={{fontWeight: 550}}>{u.displayName || "—"}</div>
-                                    <div className="text-xs faint">{u.email}</div>
+                                    <div className="cell-strong">{u.displayName || "—"}</div>
+                                    <div className="caption faint">{u.email}</div>
                                 </td>
                                 <td>
-                                    <span className="chip"
-                                          style={{color: u.role === "ADMIN" ? "var(--accent-text)" : "var(--fg-muted)"}}>
+                                    <span className={`chip ${u.role === "ADMIN" ? "chip-accent" : ""}`}>
                                         {u.role}
                                     </span>
                                 </td>
                                 <td>
-                                    <span className="chip" style={{
-                                        color: u.emailVerified ? "var(--pos)" : "var(--neg)",
-                                    }}>
+                                    <span className={`chip ${u.emailVerified ? "chip-pos" : "chip-neg"}`}>
                                         {u.emailVerified ? "Doğrulanmış" : "Bekliyor"}
                                     </span>
                                 </td>
-                                <td className="text-xs muted">{fmt(u.createdAt)}</td>
-                                <td className="text-xs muted">{fmt(u.lastLoginAt)}</td>
-                                <td style={{textAlign: "right"}}>
+                                <td className="caption muted">{fmt(u.createdAt)}</td>
+                                <td className="caption muted">{fmt(u.lastLoginAt)}</td>
+                                <td className="cell-actions">
                                     {isSelf ? (
-                                        <span className="text-xs faint">(sen)</span>
+                                        <span className="caption faint">(sen)</span>
                                     ) : (
                                         <ConfirmButton label="Sil" askReason
                                                        onConfirm={(reason) => remove(u.id, reason)}/>
@@ -139,17 +142,8 @@ function UsersAdmin() {
                 </table>
             </div>
 
-            {total > 1 && (
-                <nav className="row" style={{justifyContent: "center"}} aria-label="Sayfalama">
-                    <button className="btn btn-outline btn-sm" onClick={() => load(Math.max(1, page - 1), q)}
-                            disabled={page <= 1}>← Önceki
-                    </button>
-                    <span className="text-sm muted">Sayfa {page} / {total}</span>
-                    <button className="btn btn-outline btn-sm" onClick={() => load(Math.min(total, page + 1), q)}
-                            disabled={page >= total}>Sonraki →
-                    </button>
-                </nav>
-            )}
+            {/* Ortak sayfalama, callback modu: yerel state, URL'e ?page yazılmaz */}
+            <Pagination mode="callback" page={page} totalPages={total} onPage={n => load(n, q)}/>
         </>
     );
 }

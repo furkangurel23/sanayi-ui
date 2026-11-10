@@ -14,12 +14,17 @@
  *
  * Erişilebilirlik (toggle'da): aria-expanded + aria-controls, ekran okuyucuya
  * "bu buton şu bölgeyi açıp kapatır" bilgisini verir.
+ *
+ * 002: satır içi stiller sınıflara taşındı (.brand-card-id/.brand-card-text,
+ * .brand-provider-link); "Sohbet" bağlantısı Chat ikonu taşır. Başlık bloğu dar
+ * ekranda eylemlerin alt satıra inmesine izin verir (375 px taşma düzeltmesi — T026).
  */
 
 import Link from "next/link";
 import type {BrandDto} from "@/lib/types";
 import BrandLogo from "@/components/BrandLogo";
 import BrandProvidersToggle from "@/components/BrandProvidersToggle";
+import {Chat} from "@/components/icons";
 
 export default function BrandCard({brand}: { brand: BrandDto }) {
     const providerCount = brand.providers?.length ?? 0;
@@ -27,24 +32,27 @@ export default function BrandCard({brand}: { brand: BrandDto }) {
     return (
         <BrandProvidersToggle
             header={
-                <div className="row" style={{minWidth: 0}}>
+                <div className="brand-card-id">
                     <BrandLogo name={brand.name} size={46}/>
-                    <div style={{minWidth: 0}}>
+                    <div className="brand-card-text">
                         <h3 className="card-title truncate">{brand.name}</h3>
                         <p className="card-sub">{providerCount} usta / servis</p>
                     </div>
                 </div>
             }
-            actions={<Link href={`/chat/${brand.id}`} className="btn btn-ghost btn-sm">Sohbet</Link>}
+            actions={
+                <Link href={`/chat/${brand.id}`} className="btn btn-ghost btn-sm">
+                    <Chat size="sm"/> Sohbet
+                </Link>
+            }
             hasList={providerCount > 0}
             listId={`brand-${brand.id}-providers`}
         >
             {(brand.providers ?? []).map((p) => (
                 <li key={p.id}>
-                    <Link href={`/providers/${p.id}`} className="row-between nav-link"
-                          style={{width: "100%"}}>
+                    <Link href={`/providers/${p.id}`} className="brand-provider-link">
                         <span className="truncate">{p.name}</span>
-                        <span className="text-xs faint" style={{flexShrink: 0}}>
+                        <span className="brand-provider-loc">
                             {[p.district, p.city].filter(Boolean).join(", ")}
                         </span>
                     </Link>

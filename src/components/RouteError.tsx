@@ -23,8 +23,13 @@
  *    verisini yeniden çeker, sonra hata durumunu temizleyip segmenti yeniden çizer.
  *    Sadece `reset()` sunucudan yeni veri istemez; geçici backend arızasından sonra
  *    aynı hatalı sonucu tekrar gösterirdi.
+ *  - 002: uyarı emojisi yerine ortak EmptyState + Alert ikonu; role="alert" -> ekran okuyucu
+ *    hata ekranını hemen duyurur. EmptyState bir Server Component dosyası ama hook/olay
+ *    içermediği için client bileşenin içinden de import edilebilir (client pakete girer).
  */
 import {useEffect} from "react";
+import EmptyState from "@/components/EmptyState";
+import {Alert} from "@/components/icons";
 
 export default function RouteError({error, retry}: { error: unknown; retry: () => void }) {
     // Ayrıntıyı yalnız geliştirici konsoluna yaz (yan etki -> useEffect).
@@ -37,13 +42,16 @@ export default function RouteError({error, retry}: { error: unknown; retry: () =
 
     return (
         <main className="container page">
-            <div className="empty-state">
-                <div style={{fontSize: "2rem"}} aria-hidden>⚠️</div>
-                <b>Bir şeyler ters gitti</b>
-                <span>Sayfa yüklenirken bir sorun oluştu. Lütfen tekrar deneyin.</span>
-                {digest && <span className="text-xs faint">Hata kodu: {digest}</span>}
-                <button onClick={() => retry()} className="btn btn-outline">Tekrar dene</button>
-            </div>
+            <EmptyState
+                role="alert"
+                icon={<Alert/>}
+                title="Bir şeyler ters gitti"
+                description={<>
+                    Sayfa yüklenirken bir sorun oluştu. Lütfen tekrar deneyin.
+                    {digest && <span className="caption faint"><br/>Hata kodu: {digest}</span>}
+                </>}
+                action={<button type="button" onClick={() => retry()} className="btn btn-outline">Tekrar dene</button>}
+            />
         </main>
     );
 }

@@ -8,6 +8,10 @@
  *    token TEK KULLANIMLIK olduğu için ikinci çağrıyı ref bayrağıyla engelleriz.
  *  - Başarıda backend JWT döner -> setToken ile otomatik giriş -> anasayfaya yönlendir.
  *  - Hata mesajı ApiError.message'tan gelir (backend'in hazır Türkçe metni).
+ *
+ * 002: emojiler (kum saati, onay, uyarı) yerine ton + ŞEKİL taşıyan durum karosu: bekliyor Clock (nötr),
+ * başarılı CheckCircle (yeşil), hata Alert (kırmızı) — renk tek başına anlam taşımaz.
+ * Kart role="status" + aria-live: durum değişince ekran okuyucu yeni mesajı okur.
  */
 
 import {useEffect, useRef, useState} from "react";
@@ -16,6 +20,7 @@ import {useRouter} from "next/navigation";
 import {verifyEmail} from "@/lib/authApi";
 import {setToken} from "@/lib/auth";
 import {errorMessage} from "@/lib/apiError";
+import {Alert, CheckCircle, Clock} from "@/components/icons";
 
 export default function VerifyEmailClient({token}: { token: string }) {
     const router = useRouter();
@@ -50,14 +55,14 @@ export default function VerifyEmailClient({token}: { token: string }) {
 
     return (
         <main className="container auth-wrap">
-            <div className="card auth-card" style={{textAlign: "center"}}>
-                <div style={{fontSize: "2.5rem"}} aria-hidden>
-                    {state === "pending" ? "⏳" : state === "ok" ? "✅" : "⚠️"}
-                </div>
+            <div className="card auth-card auth-card-center" role="status" aria-live="polite">
+                <span className="status-icon" data-tone={state === "pending" ? "neutral" : state === "ok" ? "pos" : "neg"}>
+                    {state === "pending" ? <Clock size="lg"/> : state === "ok" ? <CheckCircle size="lg"/> : <Alert size="lg"/>}
+                </span>
                 <h1>E-posta doğrulama</h1>
                 <p className="card-sub">{message}</p>
                 {state === "error" && (
-                    <div className="row" style={{justifyContent: "center"}}>
+                    <div className="cluster auth-foot">
                         <Link href="/login" className="btn btn-outline">Girişe dön</Link>
                         <Link href="/register" className="btn btn-ghost">Yeniden kayıt ol</Link>
                     </div>

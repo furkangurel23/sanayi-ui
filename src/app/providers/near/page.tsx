@@ -9,14 +9,19 @@
  * ?lat=999) mod 1'e (konum isteme ekranı) düşeriz. Yarıçap params.ts parseRadiusKm ile
  * 1..100 km'ye sıkıştırılır ve ekranda backend'e giden (sıkıştırılmış) değer gösterilir.
  * Veri `no-store` çekilir: sorgu kullanıcının konumuna özel (api.ts'te açıklama).
+ *
+ * 002: başlık ortak PageHeader, sonuç yok -> EmptyState (Pin), kartlar ortak ProviderCard
+ * (mesafe chip'iyle); konum ekranı dar sütunda (.container-tight = 44rem). Satır içi stil yok.
  */
-import Link from "next/link";
 import {getProvidersNear} from "@/lib/api";
 import type {NearItem, Page as PageType, ProviderListItem} from "@/lib/types";
 import MapSection from "@/components/MapSection";
 import Pagination from "@/components/Pagination";
 import NearLocate from "@/components/NearLocate";
-import ScoreBadge from "@/components/ScoreBadge";
+import ProviderCard from "@/components/ProviderCard";
+import PageHeader from "@/components/PageHeader";
+import EmptyState from "@/components/EmptyState";
+import {Pin} from "@/components/icons";
 import {parsePage, parseRadiusKm, parseSize} from "@/lib/params";
 
 /** Koordinatı okur: tek string, sonlu sayı ve [-limit, limit] aralığında değilse null. */
@@ -45,14 +50,12 @@ export default async function ProvidersNearPage({
 
     if (lat === null || lon === null) {
         return (
-            <main className="container page" style={{maxWidth: "44rem"}}>
-                <div className="stack-sm">
-                    <span className="eyebrow">Konum</span>
-                    <h1 className="section-title" style={{fontSize: "var(--type-title)"}}>Yakınımdaki ustalar</h1>
-                    <p className="muted text-sm">
-                        Konumunu paylaştıktan sonra belirlediğin yarıçap içindeki ustaları mesafeleriyle listeleriz.
-                    </p>
-                </div>
+            <main className="container container-tight page">
+                <PageHeader
+                    eyebrow="Konum"
+                    title="Yakınımdaki ustalar"
+                    subtitle="Konumunu paylaştıktan sonra belirlediğin yarıçap içindeki ustaları mesafeleriyle listeleriz."
+                />
                 {/* Yarıçap server'dan prop iner — client'ta useSearchParams'a gerek yok. */}
                 <NearLocate initialRadiusKm={radiusKm}/>
             </main>
@@ -75,38 +78,26 @@ export default async function ProvidersNearPage({
 
     return (
         <main className="container page">
-            <div className="row-between">
-                <div className="stack-sm">
-                    <span className="eyebrow">Konum</span>
-                    <h1 className="section-title" style={{fontSize: "var(--type-title)"}}>Yakınımdaki ustalar</h1>
-                </div>
-                <span className="chip">Yarıçap: {radiusKm} km · {data.totalElements} sonuç</span>
-            </div>
+            <PageHeader
+                eyebrow="Konum"
+                title="Yakınımdaki ustalar"
+                actions={<span className="chip">Yarıçap: {radiusKm} km · {data.totalElements} sonuç</span>}
+            />
 
             <MapSection items={forMap} height={280}/>
 
             {data.content.length === 0 ? (
-                <div className="empty-state">
-                    <b>Bu yarıçapta usta bulunamadı.</b>
-                    <span>Yarıçapı büyütmeyi dene.</span>
-                </div>
+                <EmptyState
+                    icon={<Pin/>}
+                    title="Bu yarıçapta usta bulunamadı."
+                    description="Yarıçapı büyütmeyi dene."
+                />
             ) : (
                 <div className="grid-2">
-                    {data.content.map((n) => (
-                        <Link key={n.id} href={`/providers/${n.id}`} className="card card-hover">
-                            <div className="row-between" style={{alignItems: "flex-start", flexWrap: "nowrap"}}>
-                                <div className="stack-sm" style={{gap: "0.2rem", minWidth: 0}}>
-                                    <div className="card-title truncate">{n.name}</div>
-                                    <div className="card-sub truncate">
-                                        {[n.district, n.city].filter(Boolean).join(", ")}
-                                    </div>
-                                    <span className="chip" style={{width: "fit-content"}}>
-                                        {n.distanceKm.toFixed(1)} km uzakta
-                                    </span>
-                                </div>
-                                <ScoreBadge score={n.avgScore} count={n.ratingCount}/>
-                            </div>
-                        </Link>
+                    {/* forMap[i] ile data.content[i] aynı sırada: kart verisi ProviderListItem,
+                        mesafe NearItem'dan gelir. */}
+                    {forMap.map((p, i) => (
+                        <ProviderCard key={p.id} p={p} distanceKm={data.content[i].distanceKm}/>
                     ))}
                 </div>
             )}

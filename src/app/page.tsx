@@ -57,10 +57,11 @@ export default async function Home() {
                                 Tümü <ChevronRight size="sm"/>
                             </Link>
                         </div>
-                        {/* 26 kategori: serbest sarmal yerine 2 satırlık kaydırmalı raf
-                            (.chip-rail — açıklama globals.css'te). Sağ kenar eriyerek
-                            "devamı var" hissi verir; mobilde parmakla kaydırılır. */}
-                        <div className="chip-rail">
+                        {/* 26 kategori: eşit aralıklı SARAN küme (.chip-cluster — açıklama
+                            globals.css'te). Onay kapısında 1440 px'te düzensiz sütunlar ve
+                            sağda kırpılan chip'ler bulundu; düz satır akışı ikisini de çözer,
+                            375 ve 1440 px'te aynı kural. Hepsi görünür -> kaydırma/maske yok. */}
+                        <div className="chip-cluster">
                             {categories.map(c => (
                                 <Link key={c.id} href={`/providers?categoryId=${c.id}`} className="chip">
                                     {c.name}

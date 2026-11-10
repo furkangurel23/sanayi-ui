@@ -77,3 +77,18 @@ export function errorMessage(err: unknown, fallback = "Bir şeyler ters gitti.")
     if (err instanceof Error && err.message) return err.message;
     return fallback;
 }
+
+/**
+ * Alan hatalarını { alan: "ilk mesaj" } sözlüğüne çevirir (002 — alan hataları ALANIN
+ * ALTINDA gösterilir). ApiError değilse ya da fieldErrors yoksa boş nesne döner;
+ * böylece formda `fe.email && <span …>` gibi güvenle kullanılır.
+ * Object.entries/fromEntries: nesne <-> [anahtar, değer] dizisi dönüşümü.
+ */
+export function fieldErrorMap(err: unknown): Record<string, string> {
+    if (!(err instanceof ApiError) || !err.fieldErrors) return {};
+    return Object.fromEntries(
+        Object.entries(err.fieldErrors)
+            .filter(([, msgs]) => msgs.length > 0)
+            .map(([field, msgs]) => [field, msgs[0]])
+    );
+}

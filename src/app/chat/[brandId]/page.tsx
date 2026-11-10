@@ -6,6 +6,7 @@
  *    generateMetadata ile sekme başlığını kurar; bulunamazsa notFound() -> 404 sayfası.
  *  - ChatRoom (Client Component): WebSocket, mesaj listesi, composer — tüm etkileşim.
  * Next 15+ notu: params da Promise'tir -> await edilir.
+ * 002: kabuk boşluğu satır içi stil yerine .chat-page sınıfıyla.
  */
 import {notFound} from "next/navigation";
 import {getBrandsAllSorted} from "@/lib/api";
@@ -28,7 +29,7 @@ export default async function ChatRoomPage({params}: { params: Promise<{ brandId
     if (!brand) notFound();
 
     return (
-        <main className="container" style={{paddingBlock: "1rem", flex: 1}}>
+        <main className="container chat-page">
             <ChatRoom brandId={brand.id} brandName={brand.name}/>
         </main>
     );

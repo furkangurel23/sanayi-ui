@@ -159,7 +159,7 @@ export default function ProvidersMap({items, height = 260}: Props) {
             const layer = markersLayerRef.current;
             if (!mapInstance || !layer) return;
 
-            // Bu effect de L'ye ihtiyaç duyuyor → burada da import et
+            // Bu effect de L'ye ihtiyaç duyuyor -> burada da import et
             const L = await import("leaflet");
 
             layer.clearLayers();

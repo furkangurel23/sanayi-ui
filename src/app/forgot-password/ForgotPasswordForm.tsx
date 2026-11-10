@@ -8,26 +8,34 @@
  * Not: Bu dosya eskiden doğrudan page.tsx'ti. Client Component'ler `metadata`
  * export EDEMEZ; sekme başlığı için page.tsx artık küçük bir Server Component
  * (metadata + <ForgotPasswordForm/>), form mantığı burada ("use client").
+ *
+ * 002 görünüm: e-posta alan hatası alanın altında; "Girişe dön" metin oku yerine
+ * ChevronLeft ikonu (FR-006); başarı/hata .alert (role ile duyurulur).
  */
 
 import {useState} from "react";
 import Link from "next/link";
 import {forgotPassword} from "@/lib/authApi";
+import {fieldErrorMap} from "@/lib/apiError";
+import {ChevronLeft} from "@/components/icons";
 
 export default function ForgotPasswordForm() {
     const [email, setEmail] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [fe, setFe] = useState<Record<string, string>>({});
     const [done, setDone] = useState<string | null>(null);
 
     async function onSubmit(e: React.FormEvent) {
         e.preventDefault();
         setError(null);
+        setFe({});
         setLoading(true);
         try {
             const res = await forgotPassword(email.trim());
             setDone(res.message);
         } catch (err: unknown) {
+            setFe(fieldErrorMap(err));
             setError(err instanceof Error ? err.message : "İstek başarısız.");
         } finally {
             setLoading(false);
@@ -45,19 +53,22 @@ export default function ForgotPasswordForm() {
                 <label className="field">
                     <span className="field-label">E-posta</span>
                     <input className="input" type="email" required autoComplete="email"
+                           aria-invalid={fe.email ? true : undefined}
+                           aria-describedby={fe.email ? "fp-email-err" : undefined}
                            value={email} onChange={e => setEmail(e.target.value)}/>
+                    {fe.email && <span id="fp-email-err" className="field-error">{fe.email}</span>}
                 </label>
 
-                {error && <div className="alert alert-error">{error}</div>}
-                {done && <div className="alert alert-success">{done}</div>}
+                {error && <div className="alert alert-error" role="alert">{error}</div>}
+                {done && <div className="alert alert-success" role="status">{done}</div>}
 
                 <button type="submit" className="btn btn-primary btn-lg" disabled={loading || Boolean(done)}>
                     {loading ? "Gönderiliyor…" : "Sıfırlama bağlantısı gönder"}
                 </button>
 
-                <p className="text-sm muted" style={{textAlign: "center"}}>
-                    <Link href="/login">← Girişe dön</Link>
-                </p>
+                <div className="auth-links auth-foot">
+                    <Link href="/login"><ChevronLeft size="sm"/> Girişe dön</Link>
+                </div>
             </form>
         </main>
     );

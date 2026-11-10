@@ -17,12 +17,28 @@
  *  - useRef ile DOM erişimi: scroll konumu ve gizli file input'u tetiklemek için.
  *  - "cancelled" bayrağı: async işlem bitmeden bileşen unmount olursa
  *    setState çağrılmasın (memory leak / uyarı önlenir).
+ *
+ * 002 görünüm durumları (spec "kapsanan durumlar" — davranış aynı, sunum yeni):
+ *  - Kilitli / giriş yok: EmptyState + Lock ikonu, Giriş/Üye ol eylemleri.
+ *  - Kilitli / e-posta doğrulanmamış: backend gönderimde `error.chat.email-not-verified`
+ *    KODUYLA reddeder; bu kodu görünce düz hata yerine Lock ikonlu "kilitli" notu
+ *    gösteriyoruz (UI metne değil KODA göre dallanır — apiError.ts).
+ *  - Yükleniyor: balon biçimli iskeletler (.skeleton-bubble). Boş oda: EmptyState (Chat).
+ *  - Dosya yükleniyor: Upload ikonu + metin + belirsiz ilerleme çubuğu (role="progressbar").
+ *  - Görsel/video eki: en-boy korumalı AYRILMIŞ kutu (.chat-attachment, aspect-ratio +
+ *    object-fit: contain) -> görsel yüklenince balon büyümez, liste kaymaz (CLS).
+ *  - Oda başlığında avatar artık ortak BrandLogo (renkli logo ya da baş harf).
+ *  Bağlantı durumu göstergesi (koptu/yeniden bağlanıyor) KAPSAM DIŞI: chat.ts bugün durum
+ *  bildirmiyor; eklemek yeni davranış olurdu (spec Out of Scope).
  */
 
 import React, {useCallback, useEffect, useRef, useState} from "react";
 import Link from "next/link";
 import {useAuth} from "@/lib/useAuth";
-import {errorMessage} from "@/lib/apiError";
+import {ApiError, errorMessage} from "@/lib/apiError";
+import BrandLogo from "@/components/BrandLogo";
+import EmptyState from "@/components/EmptyState";
+import {Chat, ChevronLeft, Lock, Paperclip, Upload} from "@/components/icons";
 import type {ChatMessage} from "@/lib/types";
 import {
     attachmentSrc,
@@ -77,11 +93,16 @@ function dayOf(iso: string) {
     }
 }
 
+/** Backend messages.properties anahtarı: sohbete yazmak için e-posta doğrulaması gerekir. */
+const EMAIL_NOT_VERIFIED = "error.chat.email-not-verified";
+
 export default function ChatRoom({brandId, brandName}: { brandId: number; brandName: string }) {
     const user = useAuth();
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    // Gönderim backend'de "e-posta doğrulanmamış" koduyla reddedildiyse kilitli notu göster
+    const [locked, setLocked] = useState(false);
     const [text, setText] = useState("");
     const [sending, setSending] = useState(false);
     const [uploading, setUploading] = useState(false);
@@ -151,6 +172,7 @@ export default function ChatRoom({brandId, brandName}: { brandId: number; brandN
             pushMessage(m); // WS yayınını beklemeden anında göster (optimistic-benzeri)
             setText("");
         } catch (err: unknown) {
+            setLocked(err instanceof ApiError && err.code === EMAIL_NOT_VERIFIED);
             setError(errorMessage(err, "Mesaj gönderilemedi."));
         } finally {
             setSending(false);
@@ -174,6 +196,7 @@ export default function ChatRoom({brandId, brandName}: { brandId: number; brandN
             pushMessage(m);
             setText("");
         } catch (err: unknown) {
+            setLocked(err instanceof ApiError && err.code === EMAIL_NOT_VERIFIED);
             setError(errorMessage(err, "Dosya gönderilemedi."));
         } finally {
             setUploading(false);
@@ -183,14 +206,16 @@ export default function ChatRoom({brandId, brandName}: { brandId: number; brandN
     // Erken dönüş (early return): login yoksa odayı hiç kurma, davet ekranı göster.
     if (!user) {
         return (
-            <div className="empty-state" style={{marginTop: "1rem"}}>
-                <div style={{fontSize: "2rem"}} aria-hidden>🔒</div>
-                <b>{brandName} odası üyelere özel</b>
-                <span>Sohbete katılmak için giriş yapman gerekiyor.</span>
-                <div className="row">
-                    <Link href="/login" className="btn btn-primary">Giriş yap</Link>
-                    <Link href="/register" className="btn btn-outline">Üye ol</Link>
-                </div>
+            <div className="chat-locked">
+                <EmptyState
+                    icon={<Lock/>}
+                    title={`${brandName} odası üyelere özel`}
+                    description="Sohbete katılmak için giriş yapman gerekiyor."
+                    action={<>
+                        <Link href="/login" className="btn btn-primary">Giriş yap</Link>
+                        <Link href="/register" className="btn btn-outline">Üye ol</Link>
+                    </>}
+                />
             </div>
         );
     }
@@ -198,27 +223,32 @@ export default function ChatRoom({brandId, brandName}: { brandId: number; brandN
     return (
         <div className="chat-shell">
             <div className="chat-head">
-                <span className="room-avatar" style={{width: 38, height: 38}}>{brandName.charAt(0)}</span>
-                <div>
-                    <div style={{fontWeight: 700}}>{brandName} odası</div>
-                    <div className="text-xs faint">Link, fotoğraf ve video paylaşabilirsin</div>
+                <BrandLogo name={brandName} size={38}/>
+                <div className="chat-head-text">
+                    <h1 className="chat-title truncate">{brandName} odası</h1>
+                    <div className="caption faint">Link, fotoğraf ve video paylaşabilirsin</div>
                 </div>
-                <Link href="/chat" className="btn btn-ghost btn-sm" style={{marginLeft: "auto"}}>← Odalar</Link>
+                <Link href="/chat" className="btn btn-ghost btn-sm chat-head-back">
+                    <ChevronLeft size="sm"/> Odalar
+                </Link>
             </div>
 
             <div className="chat-body" ref={bodyRef}>
                 {loading && (
                     // Skeleton: içerik gelmeden yaklaşık yerleşimi göster (layout shift önlenir).
                     <>
-                        <div className="skeleton" style={{height: 56, width: "55%"}}/>
-                        <div className="skeleton" style={{height: 56, width: "45%", alignSelf: "flex-end"}}/>
-                        <div className="skeleton" style={{height: 56, width: "60%"}}/>
+                        <span className="sr-only" role="status">Mesajlar yükleniyor…</span>
+                        <div className="skeleton skeleton-bubble" aria-hidden/>
+                        <div className="skeleton skeleton-bubble own" aria-hidden/>
+                        <div className="skeleton skeleton-bubble wide" aria-hidden/>
                     </>
                 )}
                 {!loading && messages.length === 0 && (
-                    <div className="empty-state" style={{border: 0}}>
-                        İlk mesajı sen yaz — {brandName} kullananlara bir soru sor!
-                    </div>
+                    <EmptyState
+                        icon={<Chat/>}
+                        title="Henüz mesaj yok"
+                        description={`İlk mesajı sen yaz — ${brandName} kullananlara bir soru sor!`}
+                    />
                 )}
                 {messages.map((m, i) => {
                     const own = myId !== null && m.userId === myId;
@@ -239,7 +269,9 @@ export default function ChatRoom({brandId, brandName}: { brandId: number; brandN
                                         <span className="chat-time">{timeOf(m.createdAt)}</span>
                                     </div>
                                     {m.attachmentUrl && (
-                                        <div className="chat-attachment">
+                                        // Ayrılmış kutu: en-boy oranı baştan sabit (video 16:9, görsel 4:3)
+                                        <div className="chat-attachment"
+                                             data-kind={m.attachmentType === "VIDEO" ? "video" : "image"}>
                                             {m.attachmentType === "VIDEO" ? (
                                                 // preload="metadata": sadece süre/boyut bilgisi indirilir,
                                                 // video kullanıcı oynatana kadar İNDİRİLMEZ (bant genişliği).
@@ -261,7 +293,23 @@ export default function ChatRoom({brandId, brandName}: { brandId: number; brandN
                 })}
             </div>
 
-            {error && <div className="alert alert-error" style={{margin: "0 1rem 0.5rem", borderRadius: "var(--radius-sm)"}}>{error}</div>}
+            {error && (locked ? (
+                // Kilitli (e-posta doğrulanmamış): backend'in hazır Türkçe metni + Lock ikonu
+                <div className="alert alert-info chat-alert" role="alert">
+                    <Lock size="sm"/> <span>{error}</span>
+                </div>
+            ) : (
+                <div className="alert alert-error chat-alert" role="alert">{error}</div>
+            ))}
+
+            {uploading && (
+                <div className="chat-uploading">
+                    <Upload size="sm"/>
+                    <span>Dosya yükleniyor…</span>
+                    {/* aria-valuenow YOK = belirsiz ilerleme (fetch yüzde bildirmez) */}
+                    <span className="progress-indeterminate" role="progressbar" aria-label="Dosya yükleniyor"/>
+                </div>
+            )}
 
             <div className="chat-composer">
                 {/* Gizli input + ref tetikleme: tarayıcının çirkin dosya butonu yerine
@@ -271,14 +319,7 @@ export default function ChatRoom({brandId, brandName}: { brandId: number; brandN
                 <button type="button" className="btn btn-ghost btn-icon" title="Fotoğraf / video ekle"
                         aria-label="Fotoğraf veya video ekle" disabled={uploading}
                         onClick={() => fileRef.current?.click()}>
-                    {uploading ? (
-                        <span className="text-xs">…</span>
-                    ) : (
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                             strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                            <path d="M21.44 11.05 12.25 20.24a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
-                        </svg>
-                    )}
+                    {uploading ? <Upload/> : <Paperclip/>}
                 </button>
                 <textarea
                     value={text}

@@ -101,3 +101,7 @@ export const Star = (p: IconProps) => (
 export const User = (p: IconProps) => (
     <IconBase {...p}><circle cx="12" cy="8" r="4"/><path d="M4.5 20.5a7.5 7.5 0 0 1 15 0"/></IconBase>
 );
+/* Ataç — sohbet "ek ekle" düğmesi (002 yayılımında ChatRoom'daki satır içi SVG buraya taşındı) */
+export const Paperclip = (p: IconProps) => (
+    <IconBase {...p}><path d="m21.4 11.1-9.2 9.1a6 6 0 0 1-8.5-8.5l8.6-8.5a4 4 0 0 1 5.7 5.6l-8.6 8.6a2 2 0 0 1-2.8-2.8l8.5-8.5"/></IconBase>
+);

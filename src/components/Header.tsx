@@ -107,8 +107,10 @@ export default function Header() {
                     <ThemeToggle/>
                     {user ? (
                         <>
-                            <span className="chip chip-accent truncate user-chip" title={user.email}>
-                                {user.email.split("@")[0]}
+                            {/* İç span .truncate: chip inline-flex olduğu için "…" (ellipsis) ancak
+                                içteki blok öğede çalışır; dış çip daralabilir (globals.css). */}
+                            <span className="chip chip-accent user-chip" title={user.email}>
+                                <span className="truncate">{user.email.split("@")[0]}</span>
                             </span>
                             <button type="button" className="btn btn-ghost btn-sm" onClick={logout}>Çıkış</button>
                         </>

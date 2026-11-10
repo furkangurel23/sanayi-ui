@@ -5,11 +5,17 @@
  * URL parametreleri params.ts ile temizlenir: sort/dir BEYAZ LİSTE ile okunur
  * (backend Brand alanları: id, name) — ?sort=evil&dir=x gibi değerler backend'e
  * gitmez, varsayılan "name,asc" kullanılır.
+ *
+ * 002: başlık ortak PageHeader kalıbıyla (üst etiket + başlık + açıklama), marka yoksa
+ * ortak EmptyState; satır içi stil kalmadı.
  */
 import {getBrands} from "@/lib/api";
 import type {BrandDto, Page as PageType} from "@/lib/types";
 import BrandCard from "@/components/BrandCard";
 import Pagination from "@/components/Pagination";
+import PageHeader from "@/components/PageHeader";
+import EmptyState from "@/components/EmptyState";
+import {Search} from "@/components/icons";
 import {parseEnum, parsePage, parseSize} from "@/lib/params";
 
 export const metadata = {
@@ -32,16 +38,16 @@ export default async function BrandsPage({
 
     return (
         <main className="container page">
-            <div className="stack-sm">
-                <span className="eyebrow">Markalar</span>
-                <h1 className="section-title" style={{fontSize: "var(--type-title)"}}>Markana bakan ustalar</h1>
-                <p className="muted text-sm">Markanı seç; o markayla çalışan ustaları gör, sohbet odasına katıl.</p>
-            </div>
+            <PageHeader
+                eyebrow="Markalar"
+                title="Markana bakan ustalar"
+                subtitle="Markanı seç; o markayla çalışan ustaları gör, sohbet odasına katıl."
+            />
 
             {data.content.length === 0 ? (
-                <div className="empty-state">Marka bulunamadı.</div>
+                <EmptyState icon={<Search/>} title="Marka bulunamadı."/>
             ) : (
-                <div className="grid-2">
+                <div className="grid-2 grid-start">
                     {data.content.map((b) => <BrandCard key={b.id} brand={b}/>)}
                 </div>
             )}

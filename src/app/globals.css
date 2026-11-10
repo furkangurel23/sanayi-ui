@@ -265,6 +265,8 @@ h2, h3, .headline {
 }
 /* Dar içerik sütunu (detay sayfası): 72rem × 7/9 = 56rem */
 .container-narrow { max-width: calc(var(--container) * 7 / 9); }
+/* Tek görevli dar sütun (yakınımdakiler konum ekranı): 72rem × 11/18 = 44rem */
+.container-tight { max-width: calc(var(--container) * 11 / 18); }
 /* grid-template-columns: minmax(0, 1fr) -> tek sütun içerikten (min-content) geniş
    olamaz; uzun bir öğe (ör. 11 çubuklu histogram) sütunu viewport'tan taşırmaz. */
 .page {
@@ -299,6 +301,8 @@ h2, h3, .headline {
     .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 .min-w-0 { min-width: 0; }
+/* Izgara öğeleri satırın en uzununa GERİLMESİN (ör. açılan marka kartının komşusu boş uzamasın) */
+.grid-start { align-items: start; }
 
 /* — Metin yardımcıları (D12) — */
 .prose { max-inline-size: var(--measure); }
@@ -393,8 +397,13 @@ h2, h3, .headline {
     border-radius: var(--radius-full);
     background: var(--accent-text);
 }
-.header-actions { margin-left: auto; display: flex; align-items: center; gap: var(--space-2); }
-.user-chip { max-width: calc(var(--space-10) + var(--space-6)); }
+/* min-width: 0 -> eylem grubu da daralabilir (flex öğesinin varsayılan min-width'i
+   "içerik kadar"dır). Faz 5'te bulundu: giriş yapmış kullanıcıda 375 px'te üst bar
+   50 px taşıyordu (tema + kullanıcı çipi + Çıkış + menü). Artık çip daralıp "…" ile
+   kısalır; 360 px altında tamamen gizlenir (Çıkış düğmesi oturumu zaten belli eder). */
+.header-actions { margin-left: auto; display: flex; align-items: center; gap: var(--space-2); min-width: 0; }
+.user-chip { max-width: calc(var(--space-10) + var(--space-6)); min-width: 0; flex: 0 1 auto; }
+@media (max-width: 359px) { .user-chip { display: none; } }
 /* .btn'den (dosyada sonra gelir) güçlü olsun diye iki sınıflı seçici */
 .header-actions .nav-burger { display: none; }
 
@@ -680,23 +689,20 @@ a.chip:hover, button.chip:hover { background: var(--surface-2); border-color: va
     font-weight: var(--type-headline-wt);
 }
 
-/* Kategori rafı: 2 satırlık, yatay kaydırılan chip sütunları (flex column-wrap:
-   her chip içeriği kadar geniş). Sağ kenar maske ile erir -> "devamı var" ipucu. */
-.chip-rail {
+/* Kategori kümesi (ana sayfa): eşit aralıklı, SARAN chip kümesi.
+   Onay kapısında bulunan sorun: eski 2 satırlık "column wrap" raf, chip'leri içerik
+   genişliğinde DİKEY sütunlara diziyordu -> 1440 px'te düzensiz sütun boşlukları ve sağda
+   maske altında kırpılan chip'ler ("Oto Döşeme"). Şimdi düz satır akışı (row wrap):
+   her chip bir öncekinin hemen yanına, sığmazsa alt satıra; yatay ve dikey boşluk aynı
+   (--space-2) -> 375 ve 1440 px'te aynı kural, kırpma ve yatay kaydırma yok.
+   Satır adımı = 36 px chip + 8 px boşluk = 44 px -> chip'lerin 44 px vuruş alanları
+   (::after) üst üste binmez. */
+.chip-cluster {
     display: flex;
-    flex-flow: column wrap;
-    align-content: flex-start;
-    gap: var(--space-2) var(--space-2);
-    height: calc(var(--control-h-sm) * 2 + var(--space-2) + var(--space-4));
-    overflow-x: auto;
-    overflow-y: hidden;
-    padding: var(--space-1) var(--space-1) var(--space-2);
-    scrollbar-width: none;
-    -webkit-mask-image: linear-gradient(90deg, var(--fg) 88%, transparent);
-    mask-image: linear-gradient(90deg, var(--fg) 88%, transparent);
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
 }
-.chip-rail::-webkit-scrollbar { display: none; }
-.chip-rail .chip { width: fit-content; }
 
 /* ---------- puan rozeti (ScoreBadge) ----------
    Renk + İŞARET (+3 / −2 / 0) birlikte (FR-014). Sayılar tablo hizalı (tabular-nums). */
@@ -1018,11 +1024,6 @@ a.chip:hover, button.chip:hover { background: var(--surface-2); border-color: va
 .chat-author { font-weight: var(--type-headline-wt); font-size: var(--type-caption); }
 .chat-time { font-size: var(--type-caption); color: var(--fg-faint); }
 .chat-bubble a { color: var(--accent-text); text-decoration: underline; text-underline-offset: var(--space-1); }
-.chat-attachment img, .chat-attachment video {
-    border-radius: var(--radius-sm);
-    max-height: calc(var(--space-10) * 2.5);
-    width: auto; max-width: 100%;
-}
 .chat-composer {
     display: flex; align-items: flex-end; gap: var(--space-2);
     padding: var(--space-3) var(--space-4);
@@ -1053,6 +1054,9 @@ a.chip:hover, button.chip:hover { background: var(--surface-2); border-color: va
 .brand-logo {
     display: inline-flex; align-items: center; justify-content: center;
     flex-shrink: 0;
+    /* --logo-size: çalışma anı değeri (BrandLogo `size` prop'u satır içi verir) */
+    width: var(--logo-size, var(--control-h));
+    height: var(--logo-size, var(--control-h));
     border-radius: var(--radius-md);
     overflow: hidden;
 }
@@ -1061,6 +1065,8 @@ a.chip:hover, button.chip:hover { background: var(--surface-2); border-color: va
    (neredeyse beyaz). Logo renklerine DOKUNULMAZ (filtre yok). */
 .brand-logo-img { background: var(--surface-1); border: 1px solid var(--hairline); }
 :root[data-theme="dark"] .brand-logo-img { background: var(--fg); }
+/* Logo kutunun %78'ini kaplar; oran korunur (contain) -> geniş/uzun logolar taşmaz. */
+.brand-logo-img img { max-width: 78%; max-height: 78%; object-fit: contain; }
 .brand-logo-mono {
     font-weight: var(--type-title-wt);
     font-size: var(--type-callout);
@@ -1072,6 +1078,9 @@ a.chip:hover, button.chip:hover { background: var(--surface-2); border-color: va
 /* ---------- oda / marka kartı ---------- */
 .room-card { display: flex; align-items: center; gap: var(--space-4); padding: var(--space-4) var(--space-5); }
 .room-card-cta { display: inline-flex; align-items: center; gap: var(--space-1); color: var(--fg-muted); }
+.room-card-body { min-width: 0; flex: 1; }
+.room-card-arrow { margin-inline-start: auto; color: var(--fg-faint); }
+.card-hover:hover .room-card-arrow { color: var(--fg); }
 .room-avatar {
     width: var(--control-h); height: var(--control-h);
     border-radius: var(--radius-md);
@@ -1100,8 +1109,177 @@ a.chip:hover, button.chip:hover { background: var(--surface-2); border-color: va
 
 /* ---------- tablo (admin) — D12: yatay kaydırma TABLO KABINDA, sayfa kaymaz ---------- */
 .table-scroll, .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-.table-wrap { border: 1px solid var(--hairline); border-radius: var(--radius-lg); background: var(--surface-1); }
+/* position: relative -> içerideki mutlak konumlu öğeler (ör. başlıktaki .sr-only "İşlemler")
+   kaydırma kabına göre yerleşir ve onunla kırpılır; yoksa ilk kapsayıcı bloğa (sayfaya)
+   göre yerleşip 375 px'te sayfayı 377 px yatay taşırıyordu (ölçüldü, Faz 6). */
+.table-wrap { position: relative; border: 1px solid var(--hairline); border-radius: var(--radius-lg); background: var(--surface-1); }
 table.data { width: 100%; border-collapse: collapse; font-size: var(--type-callout); }
+/* Dar ekranda sütunlar ezilip kelime kelime kırılmasın: tablo en az 640 px (5 × 128) olur,
+   fazlası .table-wrap içinde yatay kayar (sayfa kaymaz — D12). Kap klavyeyle de kaydırılabilir
+   (tabIndex=0 + role="region" + aria-label, admin sayfalarında). */
+.table-wrap table.data { min-width: calc(var(--space-10) * 5); }
 table.data th, table.data td { text-align: left; padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--hairline); }
 table.data th { color: var(--fg-muted); font-weight: var(--type-headline-wt); font-size: var(--type-caption); }
 table.data tr:last-child td { border-bottom: 0; }
+
+/* ============================================================
+   4) YAYILIM (Faz 5) — markalar, yakınımdakiler, sohbet, kimlik, admin, hata ekranları
+   ============================================================ */
+
+/* ---------- marka kartı (BrandCard + BrandProvidersToggle) ----------
+   Bilinen sorun (001 öncesinden): başlık satırı "nowrap" idi -> 375 px'te logo + ad +
+   "Sohbet" + "Ustalar" sığmayıp kart 26 px taşıyordu. Şimdi SARAN flex: kimlik bloğu en az
+   192 px (--space-10 + --space-8) ister; yer kalmazsa eylemler ALT SATIRA iner. */
+.brand-card-head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3) var(--space-4); }
+.brand-card-id {
+    display: flex; align-items: center; gap: var(--space-3);
+    flex: 1 1 calc(var(--space-10) + var(--space-8));
+    min-width: 0;
+}
+.brand-card-text { min-width: 0; }
+.brand-card-actions { display: flex; align-items: center; gap: var(--space-2); margin-inline-start: auto; }
+/* Aç/kapa okunun dönmesi: durum aria-expanded'dan okunur (tek doğruluk kaynağı) */
+.toggle-chevron { transition: transform var(--dur) var(--ease-standard); }
+[aria-expanded="true"] > .toggle-chevron { transform: rotate(180deg); }
+.brand-providers {
+    display: grid;
+    gap: var(--space-1);
+    margin-top: var(--space-4);
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--hairline);
+    max-height: calc(var(--space-10) * 2.25);
+    overflow: auto;
+    overscroll-behavior: contain;
+}
+.brand-provider-link {
+    display: flex; align-items: center; justify-content: space-between; gap: var(--space-3);
+    min-height: var(--target-min);
+    padding-inline: var(--space-3);
+    border-radius: var(--radius-sm);
+    font-size: var(--type-callout);
+    transition: background-color var(--dur-fast) var(--ease-standard);
+}
+.brand-provider-link:hover { background: var(--neutral-soft); }
+.brand-provider-loc { flex-shrink: 0; font-size: var(--type-caption); color: var(--fg-faint); }
+
+/* ---------- usta kartı ek satırı (yakınımdakiler: mesafe chip'i) ---------- */
+.provider-card-extra { margin-top: var(--space-1); justify-self: start; }
+
+/* ---------- konum ekranı (NearLocate) ----------
+   EmptyState görünümü + altta yarıçap alanı ve buton. aria-live kabı durum değişimini
+   (bekliyor -> alınıyor -> reddedildi...) ekran okuyucuya duyurur. */
+.locate-form { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: center; gap: var(--space-3); }
+.locate-radius { width: calc(var(--space-10) + var(--space-4)); text-align: start; }
+
+/* ---------- durum ikonu (kimlik ekranları: posta / bekliyor / başarılı / hata) ----------
+   Renk + İKON ŞEKLİ birlikte anlam taşır (Mail, Clock, CheckCircle, Alert) — renk tek
+   başına değil (FR-014 ruhu). Ton zeminleri contrast-check'in "rozet" çiftleriyle aynı. */
+.status-icon {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: calc(var(--target-min) + var(--space-3));
+    height: calc(var(--target-min) + var(--space-3));
+    border-radius: var(--radius-full);
+    background: var(--accent-soft);
+    color: var(--accent-text);
+}
+.status-icon[data-tone="pos"] { background: var(--pos-soft); color: var(--pos); }
+.status-icon[data-tone="neg"] { background: var(--neg-soft); color: var(--neg); }
+.status-icon[data-tone="neutral"] { background: var(--neutral-soft); color: var(--fg-muted); }
+
+/* Kimlik kartı yardımcıları: ortalanmış durum kartı, alt bağlantılar */
+.auth-card-center { justify-items: center; text-align: center; }
+.auth-links { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2) var(--space-4); font-size: var(--type-callout); }
+.auth-links a { color: var(--fg-muted); display: inline-flex; align-items: center; gap: var(--space-1); min-height: var(--target-min); }
+.auth-links a:hover { color: var(--fg); }
+.auth-links b { color: var(--accent-text); }
+.auth-foot { justify-content: center; }
+.btn-block { width: 100%; }
+
+/* ---------- sohbet ek parçaları (ChatRoom) ---------- */
+.chat-page { flex: 1; padding-block: var(--space-4); }
+.chat-head-text { min-width: 0; }
+.chat-title { font-weight: var(--type-headline-wt); font-size: var(--type-body); line-height: var(--type-headline-lh); }
+.chat-head-back { margin-inline-start: auto; }
+/* İskelet balonlar: gerçek mesaj balonuna yakın ölçü (CLS) */
+.skeleton-bubble { height: calc(var(--space-8) - var(--space-2)); width: 55%; flex-shrink: 0; }
+.skeleton-bubble.own { align-self: flex-end; width: 45%; }
+.skeleton-bubble.wide { width: 60%; }
+.chat-body > .empty-state { border: 0; margin-block: auto; }
+.chat-locked { margin-top: var(--space-4); }
+/* Ek: EN-BOY KORUMALI AYRILMIŞ KUTU (001'den devralınan CLS maddesi).
+   Görselin gerçek boyutu yüklenene kadar bilinmez; kutu baştan 4:3 (video 16:9) yer
+   ayırır, medya içine "contain" ile oturur -> yüklenince balon büyümez, liste kaymaz. */
+/* Genişlik KESİN değer (yüzde değil): balon içeriğe göre daralan (shrink-to-fit) bir kutu;
+   yüzde genişlik ona göre çözülürse kutu kısa metin kadar küçülüyordu (124 px ölçüldü).
+   min(320 px, 62vw) -> masaüstünde 320, 375 px telefonda ≈ 232 px. */
+.chat-attachment {
+    width: min(calc(var(--space-10) * 2.5), 62vw);
+    aspect-ratio: 4 / 3;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    background: var(--neutral-soft);
+}
+.chat-attachment[data-kind="video"] { aspect-ratio: 16 / 9; }
+.chat-attachment img, .chat-attachment video {
+    width: 100%; height: 100%;
+    max-width: none; max-height: none;
+    object-fit: contain;
+}
+.chat-alert { margin: 0 var(--space-4) var(--space-2); }
+/* Dosya yükleniyor şeridi: ikon + metin + BELİRSİZ ilerleme çubuğu (fetch yükleme
+   yüzdesi vermez; role="progressbar" aria-valuenow'suz = belirsiz). */
+.chat-uploading {
+    display: flex; align-items: center; gap: var(--space-2);
+    padding: var(--space-2) var(--space-4);
+    border-top: 1px solid var(--hairline);
+    font-size: var(--type-caption);
+    color: var(--fg-muted);
+    background: var(--surface-1);
+}
+.progress-indeterminate {
+    position: relative;
+    flex: 1;
+    height: var(--space-1);
+    border-radius: var(--radius-full);
+    background: var(--neutral-soft);
+    overflow: hidden;
+}
+.progress-indeterminate::before {
+    content: "";
+    position: absolute;
+    inset-block: 0;
+    width: 40%;
+    border-radius: inherit;
+    background: var(--accent);
+    animation: progress-slide calc(var(--dur-slow) * 4) var(--ease-standard) infinite;
+}
+@keyframes progress-slide { from { left: -40%; } to { left: 100%; } }
+@media (prefers-reduced-motion: reduce) {
+    /* Hareket yok: çubuk sabit yarım dolu durur (durum yine okunur — metin + role) */
+    .progress-indeterminate::before { left: 0; width: 50%; animation: none; }
+}
+
+/* ---------- admin ---------- */
+.admin-tabs { max-width: 100%; overflow-x: auto; }
+.admin-toolbar { display: grid; gap: var(--space-4); padding: var(--space-4) var(--space-5); }
+.admin-filters { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-3); }
+@media (min-width: 900px) { .admin-filters { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.admin-search { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); padding: var(--space-4); }
+.admin-search .input { flex: 1 1 calc(var(--space-10) * 1.5); min-width: 0; }
+.select-compact { width: auto; flex: 0 0 auto; }
+table.data a { color: var(--accent-text); font-weight: var(--type-headline-wt); }
+table.data a:hover { text-decoration: underline; text-underline-offset: var(--space-1); }
+.cell-strong { font-weight: var(--type-headline-wt); font-variant-numeric: tabular-nums; }
+.cell-comment { min-width: calc(var(--space-10) * 1.5); max-width: calc(var(--space-10) * 2.65); }
+.cell-actions { white-space: nowrap; text-align: right; }
+.row-actions { display: inline-flex; align-items: center; justify-content: flex-end; gap: var(--space-2); }
+/* Durum chip'leri: ton zemini + ton metni (rozet çiftleri ≥4.5:1) + METİN ("Aktif") */
+.chip-pos { background: var(--pos-soft); color: var(--pos); border-color: transparent; }
+.chip-neg { background: var(--neg-soft); color: var(--neg); border-color: transparent; }
+/* Log paneli (Dialog içinde) */
+.log-list { display: grid; gap: var(--space-2); }
+.log-item { display: grid; gap: var(--space-1); padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); }
+.log-meta { font-size: var(--type-caption); color: var(--fg-muted); overflow-wrap: anywhere; }
+/* Satır içi onay (ConfirmButton) */
+.confirm-inline { display: inline-flex; align-items: center; gap: var(--space-2); }
+

@@ -8,6 +8,10 @@
  * inline onay hem tasarımımıza uyar hem yanlışlıkla silmeyi (double-tap) engeller.
  *
  * Silme sebebi opsiyonel prompt ile alınır (moderation_logs'a yazılır).
+ *
+ * 002: satır içi stil -> .confirm-inline; "Emin misin?" metni caption + muted.
+ * Onay moduna geçince odak "Evet"e verilmez (yanlışlıkla Enter'la silmeyi önlemek için
+ * kullanıcı bilinçli olarak Tab'lar) — davranış 001 ile aynı.
  */
 
 import {useState} from "react";
@@ -48,8 +52,8 @@ export default function ConfirmButton({
     }
 
     return (
-        <span className="row" style={{gap: "0.35rem"}}>
-            <span className="text-xs muted">{confirmLabel}</span>
+        <span className="confirm-inline">
+            <span className="caption muted">{confirmLabel}</span>
             <button type="button" className="btn btn-danger btn-sm" disabled={busy} onClick={run}>
                 {busy ? "…" : "Evet"}
             </button>

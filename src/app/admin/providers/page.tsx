@@ -9,7 +9,12 @@
  *
  * Arama URL'de DEĞİL local state'te: admin ekranı tam SPA, paylaşılabilir link
  * gereği yok; her tuşta URL'i kirletmemek için "Ara" tetikli.
+ *
+ * 002: satır içi stiller sınıflara (.admin-search, .cell-*); sayfalama ortak
+ * <Pagination mode="callback">. Dükkan bağlantısı ham <a> yerine next/link <Link>
+ * (yeni sekmede açılır — target="_blank" korunur; Link'in prefetch'i de gelir).
  */
+import Link from "next/link";
 
 import {useCallback, useEffect, useState} from "react";
 import {adminDeleteProvider, adminListProviders} from "@/lib/adminApi";
@@ -18,6 +23,7 @@ import {errorMessage} from "@/lib/apiError";
 import type {Page, ProviderListItem} from "@/lib/types";
 import ConfirmButton from "@/components/ConfirmButton";
 import AdminShell from "@/app/admin/AdminShell";
+import Pagination from "@/components/Pagination";
 
 function ProvidersAdmin() {
     const [q, setQ] = useState("");
@@ -61,8 +67,8 @@ function ProvidersAdmin() {
 
     return (
         <>
-            <div className="card row" style={{padding: "0.9rem 1rem", gap: "0.5rem"}}>
-                <input className="input" placeholder="Dükkan adı / adres ara…" value={q}
+            <div className="card admin-search" role="search">
+                <input className="input" placeholder="Dükkan adı / adres ara…" aria-label="Dükkan adı / adres ara" value={q}
                        onChange={e => setQ(e.target.value)}
                        onKeyDown={e => e.key === "Enter" && load(1, q)}/>
                 <button className="btn btn-primary" onClick={() => load(1, q)} disabled={loading}>
@@ -74,9 +80,10 @@ function ProvidersAdmin() {
                 }}>Temizle</button>}
             </div>
 
-            {err && <div className="alert alert-error">{err}</div>}
+            {err && <div className="alert alert-error" role="alert">{err}</div>}
 
-            <div className="table-wrap">
+            {/* Kaydırılabilir kap klavyeyle de kaydırılabilsin: odaklanabilir bölge + ad */}
+            <div className="table-wrap" tabIndex={0} role="region" aria-label="Dükkanlar tablosu">
                 <table className="data">
                     <thead>
                     <tr>
@@ -84,7 +91,7 @@ function ProvidersAdmin() {
                         <th>Konum</th>
                         <th>Puan</th>
                         <th>Oy</th>
-                        <th></th>
+                        <th><span className="sr-only">İşlemler</span></th>
                     </tr>
                     </thead>
                     <tbody>
@@ -96,16 +103,17 @@ function ProvidersAdmin() {
                     {data?.content.map(p => (
                         <tr key={p.id}>
                             <td>
-                                <a href={`/providers/${p.id}`} target="_blank" rel="noreferrer noopener"
-                                   style={{color: "var(--accent-text)", fontWeight: 550}}>{p.name}</a>
-                                <div className="text-xs faint">#{p.id}</div>
+                                <Link href={`/providers/${p.id}`} target="_blank" rel="noreferrer noopener">
+                                    {p.name}
+                                </Link>
+                                <div className="caption faint">#{p.id}</div>
                             </td>
-                            <td className="text-sm muted">{[p.district, p.city].filter(Boolean).join(", ")}</td>
-                            <td style={{fontWeight: 650}}>
+                            <td className="callout muted">{[p.district, p.city].filter(Boolean).join(", ")}</td>
+                            <td className="cell-strong">
                                 {typeof p.avgScore === "number" ? p.avgScore.toFixed(1) : "—"}
                             </td>
-                            <td className="text-sm muted">{p.ratingCount ?? 0}</td>
-                            <td style={{textAlign: "right"}}>
+                            <td className="callout muted">{p.ratingCount ?? 0}</td>
+                            <td className="cell-actions">
                                 <ConfirmButton label="Sil" askReason
                                                onConfirm={(reason) => remove(p.id, reason)}/>
                             </td>
@@ -115,17 +123,8 @@ function ProvidersAdmin() {
                 </table>
             </div>
 
-            {total > 1 && (
-                <nav className="row" style={{justifyContent: "center"}} aria-label="Sayfalama">
-                    <button className="btn btn-outline btn-sm" onClick={() => load(Math.max(1, page - 1), q)}
-                            disabled={page <= 1}>← Önceki
-                    </button>
-                    <span className="text-sm muted">Sayfa {page} / {total}</span>
-                    <button className="btn btn-outline btn-sm" onClick={() => load(Math.min(total, page + 1), q)}
-                            disabled={page >= total}>Sonraki →
-                    </button>
-                </nav>
-            )}
+            {/* Ortak sayfalama, callback modu: yerel state, URL'e ?page yazılmaz */}
+            <Pagination mode="callback" page={page} totalPages={total} onPage={n => load(n, q)}/>
         </>
     );
 }

@@ -14,7 +14,14 @@
  * zamanında yeniden boyutlandırmaya (/_next/image) gerek yok, sade kalır.
  *
  * Fallback: logosu olmayan markada (DS Automobiles, Togg) markanın baş harf(ler)i.
+ *
+ * 002: 3 satır içi stil -> 1. Boyut artık `--logo-size` CSS değişkeni olarak TEK yerde
+ * satır içi verilir (çalışma anı değeri: çağıran 46, 38... ister); genişlik/yükseklik ve
+ * logo yerleşimi (%78, contain) globals.css'te .brand-logo / .brand-logo-img img.
+ * TypeScript notu: CSSProperties tipinde "--logo-size" gibi özel özellik yok -> nesneyi
+ * `as CSSProperties` ile tiplendiriyoruz (MiniHistogram'daki --h ile aynı kalıp).
  */
+import type {CSSProperties} from "react";
 
 // Logosu MEVCUT markaların slug'ları (public/brands/*.webp ile senkron).
 const HAS_LOGO = new Set([
@@ -37,23 +44,24 @@ function toSlug(name: string): string {
 
 export default function BrandLogo({name, size = 46}: { name: string; size?: number }) {
     const slug = toSlug(name);
-    const dim = {width: size, height: size};
-
-    if (HAS_LOGO.has(slug)) {
-        return (
-            <span className="brand-logo brand-logo-img" style={dim} title={name}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={`/brands/${slug}.webp`} alt={`${name} logosu`} loading="lazy"
-                     style={{maxWidth: "78%", maxHeight: "78%", objectFit: "contain"}}/>
-            </span>
-        );
-    }
-
+    const hasLogo = HAS_LOGO.has(slug);
     // Fallback monogram: ilk harf (çok kelimeliyse ilk iki kelimenin baş harfleri).
     const initials = name.split(/\s+/).slice(0, 2).map(w => w[0]).join("").toUpperCase();
+
     return (
-        <span className="brand-logo brand-logo-mono" style={dim} title={name} aria-label={name}>
-            {initials}
+        <span
+            className={`brand-logo ${hasLogo ? "brand-logo-img" : "brand-logo-mono"}`}
+            // çalışma anı değeri: logo boyutu (px) çağırandan gelir -> --logo-size
+            style={{"--logo-size": `${size}px`} as CSSProperties}
+            title={name}
+            // Monogram: role="img" + aria-label -> ekran okuyucu "BYD" harflerini değil marka adını okur
+            role={hasLogo ? undefined : "img"}
+            aria-label={hasLogo ? undefined : name}
+        >
+            {hasLogo ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={`/brands/${slug}.webp`} alt={`${name} logosu`} loading="lazy"/>
+            ) : initials}
         </span>
     );
 }

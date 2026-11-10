@@ -26,7 +26,7 @@
  * Puan seçici — WAI-ARIA "Radio Group" klavye kalıbı (002 / D6, FR-017 a11y istisnası):
  *  - TEK sekme durağı ("roving tabindex"): yalnızca seçili değer (hiç seçim yoksa ilki,
  *    −5) tabIndex=0 taşır; diğerleri -1. Tab grubun içine bir kez girer, bir kez çıkar.
- *  - ←/↑ önceki, →/↓ sonraki değer (uçlarda başa/sona sarar); Home −5, End +5.
+ *  - Sol/Yukarı ok önceki, Sağ/Aşağı ok sonraki değer (uçlarda başa/sona sarar); Home −5, End +5.
  *    Ok tuşu odağı TAŞIR ve değeri SEÇER (radyo grubunda seçim odağı izler).
  *  - Seçili değer yalnız renkle değil (D10): kalın sayı + köşede Check ikonu + kenar.
  *  - pickRefs: düğmelerin DOM referansları dizisi; klavyeyle seçilen düğmeye
