@@ -4,7 +4,7 @@
 
 **Created**: 2026-11-10
 
-**Status**: Draft (rev 2 — frontend-reviewer spec incelemesi sonrası)
+**Status**: rev 3 — 2026-11-10 kullanıcı kararı eklendi: mobilde harita kapalı başlar + Google/Apple Haritalar ile yol tarifi (US5, FR-022…FR-025)
 
 **Input**: User description: "UI için Apple sitesi gibi (örnek bu sadece) güzel gözüken bir UI hazırlamamız gerekiyor." Kullanıcı kararları (2026-11-10): ton = **koyu öncelikli, premium** (Apple Pro ürün sayfaları hissi); kapsam = **tüm sayfalar**; açık tema desteklenmeye devam eder.
 
@@ -75,6 +75,23 @@ Açık temayı seçen kullanıcı, aynı kalite ve aynı değişmezlerle tasarla
 1. **Given** açık tema seçili, **When** herhangi bir sayfa açılıyor ya da yenileniyor, **Then** sayfa doğrudan açık temada boyanır (yanıp sönme yok).
 2. **Given** her iki tema, **When** kontrast ölçülüyor, **Then** FR-012 eşikleri sağlanır.
 
+### User Story 5 - Yoldaki kullanıcı tek dokunuşla yol tarifi alır (Priority: P1)
+
+Kullanıcı arabada, telefonundan siteye girer; bir ustayı bulur ve tek dokunuşla telefonundaki harita uygulamasında (Google Haritalar ya da Apple Haritalar) yol tarifini başlatır. Mobilde sayfa içi harita varsayılan olarak kapalıdır; sayfa hızlı açılır, isteyen haritayı tek dokunuşla açar.
+
+**Why this priority**: Kullanıcı kararı (2026-11-10): sanayi kullanıcısı çoğunlukla yolda ve mobilde; asıl ihtiyaç ustaya gitmek. Ayrıca harita rotalarındaki LCP açığını (FR-018) mobilde kapatır.
+
+**Independent Test**: 375 px'te `/providers`, `/providers/near` ve bir dükkan detayı açılır; harita kapalı gelir ve harita kodu/karoları indirilmez; "Yol tarifi" Google ve Apple Haritalar bağlantıları doğru hedef koordinatlarla açılır.
+
+**Acceptance Scenarios**:
+
+1. **Given** 768 px'ten dar ekran ve URL'de `showMap` yok, **When** `/providers`, `/providers/near` veya dükkan detayı açılıyor, **Then** harita kapalı başlar (harita kodu ve karoları indirilmez), yerinde "Haritayı göster" düğmesi bulunur; ilk boyamada yer kayması olmaz.
+2. **Given** 768 px ve üzeri ekran ve URL'de `showMap` yok, **When** aynı sayfalar açılıyor, **Then** harita bugünkü gibi açık başlar.
+3. **Given** URL'de `showMap=1` veya `showMap=0`, **When** sayfa herhangi bir genişlikte açılıyor, **Then** URL'deki tercih ekran genişliğinden önceliklidir (paylaşılan bağlantı aynı görünür).
+4. **Given** konumu olan bir dükkanın detayı, **When** kullanıcı "Google Haritalar" ya da "Apple Haritalar" yol tarifi bağlantısına dokunuyor, **Then** ilgili harita uygulaması/sitesi dükkanın koordinatına yol tarifi ekranıyla açılır.
+5. **Given** konumu olmayan ama adresi olan bir dükkan, **When** yol tarifi isteniyor, **Then** bağlantılar adres + şehir metniyle arama/yol tarifi yapar; ne konum ne adres yoksa bağlantılar gösterilmez.
+6. **Given** yakınımdakiler listesindeki bir dükkan kartı veya haritadaki bir işaretçinin açılır penceresi, **When** kullanıcı yol tarifi istiyor, **Then** aynı iki bağlantı oradan da kullanılabilir (kartın kendi bağlantısıyla iç içe etkileşimli öğe oluşturmadan).
+
 ### Edge Cases
 
 - Çok uzun dükkan/marka adları ve adresler: kart ve başlıklarda taşma olmadan kısaltılır/satır kırılır.
@@ -138,6 +155,10 @@ Açık temayı seçen kullanıcı, aynı kalite ve aynı değişmezlerle tasarla
 - **FR-018**: Performans bütçeleri (001'in `specs/001-ui-modernization/baseline.md` sonuç ölçümlerine göre, aynı ölçüm koşullarıyla): rota başına ilk yüklenen JS artışı ≤5 KB (gzip); genel stil dosyası boyutu ≤ 001 sonucunun 1.5 katı (gzip); LCP ≤2.5 sn ve CLS <0.1 (mobil laboratuvar); harita stilleri yalnızca harita rotalarında; yeni üçüncü taraf kaynak yalnızca harita karo sağlayıcısı.
 - **FR-019**: Arayüz metinleri Türkçe ve kısa kalmalı; mevcut Türkçe eğitici kod yorumları korunmalı, yeni yapılar için yorum eklenmelidir.
 - **FR-020**: Harici arayüz kütüphanesi, ikon paketi veya yardımcı sınıf çerçevesi eklenmemelidir (anayasa IV).
+- **FR-022**: 768 px'ten dar ekranlarda, URL'de açık tercih (`showMap`) yoksa harita bölümleri (`/providers`, `/providers/near`, dükkan detayı) kapalı başlamalı; harita kodu ve karoları kullanıcı açana kadar indirilmemeli; açık/kapalı yerleşim ilk boyamada doğru olmalı (sunucu ekran genişliğini bilmediği için karar CSS medya sorgusuyla verilir, yer kayması olmaz). URL'deki `showMap` tercihi ekran genişliğinden önceliklidir.
+- **FR-023**: Konumu veya adresi olan her dükkan için "Yol tarifi" bağlantıları sunulmalıdır: Google Haritalar (`https://www.google.com/maps/dir/?api=1&destination=…`) ve Apple Haritalar (`https://maps.apple.com/?daddr=…&q=<ad>`); koordinat varsa koordinat, yoksa adres + ilçe + şehir kullanılır; bağlantılar yeni sekmede/uygulamada açılır (`rel="noopener"`), dokunma hedefi ≥44 px, ikonlu ve Türkçe etiketli ("Google Haritalar'da yol tarifi"). Yerleri: dükkan detay başlığı (telefon bağlantısının yanında), yakınımdakiler kartları, harita işaretçi açılır penceresi.
+- **FR-024**: Harita işaretçileri her iki temada koyu bir kontur/gölgeyle karo zemininden ayrılmalı (su/ana yol üzerinde de ≥3:1).
+- **FR-025**: Üst üste binen masaüstü harita işaretçilerinin dokunma hedefi, WCAG 2.5.8 "eşdeğer" istisnasıyla karşılanır: her dükkana ≥44 px liste kartından da erişilebilir (kullanıcı kararı: haritanın mobilde kapalı başlaması). Bu istisna belgelenir.
 - **FR-021**: **Tasarım onay kapısı**: kalan rotalara yayılmadan önce belirteçler ve 3 referans ekran (ana sayfa, dükkan listesi, dükkan detayı; iki tema; 375 ve 1440 px) ekran görüntüleriyle kullanıcıya sunulmalı; kullanıcı onayı alınmadan yayılım başlamamalıdır.
 
 ## Success Criteria *(mandatory)*
