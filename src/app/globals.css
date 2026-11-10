@@ -47,9 +47,11 @@
     --type-caption-lh: 1.4;
     --type-caption-ls: 0.01em;
     --type-caption-wt: 400;
-    /* Satır uzunluğu: 62ch. Geist'te "0" ortalama harften geniş olduğu için ekranda
-       ≈ 70 karakter/satır çıkar (FR-002: ≤ 75). */
-    --measure: 62ch;
+    /* Satır uzunluğu (FR-002: ≤ 75 karakter). D2 62ch öngörmüştü; ancak Geist'te "0"
+       (= 1ch) ortalama Türkçe harften çok geniş: tarayıcıda ölçüldü, 62ch ≈ 85–87,
+       56ch ≈ 80–82, 50ch ≈ 65–75 karakter/satır. 48ch -> ≈ 63–72 (pay bırakıldı).
+       ch birimi yazı boyutuyla ölçeklendiği için 17 px gövdede de 24 px .lead'de de aynı oran. */
+    --measure: 48ch;
 
     /* — BOŞLUK: 4 px modüler dizi (4, 8, 12, 16, 24, 32, 48, 64, 96, 128) — */
     --space-1: 0.25rem;
@@ -263,17 +265,20 @@ h2, h3, .headline {
 }
 /* Dar içerik sütunu (detay sayfası): 72rem × 7/9 = 56rem */
 .container-narrow { max-width: calc(var(--container) * 7 / 9); }
+/* grid-template-columns: minmax(0, 1fr) -> tek sütun içerikten (min-content) geniş
+   olamaz; uzun bir öğe (ör. 11 çubuklu histogram) sütunu viewport'tan taşırmaz. */
 .page {
     flex: 1;
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
     align-content: start;
     gap: var(--space-6);
     padding-block: var(--space-6) var(--space-8);
 }
 /* .sections: vitrin gibi bölümlü sayfalarda bölüm arası boşluk
    (FR-002: mobil ≥ 56 px -> 64 px, masaüstü ≥ 96 px -> 96 px). */
-.sections { display: grid; gap: var(--space-8); padding-block-end: var(--space-8); }
-.section { display: grid; gap: var(--space-5); align-content: start; }
+.sections { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-8); padding-block-end: var(--space-8); }
+.section { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-5); align-content: start; }
 .section-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
 @media (min-width: 768px) {
     .container { padding-inline: var(--space-6); }
@@ -281,12 +286,12 @@ h2, h3, .headline {
     .sections { gap: var(--space-9); padding-block-end: var(--space-9); }
 }
 
-.stack-sm { display: grid; gap: var(--space-2); }
-.stack { display: grid; gap: var(--space-4); }
+.stack-sm { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-2); }
+.stack { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-4); }
 .row { display: flex; align-items: center; gap: var(--space-3); }
 .cluster { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2); }
 .row-between { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; }
-.grid-2, .grid-3 { display: grid; grid-template-columns: 1fr; gap: var(--space-4); }
+.grid-2, .grid-3 { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-4); }
 @media (min-width: 680px) {
     .grid-2, .grid-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
@@ -390,7 +395,8 @@ h2, h3, .headline {
 }
 .header-actions { margin-left: auto; display: flex; align-items: center; gap: var(--space-2); }
 .user-chip { max-width: calc(var(--space-10) + var(--space-6)); }
-.nav-burger { display: none; }
+/* .btn'den (dosyada sonra gelir) güçlü olsun diye iki sınıflı seçici */
+.header-actions .nav-burger { display: none; }
 
 /* Mobil menü: 720 px altında nav gizlenir; açıkken üst barın hemen altında --surface-2 panel.
    Üst bar (sticky) "positioned" olduğu için absolute panel ona göre yerleşir. */
@@ -417,12 +423,13 @@ h2, h3, .headline {
         content: "";
         position: absolute;
         inset-block: var(--space-3);
-        inset-inline-start: 0;
+        inset-inline: 0 auto;      /* masaüstü kuralının sağ kenarını sıfırla */
         width: var(--indicator-h);
+        height: auto;              /* masaüstü kuralının 2 px yüksekliğini geçersiz kıl */
         border-radius: var(--radius-full);
         background: var(--accent-text);
     }
-    .nav-burger { display: inline-flex; }
+    .header-actions .nav-burger { display: inline-flex; }
 }
 
 /* ---------- alt bilgi ---------- */
@@ -589,6 +596,7 @@ h2, h3, .headline {
 .toolbar-field { display: grid; gap: var(--space-2); min-width: 0; }
 .toolbar-label { font-size: var(--type-caption); font-weight: var(--type-headline-wt); color: var(--fg-muted); }
 .toolbar-inputs { display: flex; gap: var(--space-2); }
+.toolbar-inputs > * { flex: 1; min-width: 0; }
 .toolbar-clear { justify-self: start; }
 @media (min-width: 760px) { .toolbar-clear { justify-self: end; } }
 
@@ -722,7 +730,8 @@ a.chip:hover, button.chip:hover { background: var(--surface-2); border-color: va
    çizilen çok hafif bir vurgu ışığı (--accent-soft) üstte. */
 .hero {
     position: relative;
-    padding-block: var(--space-7) var(--space-6);
+    /* Alt boşluk = vitrinden ilk bölüme mesafe -> FR-002 bölüm aralığı (mobil 64, masaüstü 96) */
+    padding-block: var(--space-7) var(--space-8);
     text-align: center;
     overflow: hidden;
     isolation: isolate;
@@ -739,7 +748,7 @@ a.chip:hover, button.chip:hover { background: var(--surface-2); border-color: va
 .hero .lead { max-inline-size: var(--measure); margin-inline: auto; }
 .hero-actions { display: flex; gap: var(--space-3); justify-content: center; flex-wrap: wrap; margin-top: var(--space-3); }
 @media (min-width: 768px) {
-    .hero { padding-block: var(--space-10) var(--space-8); }
+    .hero { padding-block: var(--space-10) var(--space-9); }
     .hero-inner { gap: var(--space-5); }
 }
 /* "Nasıl çalışır" kartlarının ikon karosu */

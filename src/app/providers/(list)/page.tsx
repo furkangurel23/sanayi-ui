@@ -15,12 +15,19 @@
  *
  * Meta veriler (marka/kategori) .catch(() => []) ile korunur: o servisler hata
  * verirse dükkanlar yine listelenir, yalnızca filtre seçenekleri boş kalır.
+ *
+ * 002 görünümü: başlık ortak PageHeader (üst etiket + başlık + sonuç sayısı),
+ * sonuç yoksa ortak EmptyState (Search ikonu), sayfalama Pagination mode="url"
+ * (varsayılan — URL'e yazar). Satır içi stil yok.
  */
 import {getBrandsAllSorted, getCategoriesAllSorted, getProviders} from "@/lib/api";
 import ProviderCard from "@/components/ProviderCard";
 import FilterBar from "@/components/FilterBar";
 import Pagination from "@/components/Pagination";
 import MapSection from "@/components/MapSection";
+import PageHeader from "@/components/PageHeader";
+import EmptyState from "@/components/EmptyState";
+import {Search} from "@/components/icons";
 import {parseEnum, parsePage, parsePositiveId, parseScore, parseSize} from "@/lib/params";
 
 /*
@@ -112,13 +119,11 @@ export default async function ProvidersPage({
 
     return (
         <main className="container page">
-            <div className="row-between">
-                <div className="stack-sm">
-                    <span className="eyebrow">Keşfet</span>
-                    <h1 className="section-title" style={{fontSize: "var(--type-title)"}}>Ustalar</h1>
-                </div>
-                <span className="chip">{data.totalElements} sonuç</span>
-            </div>
+            <PageHeader
+                eyebrow="Keşfet"
+                title="Ustalar"
+                actions={<span className="chip">{data.totalElements} sonuç</span>}
+            />
 
             <FilterBar key={filterKey} brands={brands} categories={categories} initial={filterInitial}/>
 
@@ -126,17 +131,18 @@ export default async function ProvidersPage({
                         initialOpen={mapInitialOpen}/>
 
             {data.content.length === 0 ? (
-                <div className="empty-state">
-                    <b>Bu filtrelerle usta bulunamadı.</b>
-                    <span>Filtreleri gevşetmeyi veya temizlemeyi dene.</span>
-                </div>
+                <EmptyState
+                    icon={<Search/>}
+                    title="Bu filtrelerle usta bulunamadı."
+                    description="Filtreleri gevşetmeyi veya temizlemeyi dene."
+                />
             ) : (
                 <div className="grid-2">
                     {data.content.map((p) => <ProviderCard key={p.id} p={p}/>)}
                 </div>
             )}
 
-            <Pagination page={(data.number ?? 0) + 1} totalPages={data.totalPages ?? 1}/>
+            <Pagination mode="url" page={(data.number ?? 0) + 1} totalPages={data.totalPages ?? 1}/>
         </main>
     );
 }

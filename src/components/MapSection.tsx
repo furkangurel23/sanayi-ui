@@ -27,17 +27,19 @@
  * Kullanan rotalar: /providers ve /providers/near.
  */
 
-import {useState} from "react";
+import {type CSSProperties, useState} from "react";
 import dynamic from "next/dynamic";
 import {useRouter} from "next/navigation";
 import type {ProviderListItem} from "@/lib/types";
+import EmptyState from "@/components/EmptyState";
+import {Pin} from "@/components/icons";
 
 const ProvidersMap = dynamic(() => import("@/components/ProvidersMap"), {
     ssr: false,
-    // `loading` fonksiyonu bileşenin prop'larını (height) GÖREMEZ; bu yüzden iskelet
-    // MapSection'ın varsayılan harita yüksekliğiyle (280 px — /providers ve /near'ın
-    // kullandığı değer) sabit çizilir. Farklı yükseklik kullanılırsa burası da güncellenmeli.
-    loading: () => <div className="skeleton" style={{height: 280}}/>,
+    // `loading` fonksiyonu bileşenin prop'larını (height) GÖREMEZ. Bu yüzden yükseklik
+    // .map-frame kabına `--map-h` CSS değişkeni olarak verilir; iskelet (.skeleton-map)
+    // onu okur -> sabit sayı kopyalanmaz, harita gelince sayfa zıplamaz (CLS yok).
+    loading: () => <div className="skeleton skeleton-map" aria-hidden/>,
 });
 
 type Props = { items: ProviderListItem[]; height?: number; initialOpen?: boolean };
@@ -59,22 +61,26 @@ export default function MapSection({items, height = 280, initialOpen}: Props) {
     };
 
     return (
-        <section className="stack-sm">
-            <div className="row-between">
-                <h2 className="section-title">Harita</h2>
+        <section className="stack">
+            <div className="section-head">
+                <h2 className="headline">Harita</h2>
                 <button type="button" onClick={toggle} aria-pressed={open} className="btn btn-outline btn-sm">
                     {open ? "Gizle" : "Göster"}
                 </button>
             </div>
 
             {open ? (
-                <div className="map-frame">
+                // çalışma anı değeri: harita yüksekliği (prop) -> iskelet ve harita aynı boyda
+                <div className="map-frame" style={{"--map-h": `${height}px`} as CSSProperties}>
                     <ProvidersMap items={items} height={height}/>
                 </div>
             ) : (
-                <div className="empty-state" style={{padding: "1.25rem"}}>
-                    Harita kapalı. &ldquo;Göster&rdquo;e tıklayarak açabilirsiniz.
-                </div>
+                <EmptyState
+                    compact
+                    icon={<Pin/>}
+                    title="Harita kapalı."
+                    description={<>&ldquo;Göster&rdquo;e tıklayarak açabilirsiniz.</>}
+                />
             )}
         </section>
     );

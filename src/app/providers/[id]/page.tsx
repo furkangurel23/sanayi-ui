@@ -14,19 +14,30 @@
  * URL parametreleri (page, size) params.ts ile temizlenir: ?page=0/abc -> 1.
  * scoreHistogram Record<string, number> gelir; -5..+5 dizisine map'lenerek
  * eksik skorlar 0 ile doldurulur (histogram her zaman 11 çubuk).
+ *
+ * 002 görünümü: başlık alanı geniş köşeli kart (.detail-head) — ad .title kademesinde,
+ * adres Pin ikonuyla, telefon --accent-text bağlantısı (44 px dokunma alanı), büyük
+ * ScoreBadge (renk + işaret). Yorum yoksa ortak EmptyState; satır içi stiller sınıflara
+ * taşındı. Tek satır içi değer: harita kabının yüksekliği (--map-h, çalışma anı değeri).
  */
 import type {Page as PageType, ProviderDetailDto, ProviderListItem, RatingDto} from "@/lib/types";
 import {getProviderDetail, getProviderRatings} from "@/lib/api";
 import Link from "next/link";
 import {notFound} from "next/navigation";
 import {parsePage, parsePositiveId, parseSize} from "@/lib/params";
+import type {CSSProperties} from "react";
 import RatingItem from "@/components/RatingItem";
 import Pagination from "@/components/Pagination";
 // Harita: ssr:false dinamik sarmalayıcı (server component dynamic ssr:false kullanamaz).
 import ProviderMapClient from "@/components/ProviderMapClient";
 import MiniHistogram from "@/components/MiniHistogram";
 import RateForm from "@/components/RateForm";
-import ScoreBadge from "@/components/ScoreBadge";
+import ScoreBadge, {formatScore} from "@/components/ScoreBadge";
+import EmptyState from "@/components/EmptyState";
+import {Chat, Pin} from "@/components/icons";
+
+/** Detay haritasının yüksekliği (px) — iskelet ve harita aynı değeri --map-h ile okur. */
+const MAP_HEIGHT = 220;
 
 export async function generateMetadata({params}: { params: Promise<{ id: string }> }) {
     const {id: raw} = await params;
@@ -93,26 +104,32 @@ export default async function ProviderDetailPage({
     }));
     const histogramTotal = buckets.reduce((sum, b) => sum + b.count, 0);
 
+    // Ortalama metni: işaretli, 2 ondalık ("+3.00"); puan yoksa uzun tire.
+    const avg = typeof detail.avgScore === "number" ? formatScore(detail.avgScore, 2) : null;
+    const avgText = avg ? `${avg.sign}${avg.value}` : "—";
+
     return (
-        <main className="container page" style={{maxWidth: "56rem"}}>
-            {/* Başlık kartı */}
-            <section className="card stack" style={{padding: "1.5rem"}}>
-                <div className="row-between" style={{alignItems: "flex-start"}}>
-                    <div className="stack-sm" style={{gap: "0.35rem", minWidth: 0}}>
-                        <h1 style={{fontSize: "var(--type-title)", letterSpacing: "-0.02em"}}>{detail.name}</h1>
-                        <div className="card-sub">{addressLine || "Adres bilgisi yok"}</div>
+        <main className="container container-narrow page">
+            {/* Başlık alanı */}
+            <section className="card detail-head" aria-labelledby="provider-title">
+                <div className="detail-head-top">
+                    <div className="detail-head-info">
+                        <h1 id="provider-title" className="title">{detail.name}</h1>
+                        <div className="detail-meta">
+                            <Pin size="sm"/>
+                            <span>{addressLine || "Adres bilgisi yok"}</span>
+                        </div>
                         {detail.phone && (
-                            <a className="text-sm" style={{color: "var(--accent-text)", fontWeight: 550}}
-                               href={`tel:${detail.phone}`}>
+                            <a className="link-accent" href={`tel:${detail.phone}`}>
                                 {detail.phone}
                             </a>
                         )}
                     </div>
-                    <ScoreBadge score={detail.avgScore} count={detail.ratingCount}/>
+                    <ScoreBadge score={detail.avgScore} count={detail.ratingCount} size="lg"/>
                 </div>
 
                 {(detail.brands.length > 0 || detail.categories.length > 0) && (
-                    <div className="row" style={{flexWrap: "wrap", gap: "0.4rem"}}>
+                    <div className="cluster">
                         {detail.brands.map(b => (
                             <Link key={`b${b.id}`} href={`/providers?brandId=${b.id}`}
                                   className="chip chip-accent">{b.name}</Link>
@@ -127,29 +144,28 @@ export default async function ProviderDetailPage({
 
             {/* Konum */}
             {mapItems.length > 0 && (
-                <section className="stack-sm">
-                    <h2 className="section-title">Konum</h2>
-                    <div className="map-frame">
-                        <ProviderMapClient items={mapItems} height={220}/>
+                <section className="stack" aria-labelledby="map-title">
+                    <h2 id="map-title" className="headline">Konum</h2>
+                    {/* çalışma anı değeri: harita yüksekliği -> iskelet (.skeleton-map) aynı boyda */}
+                    <div className="map-frame" style={{"--map-h": `${MAP_HEIGHT}px`} as CSSProperties}>
+                        <ProviderMapClient items={mapItems} height={MAP_HEIGHT}/>
                     </div>
                 </section>
             )}
 
             {/* Puan dağılımı */}
             {detail.ratingCount > 0 && (
-                <section className="stack-sm">
-                    <h2 className="section-title">Puan dağılımı</h2>
-                    <div className="row" style={{alignItems: "stretch", gap: "1rem", flexWrap: "wrap"}}>
-                        <div className="card stack-sm"
-                             style={{minWidth: "9rem", justifyItems: "center", alignContent: "center"}}>
-                            <div style={{fontSize: "2.2rem", fontWeight: 800, letterSpacing: "-0.03em"}}>
-                                {typeof detail.avgScore === "number" ? detail.avgScore.toFixed(2) : "—"}
+                <section className="stack" aria-labelledby="dist-title">
+                    <h2 id="dist-title" className="headline">Puan dağılımı</h2>
+                    <div className="stat-grid">
+                        <div className="card stat-card">
+                            {/* Ortalama da işaretli yazılır (+3.00 / −1.50) — rozetle tutarlı (FR-014) */}
+                            <div className="stat-value">
+                                {avgText}
                             </div>
-                            <div className="text-xs faint">{detail.ratingCount} oy ortalaması</div>
+                            <div className="caption muted">{detail.ratingCount} oy ortalaması</div>
                         </div>
-                        <div style={{flex: 1, minWidth: "16rem"}}>
-                            <MiniHistogram buckets={buckets} total={histogramTotal || detail.ratingCount}/>
-                        </div>
+                        <MiniHistogram buckets={buckets} total={histogramTotal || detail.ratingCount}/>
                     </div>
                 </section>
             )}
@@ -158,9 +174,9 @@ export default async function ProviderDetailPage({
             <RateForm providerId={id}/>
 
             {/* Yorumlar */}
-            <section className="stack">
-                <div className="row-between">
-                    <h2 className="section-title">Yorumlar</h2>
+            <section className="stack" aria-labelledby="reviews-title">
+                <div className="section-head">
+                    <h2 id="reviews-title" className="headline">Yorumlar</h2>
                     <span className="chip">{detail.ratingCount} değerlendirme</span>
                 </div>
 
@@ -168,18 +184,19 @@ export default async function ProviderDetailPage({
                     // Yorum isteği başarısız oldu (backend hatası) — sayfanın geri kalanı çalışır.
                     <div className="alert alert-error" role="alert">Yorumlar şu anda yüklenemedi.</div>
                 ) : ratingsPage.content.length === 0 ? (
-                    <div className="empty-state">
-                        <b>Henüz yorum yok.</b>
-                        <span>İlk değerlendirmeyi sen yap!</span>
-                    </div>
+                    <EmptyState
+                        icon={<Chat/>}
+                        title="Henüz yorum yok."
+                        description="İlk değerlendirmeyi sen yap!"
+                    />
                 ) : (
-                    <ul className="stack-sm">
+                    <ul className="stack">
                         {ratingsPage.content.map((r) => <RatingItem key={r.id} r={r}/>)}
                     </ul>
                 )}
 
                 {ratingsPage && (
-                    <Pagination page={(ratingsPage.number ?? 0) + 1} totalPages={ratingsPage.totalPages ?? 1}/>
+                    <Pagination mode="url" page={(ratingsPage.number ?? 0) + 1} totalPages={ratingsPage.totalPages ?? 1}/>
                 )}
             </section>
         </main>

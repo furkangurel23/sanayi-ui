@@ -46,19 +46,19 @@
 
 **Independent Test**: quickstart #1–#3; FR-002 kontrol listesi; contrast-check; ekran görüntüleri.
 
-- [ ] T017 [US1] `src/app/page.tsx` vitrin: `.display` başlık + kısa açıklama + birincil CTA (usta bul) ilk ekranda (375×667, 1440×900); kategori chip rafı, marka/sohbet odası ızgarası, "nasıl çalışır" bölümü — `.section` aralıkları, `.prose`; hero'daki tek seferlik radial renk (`globals.css:≈453`) kaldırılır/belirteçle
-- [ ] T018 [US2] `src/app/providers/(list)/page.tsx` + `loading.tsx` (`SkeletonBlocks`): `PageHeader`; sonuç yok → `EmptyState` (`Search` ikonu); `FilterBar.tsx` (seg/chip seçili D10, sıralama okları `ArrowUp/Down`, "Temizle" `Close` ikonu), `ProviderCard.tsx` (yeni kart, uzun ad `.clamp-2`), `Pagination mode="url"`, `MapSection.tsx` (harita kabı)
-- [ ] T019 [US2] `src/app/providers/[id]/page.tsx` + `loading.tsx` (`SkeletonDetail`): başlık alanı, yorum yok → `EmptyState`, `ScoreBadge`, chip'ler, `MiniHistogram`, yorum listesi (`RatingItem`), harita; satır içi stiller sınıflara
-- [ ] T020 [US2] `src/components/RateForm.tsx`: puan seçici ARIA radio group — roving tabindex (tek sekme durağı), ←/→/↑/↓ değer değiştirir, Home/End uçlar, seçili değerde `Check` ikonu + kalın sayı (D6, D10); `RecaptchaField.tsx` aktif temayı **kendi içinde** okur: `useSyncExternalStore(subscribe = MutationObserver(document.documentElement, {attributeFilter:["data-theme"]}), getSnapshot = dataset.theme, getServerSnapshot = "dark")`; widget `key={`${resetKey}-${theme}`}` ile yeniden oluşur (token kaybı bilinçli, D7); `RateForm` `theme` prop'u vermez
-- [ ] T021 [US1] Ölçüm: contrast-check, FR-002 ekran görüntüsü kontrol listesi (bölüm aralığı ≥96/≥56 px, satır ≤75 karakter, vitrin 40/72 px, ilk ekran içeriği) — sonuçları Uygulama Notları'na; yerleşik tarayıcıyla `screenshots/{home,providers,provider-detail}-{dark,light}-{375,1440}.png` + `header-mobile-menu-{dark,light}-375.png`
-- [ ] T022 [US1] D1 alternatifi: gümüş/krom vurgu belirteç setini geçici uygula (yalnızca `--accent*` değerleri), aynı 3 ekranı koyu temada 375/1440 çek → `screenshots/alt-silver/…`; belirteçleri mavi sete geri al
-- [ ] T023 Kapı: lint + build → **Commit D2** (`feat(ui): reference screens — home, provider list, provider detail`) — push YOK
+- [x] T017 [US1] `src/app/page.tsx` vitrin: `.display` başlık + kısa açıklama + birincil CTA (usta bul) ilk ekranda (375×667, 1440×900); kategori chip rafı, marka/sohbet odası ızgarası, "nasıl çalışır" bölümü — `.section` aralıkları, `.prose`; hero'daki tek seferlik radial renk (`globals.css:≈453`) kaldırılır/belirteçle
+- [x] T018 [US2] `src/app/providers/(list)/page.tsx` + `loading.tsx` (`SkeletonBlocks`): `PageHeader`; sonuç yok → `EmptyState` (`Search` ikonu); `FilterBar.tsx` (seg/chip seçili D10, sıralama okları `ArrowUp/Down`, "Temizle" `Close` ikonu), `ProviderCard.tsx` (yeni kart, uzun ad `.clamp-2`), `Pagination mode="url"`, `MapSection.tsx` (harita kabı)
+- [x] T019 [US2] `src/app/providers/[id]/page.tsx` + `loading.tsx` (`SkeletonDetail`): başlık alanı, yorum yok → `EmptyState`, `ScoreBadge`, chip'ler, `MiniHistogram`, yorum listesi (`RatingItem`), harita; satır içi stiller sınıflara
+- [x] T020 [US2] `src/components/RateForm.tsx`: puan seçici ARIA radio group — roving tabindex (tek sekme durağı), ←/→/↑/↓ değer değiştirir, Home/End uçlar, seçili değerde `Check` ikonu + kalın sayı (D6, D10); `RecaptchaField.tsx` aktif temayı **kendi içinde** okur: `useSyncExternalStore(subscribe = MutationObserver(document.documentElement, {attributeFilter:["data-theme"]}), getSnapshot = dataset.theme, getServerSnapshot = "dark")`; widget `key={`${resetKey}-${theme}`}` ile yeniden oluşur (token kaybı bilinçli, D7); `RateForm` `theme` prop'u vermez
+- [x] T021 [US1] Ölçüm: contrast-check, FR-002 ekran görüntüsü kontrol listesi (bölüm aralığı ≥96/≥56 px, satır ≤75 karakter, vitrin 40/72 px, ilk ekran içeriği) — sonuçları Uygulama Notları'na; yerleşik tarayıcıyla `screenshots/{home,providers,provider-detail}-{dark,light}-{375,1440}.png` + `header-mobile-menu-{dark,light}-375.png`
+- [x] T022 [US1] D1 alternatifi: gümüş/krom vurgu belirteç setini geçici uygula (yalnızca `--accent*` değerleri), aynı 3 ekranı koyu temada 375/1440 çek → `screenshots/alt-silver/…`; belirteçleri mavi sete geri al
+- [x] T023 Kapı: lint + build → **Commit D2** (`feat(ui): reference screens — home, provider list, provider detail`) — push YOK
 
 ---
 
 ## Phase 4: 🚦 Tasarım onay kapısı (FR-021)
 
-- [ ] T024 Kullanıcıya sun: belirteç tablosu (D2 özeti), contrast-check raporu, FR-002 ölçümleri, referans ekran görüntüleri (mavi) + gümüş alternatif + mobil menü. Soru: "Bu yönle tüm sayfalara yayalım mı?" (seçenekler: mavi onay / gümüş onay / değişiklik iste)
+- [x] T024 Kullanıcıya sun: belirteç tablosu (D2 özeti), contrast-check raporu, FR-002 ölçümleri, referans ekran görüntüleri (mavi) + gümüş alternatif + mobil menü. Soru: "Bu yönle tüm sayfalara yayalım mı?" (seçenekler: mavi onay / gümüş onay / değişiklik iste)
 - [ ] T025 **DUR**: T024 sunulduktan sonra `/speckit-implement` burada durur ve kullanıcının yanıtını bekler (yanıt gelmeden hiçbir Faz 5 görevi başlatılmaz). Yanıt gelince: onay tarihini ve seçimi Uygulama Notları'na yaz; gümüş seçildiyse belirteçleri değiştir, T021 ölçümlerini tekrarla; değişiklik istendiyse Faz 2–3 ilgili görevlerini yeniden aç. **Onay olmadan Faz 5 başlamaz.**
 
 ---
@@ -141,3 +141,39 @@ Task: "T011 ScoreBadge + histogram + RatingItem"
 - **T014** contrast-check çıktısı: koyu `--bg` = `#070709`, açık `--bg` = `#f6f7f8` → `THEME_COLOR` güncellendi.
 - **T015** `ProvidersMap.css` (leaflet CSS'inden sonra import): zemin `--surface-1`, koyu karo filtresi `--map-dark-filter` yalnız `.leaflet-tile-pane`, zoom kontrolleri 44 px, atıf/popup belirteçle; karo URL'i `https://tile.openstreetmap.org/{z}/{x}/{y}.png`, atıf "© OpenStreetMap contributors". `.map-frame { isolation: isolate }` globals'ta.
 - **T016 kapı**: contrast-check **0 eşik altı** (en zayıf: koyu `--accent-fg × --accent` 4.92, `--border-control × --surface-2` 3.22; açık `--accent-text × --accent-soft@bg` 4.76, `--border-control × --surface-2` 3.19); lint 0 hata / 7 uyarı (taban); build ✓. token-lint 269 → 80 (globals.css 0; kalanlar Faz 3/5 sayfalarının satır içi stilleri). Global CSS 35.4 KB ham / **7.6 KB gzip** (tavan ≈ 9.0 KB).
+
+### T017–T020 — referans ekranlar (Faz 3)
+
+- **T017** Ana sayfa: `.hero` (eyebrow + `.display` + `.lead` + 2 CTA), `.sections` içinde Kategoriler (chip rafı), Markalar (6 kart, "Ustaları gör" + ChevronRight), yeni "Nasıl çalışır" başlığı + 3 kart (Star/Pin/Chat ikon karosu). Hero'nun radial/ızgara dokusu kaldırıldı; yerine yalnız `--accent-soft` ile çok hafif üst ışık. "Tümü →" metin okları ikonla değişti. Eklenen tek metin: "Nasıl çalışır" başlığı (görev tanımı gereği).
+- **T018** Liste: `PageHeader` (eyebrow "Keşfet", başlık, sonuç chip'i eylem olarak), `EmptyState` (Search), `Pagination mode="url"`, loading → `SkeletonList`. FilterBar: satır içi stiller → `.toolbar-inputs` / `.cluster`, sıralama yönü ArrowUp/ArrowDown, Temizle Close ikonu. ProviderCard: `.clamp-2` ad, Pin'li konum. MapSection: kapalı durum `EmptyState compact` (Pin); harita yüksekliği `.map-frame`'e `--map-h` (çalışma anı değeri) — dinamik iskelet (`.skeleton-map`) aynı değeri okur, sabit 280 kopyası kalktı.
+- **T019** Detay: `.container-narrow` (56rem), başlık kartı `.detail-head` (radius-xl, `.title`, Pin'li adres, `--accent-text` telefon bağlantısı 44 px, `ScoreBadge size="lg"`), chip'ler `.cluster`, harita `--map-h` (220), puan dağılımı `.stat-grid` (işaretli ortalama "+3.00" + MiniHistogram), yorum yok → `EmptyState` (Chat), yorumlar `RatingItem` + `Pagination mode="url"`, loading → `SkeletonDetail`. Sayfada kalan tek satır içi stil `--map-h`.
+- **T020** RateForm: roving tabindex (seçim yoksa ilk düğme −5 sekme durağı), ←/↑ ve →/↓ sarar, Home/End; seçilen düğmeye odak taşınır; seçili: ton zemini + ton kenarı (1.5 px) + 650 ağırlık + köşede Check rozeti; her düğmede `aria-label` ("eksi 5"). Tarayıcıda doğrulandı: −5'te → → End → aria-checked "artı 5", odak aynı düğmede, tabIndex dizisi `-1×10, 0`. RecaptchaField teması içeride (`useSyncExternalStore` + MutationObserver, server snapshot "dark"), `key={resetKey-theme}`; ek olarak tema değişince `onToken(null)` çağrılır (eski token'la gönderim denenmesin). RateForm `theme` vermiyor (prop kaldırıldı).
+- Ek düzeltmeler (ekran görüntüsü turunda bulundu): (1) `.nav-burger` masaüstünde görünüyordu (`.btn` sonra geldiği için) → `.header-actions .nav-burger`. (2) 375 px detayda sütun 354 px'e genişliyordu (grid `1fr` = `minmax(auto,1fr)`, min-content histogram/picker) → `.page/.sections/.section/.stack/.grid-*` `minmax(0, 1fr)`; sonrasında kart 16–359 px, yatay kaydırma yok. (3) Mobil menü aktif çizgisi nokta gibi çiziliyordu → `height:auto; inset-inline: 0 auto`. (4) **`--measure` 62ch → 48ch** (aşağıda ölçüm). (5) Hero alt boşluğu bölüm aralığına eşitlendi (mobil 64, masaüstü 96).
+
+### T021 — ölçümler (prod build, `npm run start`, yerleşik tarayıcı, 2026-11-10)
+
+| FR-002 maddesi | Hedef | Ölçüm | Durum |
+|---|---|---|---|
+| Vitrin başlığı | 375: ≥40 px, 1440: ≥72 px, negatif harf aralığı | 40.04 px / 72 px; letter-spacing −1.40 px / −2.52 px (−0.035em); lh 1.05 | ✓ |
+| Bölüm arası boşluk | mobil ≥56, masaüstü ≥96 | hero→Kategoriler→Markalar→Nasıl çalışır: 64/64/64 (375), 96/96/96 (1440) | ✓ |
+| Gövde satır uzunluğu | ≤75 karakter | 62ch ile **85–87** ölçüldü (D2 varsayımı tutmadı: Geist'te 1ch ≈ 0.66em); 56ch 80–82; 50ch 65–75; **48ch** seçildi → `.lead` 1440'ta 68/65 karakter, kart metinleri ≤44 | ✓ (değer değişti) |
+| Gövde satır yüksekliği | ≥1.5 | 17 px / 26.35 px = 1.55 | ✓ |
+| İlk ekran (başlık + açıklama + CTA) | 375×667 ve 1440×900 | birincil CTA alt kenarı 443 px (/667) ve 525 px (/900) | ✓ |
+| Yatay kaydırma | yok | 375 px: `/`, `/providers`, `/providers/1` scrollWidth = 375 | ✓ |
+| contrast-check | 0 | 0 (en zayıf koyu: accent-fg×accent 4.92, border-control×surface-2 3.22, fg-faint×surface-2 5.70; açık: accent-text×accent-soft 4.76, border-control×surface-2 3.19, fg-faint×surface-2 5.26, neutral×neutral-soft 5.00) | ✓ |
+| Vurgu tonu = 1, katman ΔL | ±5°, [0.02,0.05] | koyu Δh ≤5°, ΔL 0.04/0.04; açık ΔL 0.025/0.045 | ✓ |
+
+- token-lint: 80 → **56** (referans ekran dosyaları ve globals.css'te **0**; kalan 56 Faz 5 rotaları). `style={` sayısı 128 → 92. Emoji/metin oku: 25 → 18 (hepsi Faz 5 dosyalarında). Global CSS 35.6 KB / **7.6 KB gzip** (tavan ≈ 9.0); harita CSS'i (leaflet + ProvidersMap.css) 12.9 KB / 3.1 KB gzip yalnız harita rotalarında.
+- **Ekran görüntüleri** `specs/002-premium-dark-redesign/screenshots/` (14 PNG): `{home,providers,provider-detail}-{dark,light}-{375,1440}.png` + `header-mobile-menu-{dark,light}-375.png`. Yöntem: yerleşik tarayıcı `resize_window` 375×812 / 1440×900, `localStorage.sanayiTheme` + yeniden yükleme, yalnız ilk görünüm alanı (tam sayfa değil). 375 görüntüleri 750×1624 (2x); 1440 görüntüleri bölme küçültmesi nedeniyle 800×500'e ölçekli kaydedildi (araç kısıtı). Detay için **/providers/1** kullanıldı (5 oy, histogram ve yorumlar dolu; 1058'de oy yok — boş durum ve "—" rozeti ayrıca 375 px'te kontrol edildi). Her görüntüde kontrol edilenler: tema doğru, cam üst bar, aktif nav göstergesi (alt çizgi / mobilde sol çizgi + zemin), D10 seçili seg (zemin + kenar + kalınlık), harita koyu filtre + işaretçiler + atıf, rozet işareti, taşma yok.
+- Elle denenenler: mobil menü aç → Escape → menü kapandı, odak "Menüyü aç" düğmesinde; puan seçici klavye (yukarıda); koyu/açık tema geçişinde harita karoları CSS filtresiyle değişiyor.
+
+### T022 — gümüş alternatif (D1)
+
+- Yalnız koyu temanın `--accent/--accent-fg/--accent-text/--accent-soft/--ring` değerleri D1 setine çevrildi (`oklch(0.86 0.006 250)`, fg `oklch(0.17 0.008 250)`, soft `/0.14`), contrast-check **0 eşik altı** (accent-fg×accent 12.50, accent-text metin 11.58–13.15; L ayarı gerekmedi; renksiz olduğu için ton kontrolünden muaf). Prod build ile 6 görüntü: `screenshots/alt-silver/{home,providers,provider-detail}-dark-{375,1440}.png`. Sonra mavi set geri yüklendi (dosya yedekten birebir geri kopyalandı, contrast-check yeniden 0) ve yeniden derlendi.
+- Gözlem (tasarımcı): gümüşte birincil CTA açık gri hap (Apple'ın beyaz düğmesine yakın, sakin) ama (a) bağlantı metni (`--accent-text`) gövde metninden ayırt edilemiyor — telefon bağlantısı ve "Keşfet" etiketi düz metin gibi; (b) seçili seg/marka chip'leri nötr gri, kategori chip'lerinden farkı yalnız kenar; (c) hover/odak halkası beyazımsı. Mavi set, eylem/bağlantı/seçim için tek ve belirgin bir sinyal veriyor.
+
+### T023 — kapı
+- lint 0 hata / 7 uyarı (taban), build ✓, contrast-check 0 → Commit D2.
+
+### T024 — onay paketi (hazırlandı; sunum ana oturumda)
+- İçerik: D2 belirteç özeti (globals.css başı), contrast-check raporu (yukarıdaki tablo), FR-002 ölçümleri (T021 tablosu), 14 mavi + 6 gümüş ekran görüntüsü, mobil menü (iki tema). Soru: **"Bu yönle tüm sayfalara yayalım mı?"** — seçenekler: mavi onay / gümüş onay / değişiklik iste. Yanıt gelene kadar T025'te durulur; Faz 5 başlamadı. Onaya kadar push yok; Faz 5 rotaları (markalar, sohbet, kimlik, admin, 404) bu arada yeni belirteçlerle "yarı tasarım" durumunda (ortak sınıflar yenilendi, sayfa düzenleri ve emoji/satır içi stilleri henüz eski).

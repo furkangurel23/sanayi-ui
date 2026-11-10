@@ -23,12 +23,21 @@
  *    false, hidrasyon bittikten sonra true döner — useEffect + setState'siz
  *    (o kalıp hem ekstra render yapar hem lint uyarısı üretir).
  *
+ * Puan seçici — WAI-ARIA "Radio Group" klavye kalıbı (002 / D6, FR-017 a11y istisnası):
+ *  - TEK sekme durağı ("roving tabindex"): yalnızca seçili değer (hiç seçim yoksa ilki,
+ *    −5) tabIndex=0 taşır; diğerleri -1. Tab grubun içine bir kez girer, bir kez çıkar.
+ *  - ←/↑ önceki, →/↓ sonraki değer (uçlarda başa/sona sarar); Home −5, End +5.
+ *    Ok tuşu odağı TAŞIR ve değeri SEÇER (radyo grubunda seçim odağı izler).
+ *  - Seçili değer yalnız renkle değil (D10): kalın sayı + köşede Check ikonu + kenar.
+ *  - pickRefs: düğmelerin DOM referansları dizisi; klavyeyle seçilen düğmeye
+ *    .focus() çağırmak için (React'te DOM'a imperatif erişim = ref).
+ *
  * Hata standardı:
  *  - postRating başarısız olursa ApiError fırlatır; err.code'a göre dallanır,
  *    err.message backend'den gelen hazır Türkçe metindir (messages.properties).
  */
 
-import React, {useEffect, useMemo, useState, useSyncExternalStore} from "react";
+import React, {useEffect, useMemo, useRef, useState, useSyncExternalStore} from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import {useRouter} from "next/navigation";
@@ -36,6 +45,8 @@ import {postRating} from "@/lib/api";
 import {useAuth} from "@/lib/useAuth";
 import {ensureFreshToken} from "@/lib/auth";
 import {ApiError, errorMessage} from "@/lib/apiError";
+import {Check} from "@/components/icons";
+import {formatScore} from "@/components/ScoreBadge";
 
 // Dinamik (ayrı chunk) ve yalnız istemcide; bkz. dosya başı "reCAPTCHA (performans)".
 const RecaptchaField = dynamic(() => import("@/components/RecaptchaField"), {ssr: false});
@@ -59,6 +70,21 @@ export default function RateForm({providerId}: { providerId: number }) {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [okMsg, setOkMsg] = useState<string | null>(null);
+    // Puan düğmelerinin DOM referansları (klavyeyle odak taşımak için)
+    const pickRefs = useRef<Array<HTMLButtonElement | null>>([]);
+
+    /** Ok/Home/End tuşları: yeni değeri seç ve odağı ona taşı (radio group kalıbı). */
+    const onPickerKey = (e: React.KeyboardEvent, index: number) => {
+        let next: number | null = null;
+        if (e.key === "ArrowRight" || e.key === "ArrowDown") next = (index + 1) % SCORES.length;
+        else if (e.key === "ArrowLeft" || e.key === "ArrowUp") next = (index - 1 + SCORES.length) % SCORES.length;
+        else if (e.key === "Home") next = 0;
+        else if (e.key === "End") next = SCORES.length - 1;
+        if (next === null) return;
+        e.preventDefault(); // sayfa kaydırmasını engelle
+        setScore(SCORES[next]);
+        pickRefs.current[next]?.focus();
+    };
 
     // reCAPTCHA yalnızca anonim kullanıcıya gösterilir (üye için gereksiz sürtünme).
     const siteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || "";
@@ -149,34 +175,47 @@ export default function RateForm({providerId}: { providerId: number }) {
     return (
         <form onSubmit={onSubmit} className="card stack">
             <div className="row-between">
-                <h2 className="section-title">Değerlendir</h2>
+                <h2 className="headline">Değerlendir</h2>
                 {!user && (
-                    <span className="text-xs faint">
-                        Anonim tek oy hakkı · <Link href="/login" className="btn btn-ghost btn-sm"
-                                                     style={{display: "inline-flex"}}>Giriş yap</Link>
+                    <span className="caption muted">
+                        Anonim tek oy hakkı · <Link href="/login" className="btn btn-ghost btn-sm">Giriş yap</Link>
                     </span>
                 )}
             </div>
 
-            {/* role="radiogroup" + aria-checked: ekran okuyucular için "tek seçimli grup" semantiği */}
+            {/* role="radiogroup" + aria-checked: ekran okuyucular için "tek seçimli grup" semantiği.
+                aria-labelledby: grubun adı görünen etiketten gelir (tek kaynak). */}
             <div className="field">
-                <span className="field-label">Puanın (-5 çok kötü · +5 mükemmel)</span>
-                <div className="score-picker" role="radiogroup" aria-label="Puan seç">
-                    {SCORES.map(s => (
-                        <button
-                            key={s}
-                            type="button" // önemli: default "submit"tir, formu göndermesin!
-                            role="radio"
-                            aria-checked={score === s}
-                            className="score-pick"
-                            // data-* attribute'ları: CSS'te [data-selected="true"] ile stillenir
-                            data-selected={score === s}
-                            data-tone={s === 0 ? "zero" : s > 0 ? "pos" : "neg"}
-                            onClick={() => setScore(s)}
-                        >
-                            {s > 0 ? `+${s}` : s}
-                        </button>
-                    ))}
+                <span id="score-label" className="field-label">Puanın (-5 çok kötü · +5 mükemmel)</span>
+                <div className="score-picker" role="radiogroup" aria-labelledby="score-label">
+                    {SCORES.map((s, i) => {
+                        const checked = score === s;
+                        // Roving tabindex: seçili olan (hiç seçim yoksa ilki) sekme durağıdır.
+                        const tabStop = score === null ? i === 0 : checked;
+                        const f = formatScore(s, 0);
+                        const word = s > 0 ? "artı " : s < 0 ? "eksi " : "";
+                        return (
+                            <button
+                                key={s}
+                                ref={el => {
+                                    pickRefs.current[i] = el;
+                                }}
+                                type="button" // önemli: default "submit"tir, formu göndermesin!
+                                role="radio"
+                                aria-checked={checked}
+                                aria-label={`${word}${f.value}`}
+                                tabIndex={tabStop ? 0 : -1}
+                                className="score-pick"
+                                // data-tone: CSS'te seçili tonun rengi ([aria-checked="true"][data-tone])
+                                data-tone={s === 0 ? "zero" : s > 0 ? "pos" : "neg"}
+                                onClick={() => setScore(s)}
+                                onKeyDown={e => onPickerKey(e, i)}
+                            >
+                                {f.sign}{f.value}
+                                {checked && <span className="score-pick-check"><Check size="sm"/></span>}
+                            </button>
+                        );
+                    })}
                 </div>
             </div>
 

@@ -1,24 +1,30 @@
 /*
  * USTA KARTI — Server Component. Kartın tamamı <Link> (tıklanabilir alan büyük olsun).
  * next/link: client-side navigasyon + görünürlükte otomatik prefetch -> anında geçiş hissi.
+ *
+ * 002: uzun dükkan adı tek satırda kesilmek yerine en fazla 2 satır (.clamp-2 — D12),
+ * konum satırı Pin ikonuyla; satır içi stiller sınıflara taşındı (.provider-card*).
+ * Puan rozeti renk + işaret + aria-label taşır (ScoreBadge).
  */
 import type {ProviderListItem} from "@/lib/types";
 import Link from "next/link";
 import ScoreBadge from "@/components/ScoreBadge";
+import {Pin} from "@/components/icons";
 
 export default function ProviderCard({p}: { p: ProviderListItem }) {
     const location = [p.district, p.city].filter(Boolean).join(", ");
 
     return (
-        <Link href={`/providers/${p.id}`} className="card card-hover">
-            <div className="row-between" style={{alignItems: "flex-start", flexWrap: "nowrap"}}>
-                <div className="stack-sm" style={{gap: "0.2rem", minWidth: 0}}>
-                    <div className="card-title truncate">{p.name}</div>
-                    <div className="card-sub truncate">{location || "Konum bilgisi yok"}</div>
-                    {p.phone && <div className="text-xs faint">{p.phone}</div>}
+        <Link href={`/providers/${p.id}`} className="card card-hover provider-card">
+            <div className="provider-card-body">
+                <div className="card-title clamp-2">{p.name}</div>
+                <div className="provider-card-meta">
+                    <Pin size="sm"/>
+                    <span className="truncate">{location || "Konum bilgisi yok"}</span>
                 </div>
-                <ScoreBadge score={p.avgScore} count={p.ratingCount}/>
+                {p.phone && <div className="caption faint">{p.phone}</div>}
             </div>
+            <ScoreBadge score={p.avgScore} count={p.ratingCount}/>
         </Link>
     );
 }

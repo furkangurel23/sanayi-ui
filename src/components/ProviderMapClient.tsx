@@ -11,14 +11,15 @@
  *    bir CLIENT bileşene koyup server sayfadan onu kullanmak — bu dosya o köprü.
  *  - Leaflet sunucuda çalışamaz (window ister) -> ssr:false; harita JS'i ve CSS'i
  *    yalnızca bu rota açıldığında iner (anayasa I).
- *  - loading: detay sayfasındaki harita yüksekliğiyle (220 px) aynı iskelet -> harita
- *    gelince sayfa zıplamaz (CLS yok). `loading` prop göremediği için değer sabittir.
+ *  - loading: `loading` fonksiyonu prop GÖREMEZ. 002'den itibaren iskelet yüksekliği
+ *    sabit sayı değil: sayfa .map-frame kabına `--map-h` CSS değişkenini verir,
+ *    .skeleton-map onu okur -> harita gelince sayfa zıplamaz (CLS yok) ve sayı tek yerde.
  */
 import dynamic from "next/dynamic";
 
 const ProviderMapClient = dynamic(() => import("@/components/ProvidersMap"), {
     ssr: false,
-    loading: () => <div className="skeleton" style={{height: 220}}/>,
+    loading: () => <div className="skeleton skeleton-map" aria-hidden/>,
 });
 
 export default ProviderMapClient;

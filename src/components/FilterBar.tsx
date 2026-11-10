@@ -19,11 +19,17 @@
  *  - Puan filtresi min/max sayı kutusu yerine SEGMENTED hızlı seçimler:
  *    Tümü / 3+ / 1+ / Eksili — kullanıcıların %95'inin gerçek ihtiyacı bu.
  *  - Aktif filtre varsa "Temizle" görünür; yokken UI sade kalır.
+ *
+ * 002 görünümü: seçili segment (D10) yalnız zemin tonuyla değil, --accent KENAR ve
+ * kalın yazıyla da belli olur (globals.css .seg [data-active]). Sıralama yönü ve
+ * "Temizle" metin karakterleri yerine ikon (ArrowUp/ArrowDown, Close — FR-006).
+ * Davranış ve URL'ler aynı (FR-017).
  */
 
 import {useRouter} from "next/navigation";
 import type {IdName} from "@/lib/types";
 import {useState} from "react";
+import {ArrowDown, ArrowUp, Close} from "@/components/icons";
 
 export type FilterInitial = {
     brandId: string;
@@ -126,7 +132,7 @@ export default function FilterBar({brands, categories, initial}: Props) {
                 {/* Konum: Enter veya odak kaybında uygulanır */}
                 <div className="toolbar-field">
                     <span className="toolbar-label">Konum</span>
-                    <div className="row" style={{gap: "0.4rem"}}>
+                    <div className="toolbar-inputs">
                         <input
                             className="input" placeholder="Şehir" value={city}
                             onChange={e => setCity(e.target.value)}
@@ -166,7 +172,7 @@ export default function FilterBar({brands, categories, initial}: Props) {
                 {/* Sıralama: segmented alan + yön düğmesi */}
                 <div className="toolbar-field">
                     <span className="toolbar-label">Sıralama</span>
-                    <div className="row" style={{gap: "0.4rem"}}>
+                    <div className="cluster">
                         <div className="seg" role="radiogroup" aria-label="Sıralama alanı">
                             {SORT_FIELDS.map(s => (
                                 <button
@@ -188,7 +194,7 @@ export default function FilterBar({brands, categories, initial}: Props) {
                             aria-label="Sıralama yönünü değiştir"
                             onClick={() => applySort(initial.sortField, initial.sortDir === "desc" ? "asc" : "desc")}
                         >
-                            {initial.sortDir === "desc" ? "↓" : "↑"}
+                            {initial.sortDir === "desc" ? <ArrowDown/> : <ArrowUp/>}
                         </button>
                     </div>
                 </div>
@@ -200,7 +206,7 @@ export default function FilterBar({brands, categories, initial}: Props) {
                         className="btn btn-ghost btn-sm toolbar-clear"
                         onClick={() => router.push("/providers")}
                     >
-                        ✕ Temizle
+                        <Close size="sm"/> Temizle
                     </button>
                 )}
             </div>
