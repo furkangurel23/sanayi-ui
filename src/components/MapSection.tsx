@@ -29,6 +29,7 @@
 
 import {type CSSProperties, useState} from "react";
 import dynamic from "next/dynamic";
+import {preconnect} from "react-dom";
 import {useRouter} from "next/navigation";
 import type {ProviderListItem} from "@/lib/types";
 import EmptyState from "@/components/EmptyState";
@@ -50,6 +51,13 @@ export default function MapSection({items, height = 280, initialOpen}: Props) {
     // initialOpen verilmemişse: koordinatı olan kayıt varsa açık başla.
     const anyWithCoords = items.some(p => typeof p.lat === "number" && typeof p.lon === "number");
     const [open, setOpen] = useState<boolean>(initialOpen ?? anyWithCoords);
+
+    // 002 / T038 — harita rotalarında LCP öğesi OSM karosu. Karo sunucusuna bağlantıyı
+    // (DNS + TCP + TLS) ERKEN açmak için React 19'un kaynak ipucu API'si: render sırasında
+    // preconnect() çağrılır; sunucu render'ında React <head>'e <link rel="preconnect"> ekler.
+    // Yalnızca harita açıkken (kapalıyken karo isteği hiç olmayacak). Yeni üçüncü taraf YOK:
+    // aynı karo sunucusu (FR-018), sadece bağlantı daha önce kurulur.
+    if (open) preconnect("https://tile.openstreetmap.org");
 
     const toggle = () => {
         const next = !open;

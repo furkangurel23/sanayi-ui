@@ -37,6 +37,7 @@ export default function AdminShell({children}: { children: ReactNode }) {
     if (!user?.roles.includes("ADMIN")) {
         return (
             <main className="container page">
+                <h1 className="sr-only">Admin paneli</h1>
                 <EmptyState
                     icon={<Shield/>}
                     title="Bu sayfa yöneticilere özel"

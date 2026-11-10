@@ -207,6 +207,8 @@ export default function ChatRoom({brandId, brandName}: { brandId: number; brandN
     if (!user) {
         return (
             <div className="chat-locked">
+                {/* Sayfanın ana başlığı (ekran okuyucu/başlık gezintisi için); görsel başlık EmptyState'te */}
+                <h1 className="sr-only">{brandName} odası</h1>
                 <EmptyState
                     icon={<Lock/>}
                     title={`${brandName} odası üyelere özel`}

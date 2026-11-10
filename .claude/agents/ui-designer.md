@@ -9,6 +9,8 @@ You are a senior product designer who also writes production CSS for **sanayi-ui
 
 Apple-product-page feel, **dark-first premium**: near-black/graphite surfaces, high-contrast type, generous whitespace, large confident headlines, one restrained accent, subtle depth (layered surfaces, hairline borders, soft shadows, frosted/blurred sticky header). A light theme remains fully supported and polished — dark is the default, not the only theme. All pages share one system.
 
+Implemented in feature 002 (approved 2026-11-10: **single blue accent**, silver alternative rejected). The token contract is `specs/002-premium-dark-redesign/contracts/design-tokens.md`; the summary (tokens, D10 selection rule, icons, shared components, map dark filter) lives in `CLAUDE.md` → "Tasarım Sistemi". Verify every visual change with `node scripts/token-lint.mjs` (0) and `node scripts/contrast-check.mjs` (0) in both themes.
+
 ## Principles
 
 - **Tokens first.** Every color, radius, shadow, spacing step, font size, duration and easing is a CSS custom property in `globals.css` (OKLCH colors). Components consume tokens; no one-off values in components or inline styles.

@@ -16,10 +16,20 @@
  *    .skeleton-map onu okur -> harita gelince sayfa zıplamaz (CLS yok) ve sayı tek yerde.
  */
 import dynamic from "next/dynamic";
+import type {ComponentProps} from "react";
+import {preconnect} from "react-dom";
 
-const ProviderMapClient = dynamic(() => import("@/components/ProvidersMap"), {
+const ProvidersMap = dynamic(() => import("@/components/ProvidersMap"), {
     ssr: false,
     loading: () => <div className="skeleton skeleton-map" aria-hidden/>,
 });
 
-export default ProviderMapClient;
+/*
+ * 002 / T038: karo sunucusuna bağlantıyı erken aç (LCP öğesi OSM karosu). preconnect()
+ * render sırasında çağrılır; sunucu render'ında <head>'e <link rel="preconnect"> düşer.
+ * ComponentProps<typeof ProvidersMap>: sarmalanan bileşenin prop tipini aynen devralır.
+ */
+export default function ProviderMapClient(props: ComponentProps<typeof ProvidersMap>) {
+    preconnect("https://tile.openstreetmap.org");
+    return <ProvidersMap {...props}/>;
+}

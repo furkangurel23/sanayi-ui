@@ -35,7 +35,8 @@ export default function BrandCard({brand}: { brand: BrandDto }) {
                 <div className="brand-card-id">
                     <BrandLogo name={brand.name} size={46}/>
                     <div className="brand-card-text">
-                        <h3 className="card-title truncate">{brand.name}</h3>
+                        {/* h2: sayfa h1'inden sonra ilk kademe (axe heading-order); görünüm .card-title'dan */}
+                        <h2 className="card-title truncate">{brand.name}</h2>
                         <p className="card-sub">{providerCount} usta / servis</p>
                     </div>
                 </div>
