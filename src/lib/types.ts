@@ -419,3 +419,22 @@ export type ClaimSubmitRequest = {
     kvkkVersion: string;
     kvkkAccepted: boolean;
 };
+
+// --- 005-seo-foundation: sayım özeti ve site haritası (backend ProviderFacetsDto / SitemapEntryDto) ---
+
+/** Marka/kategori toplamı (görünür = gerçek + Ankara; yalnız count ≥ 1). */
+export type NamedCount = { id: number; name: string; count: number };
+/** İlçe toplamı; `name` her zaman 25 kanonik Ankara ilçesinden biri. */
+export type DistrictCount = { name: string; count: number };
+
+/** GET /api/providers/facets — açılış sayfalarının var olup olmadığına ve dizine açıklığına karar verir. */
+export type ProviderFacets = {
+    brands: NamedCount[];
+    categories: NamedCount[];
+    districts: DistrictCount[];
+    brandDistricts: { brandId: number; district: string; count: number }[];
+    categoryDistricts: { categoryId: number; district: string; count: number }[];
+};
+
+/** GET /api/providers/sitemap — sayfası açılan her gerçek dükkan (kimlik sırasıyla). */
+export type SitemapEntry = { id: number; updatedAt: string };

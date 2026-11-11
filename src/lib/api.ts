@@ -5,8 +5,10 @@ import {
     NearItem,
     Page,
     ProviderDetailDto,
+    ProviderFacets,
     ProviderListItem,
     RatingDto,
+    SitemapEntry,
     SpringPage
 } from "@/lib/types";
 import {normalizePage} from "@/lib/page";
@@ -169,6 +171,48 @@ export async function getProviders(opts: {
         throw new Error(`GET /providers failed: ${res.status} ${res.statusText}`);
     }
     return normalizePage(await res.json() as SpringPage<ProviderListItem>);
+}
+
+/*
+*
+*   SAYIM ÖZETİ (005-seo-foundation) — açılış sayfalarının (/ankara/marka/honda...) var olup olmadığı,
+* dizine açık olup olmadığı ve iç bağlantılar bu tek yanıttan hesaplanır (lib/seo/landing.ts).
+*
+*   Önbellek 3600 sn (+ "providers"/"brands"/"categories" etiketleri: dükkan düzenleme/onay Server
+* Action'ları erken tazeler). UI anayasası I'deki 60–300 sn liste aralığının DIŞINDA — bilinçli
+* (plan.md Complexity Tracking): sayılar saatlik değişir, açılış sayfasının 404 kararı için ≤1 saat
+* gecikme kabul (spec Assumptions); sayfada GÖSTERİLEN sayı ise 60 sn'lik liste yanıtından gelir.
+*   Site haritası da bunu kullanır; haritanın kendi verisi 86400 sn olsa da etkin pencere en kısa olan
+* (3600) olur — zararsız.
+*   Hata FIRLATILIR: açılış layout'u bunu 5xx'e çevirir (404 değil — geçici backend hatası sayfayı
+* "yok" ilan etmemeli). Ana sayfa/listeler `.catch(() => null)` ile bölümü gizler.
+*   cache(): layout + generateMetadata + sayfa aynı istekte tek çağrı (fetch önbelleğinin üstüne emniyet).
+*
+* */
+export const getFacets = cache(async (): Promise<ProviderFacets> => {
+    const res = await fetch(`${BASE}/providers/facets`, {
+        next: {revalidate: 3600, tags: ["providers", "brands", "categories"]},
+    });
+    if (!res.ok) {
+        throw new Error(`GET /providers/facets failed: ${res.status} ${res.statusText}`);
+    }
+    return res.json();
+});
+
+/*
+*
+*   SİTE HARİTASI dükkan listesi (005): sayfası açılan her gerçek dükkan + son değişiklik zamanı.
+* 86400 sn (spec FR-001: harita en geç 24 saatte yenilenir; ~2,8 bin satır tek istekte).
+*
+* */
+export async function getSitemapEntries(): Promise<SitemapEntry[]> {
+    const res = await fetch(`${BASE}/providers/sitemap`, {
+        next: {revalidate: 86400, tags: ["providers"]},
+    });
+    if (!res.ok) {
+        throw new Error(`GET /providers/sitemap failed: ${res.status} ${res.statusText}`);
+    }
+    return res.json();
 }
 
 /*
