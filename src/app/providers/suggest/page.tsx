@@ -8,6 +8,7 @@
  */
 import type {Metadata} from "next";
 import {getBrandsAllSorted, getCategoriesAllSorted} from "@/lib/api";
+import {connection} from "next/server";
 import SuggestPageClient from "./SuggestPageClient";
 import {pageMetadata} from "@/lib/seo/site";
 
@@ -15,6 +16,10 @@ import {pageMetadata} from "@/lib/seo/site";
 export const metadata: Metadata = pageMetadata({title: "Dükkan öner", description: "Listede olmayan bir sanayi dükkanını öner.", path: "/providers/suggest", index: false});
 
 export default async function SuggestPage() {
+    // connection(): sayfa DERLEMEDE üretilmez, istek anında çizilir. Eskiden statik ön-üretimdeydi ve derleme
+    // backend'e kategori/marka sorardı -> backend'siz derleme (CI, Docker imajı) kırılıyordu. Liste verisi
+    // yine fetch önbelleğinden gelir (ISR 300 sn) -> her istekte backend'e gidilmez.
+    await connection();
     const [categories, brands] = await Promise.all([getCategoriesAllSorted(), getBrandsAllSorted()]);
     return <SuggestPageClient categories={categories} brands={brands}/>;
 }
