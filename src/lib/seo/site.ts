@@ -20,9 +20,18 @@ export const SITE_TAGLINE = "Sanayide doğru ustayı bul.";
 /** Varsayılan paylaşım görseli (src/app/opengraph-image.ts) — 1200×630. */
 export const OG_IMAGE = {url: "/opengraph-image", width: 1200, height: 630, alt: `${SITE_NAME} — ${SITE_TAGLINE}`};
 
+const LOCAL_URL = "http://localhost:3000";
+
 /** Mutlak site adresi, sonda "/" olmadan. Tanımsızsa yerel geliştirme adresi. */
 export function siteUrl(): string {
-    const raw = process.env.SITE_URL?.trim() || "http://localhost:3000";
+    const raw = process.env.SITE_URL?.trim() || LOCAL_URL;
+    // İkinci emniyet (asıl kontrol next.config.ts'te): geçersiz değer sayfaları düşürmesin, yerel adrese düş.
+    try {
+        new URL(raw);
+    } catch {
+        console.error(`[seo] geçersiz SITE_URL "${raw}", ${LOCAL_URL} kullanılıyor`);
+        return LOCAL_URL;
+    }
     return raw.replace(/\/+$/, "");
 }
 

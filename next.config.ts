@@ -56,8 +56,22 @@ function assertIndexableSiteUrl(raw: string | undefined): void {
     }
 }
 
+/** SITE_URL verildiyse HER ortamda geçerli bir http(s) adresi olmalı: şemasız "sanayidefteri.com" gibi bir
+ *  değer kök layout'taki `new URL(...)`'ı (metadataBase) çalışma anında patlatıp TÜM sayfaları 500 yapardı. */
+function assertSiteUrlShape(raw: string | undefined): void {
+    if (!raw?.trim()) return;
+    let ok = false;
+    try {
+        ok = ["http:", "https:"].includes(new URL(raw.trim()).protocol);
+    } catch {
+        ok = false;
+    }
+    if (!ok) throw new Error(`SITE_URL geçerli bir http(s) adresi olmalı (şu an: "${raw}"). Örnek: SITE_URL=https://sanayidefteri.com`);
+}
+
 export default function config(phase: string): NextConfig {
     const indexable = process.env.SITE_INDEXABLE === "true";
+    assertSiteUrlShape(process.env.SITE_URL);
     if (phase === PHASE_PRODUCTION_BUILD && indexable) assertIndexableSiteUrl(process.env.SITE_URL);
 
     // Kapalı modda her yanıta "dizine alma, bağlantı izleme" başlığı (HTML dışı yanıtlar dahil).

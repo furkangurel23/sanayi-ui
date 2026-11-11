@@ -16,7 +16,9 @@ export const TITLE_BUDGET = 60;
 export const DESCRIPTION_MAX = 160;
 const SEP = " – ";
 
-type ShopText = Pick<ProviderDetailDto, "name" | "address" | "district" | "brands" | "categories" | "avgScore" | "ratingCount">;
+type ShopText = Pick<ProviderDetailDto, "name" | "address" | "district" | "brands" | "categories" | "avgScore" | "ratingCount"> & {
+    city?: string | null;
+};
 
 /** Dükkan yeri: sanayi sitesi adı (varsa) yoksa ilçe. */
 function placeOf(d: ShopText): string | null {
@@ -52,7 +54,7 @@ function clamp(text: string, max: number): string {
 
 export function shopDescription(d: ShopText): string {
     const site = industrialSiteOf(d.address, d.district);
-    const where = [site, d.district, "Ankara"].filter(Boolean).join(", ");
+    const where = [site, d.district, d.city?.trim() || "Ankara"].filter(Boolean).join(", ");
     const parts: string[] = [where];
     if (d.categories.length) parts.push(listWithMore(d.categories.map((c) => c.name), 4));
     if (d.brands.length) parts.push(`Markalar: ${listWithMore(d.brands.map((b) => b.name), 3)}`);

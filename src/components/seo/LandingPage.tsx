@@ -39,7 +39,7 @@ export default function LandingPage({title, description, total, shops, crumbs, a
                 eyebrow="Ankara"
                 title={title}
                 subtitle={description}
-                actions={<span className="chip" role="status">{total} dükkan</span>}
+                actions={<span className="chip">{total} dükkan</span>}
             />
             {extra}
             <div className="grid-2">

@@ -49,6 +49,8 @@ test("ilçe bağlantısı", () => {
     assert.equal(districtHref(ix, "Mamak"), "/providers?district=Mamak");
     assert.equal(districtHref(null, "Çankaya"), "/providers?district=%C3%87ankaya");
     assert.equal(districtHref(ix, null), null);
+    assert.equal(districtHref(ix, "Kadıköy", "İstanbul"), null);   // Ankara dışı dükkan
+    assert.equal(districtHref(ix, "Çankaya", "ANKARA"), "/ankara/ilce/cankaya");
 });
 
 test("kırılım listeleri sayıya göre azalan", () => {

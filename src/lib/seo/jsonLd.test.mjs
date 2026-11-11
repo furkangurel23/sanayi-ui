@@ -64,6 +64,7 @@ test("ilçesiz/konumsuz/telefonsuz/adressiz dükkanda ilgili alanlar yazılmaz",
     assert.deepEqual(j.address, {"@type": "PostalAddress", addressRegion: "Ankara", addressCountry: "TR"});
     assert.equal(j.geo, undefined);
     assert.equal(j.telephone, undefined);
+    assert.equal(businessJsonLd({...base, city: "İstanbul"}, "/providers/1").address.addressRegion, "İstanbul");
 });
 
 test("gezinti yolu ve site verisi mutlak adresli", () => {

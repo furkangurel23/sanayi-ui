@@ -21,11 +21,11 @@ export default function ExploreLinks({index, limit = 8}: { index: LandingIndex |
     return (
         <section className="section stack" aria-labelledby="explore-title">
             <h2 id="explore-title" className="headline">Ankara&apos;da keşfet</h2>
-            <LandingLinks id="explore-districts" title="İlçelere göre oto sanayi ustaları"
+            <LandingLinks level={3} id="explore-districts" title="İlçelere göre oto sanayi ustaları"
                           links={districts.map((d) => ({href: landingPath("ilce", d.slug), label: landingTitle("ilce", d.name), count: d.count}))}/>
-            <LandingLinks id="explore-categories" title="Kategoriler"
+            <LandingLinks level={3} id="explore-categories" title="Kategoriler"
                           links={categories.map((c) => ({href: landingPath("kategori", c.slug), label: landingTitle("kategori", c.name), count: c.count}))}/>
-            <LandingLinks id="explore-brands" title="Markalar"
+            <LandingLinks level={3} id="explore-brands" title="Markalar"
                           links={brands.map((b) => ({href: landingPath("marka", b.slug), label: landingTitle("marka", b.name), count: b.count}))}/>
         </section>
     );

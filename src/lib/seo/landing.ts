@@ -138,9 +138,14 @@ export function shopChipHref(ix: LandingIndex | null, kind: FacetKind, id: numbe
     return landingPath(kind, target.slug);
 }
 
-/** Dükkan sayfasındaki ilçe bağlantısı: ilçe sayfası varsa oraya, yoksa eski liste filtresine (ilçe yoksa null). */
-export function districtHref(ix: LandingIndex | null, district: string | null | undefined): string | null {
+/**
+ * Dükkan sayfasındaki ilçe bağlantısı: ilçe sayfası varsa oraya, yoksa eski liste filtresine. İlçe yoksa ya
+ * da dükkan Ankara dışındaysa null (Ustalar listesi yalnız Ankara ilçelerini süzer; "Kadıköy" filtresi yok sayılıp
+ * filtresiz liste açılırdı).
+ */
+export function districtHref(ix: LandingIndex | null, district: string | null | undefined, city?: string | null): string | null {
     if (!district) return null;
+    if (city && foldSearch(city) !== "ankara") return null;
     const d = ix ? districtOf(ix, district) : undefined;
     return d ? landingPath("ilce", d.slug) : legacyHref("ilce", district);
 }

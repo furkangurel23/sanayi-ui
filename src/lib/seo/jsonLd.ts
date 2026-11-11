@@ -73,7 +73,7 @@ export function businessJsonLd(d: ProviderDetailDto, path: string): Json {
     const address: Json = {"@type": "PostalAddress"};
     if (d.address) address.streetAddress = d.address;
     if (d.district) address.addressLocality = d.district;
-    address.addressRegion = "Ankara";
+    address.addressRegion = d.city?.trim() || "Ankara"; // site haritasında Ankara dışı gerçek dükkan da var
     address.addressCountry = "TR";
     out.address = address;
     if (d.location) {

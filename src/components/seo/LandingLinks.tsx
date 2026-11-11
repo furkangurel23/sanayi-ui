@@ -9,11 +9,15 @@ import Link from "next/link";
 
 export type LandingLink = { href: string; label: string; count: number };
 
-export default function LandingLinks({title, links, id}: { title: string; links: readonly LandingLink[]; id: string }) {
+/** `level`: başlık kademesi — tek başına bölümse h2, bir h2 bölümünün içindeyse h3 (ExploreLinks). */
+export default function LandingLinks({title, links, id, level = 2}: {
+    title: string; links: readonly LandingLink[]; id: string; level?: 2 | 3;
+}) {
     if (links.length === 0) return null;
+    const Heading = level === 3 ? "h3" : "h2";
     return (
         <section className="stack-sm" aria-labelledby={id}>
-            <h2 id={id} className="headline">{title}</h2>
+            <Heading id={id} className={level === 3 ? "card-title" : "headline"}>{title}</Heading>
             <ul className="cluster landing-links">
                 {links.map((l) => (
                     <li key={l.href}>

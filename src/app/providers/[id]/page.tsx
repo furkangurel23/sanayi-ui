@@ -62,10 +62,9 @@ import {Chat, Pin} from "@/components/icons";
 import Breadcrumbs from "@/components/seo/Breadcrumbs";
 import JsonLd from "@/components/seo/JsonLd";
 import {pageMetadata} from "@/lib/seo/site";
-import {shopDescription, shopTitle} from "@/lib/seo/text";
 import {breadcrumbJsonLd, businessJsonLd, type Crumb} from "@/lib/seo/jsonLd";
 import {buildLandingIndex, districtHref, districtOf, isIndexable, landingPath, shopChipHref} from "@/lib/seo/landing";
-import {landingTitle} from "@/lib/seo/text";
+import {landingTitle, shopDescription, shopTitle} from "@/lib/seo/text";
 
 /** Detay haritasının yüksekliği (px) — iskelet ve harita aynı değeri --map-h ile okur. */
 const MAP_HEIGHT = 220;
@@ -138,7 +137,8 @@ export default async function ProviderDetailPage({
 
     // Gezinti yolu (görünür + JSON-LD aynı öğeler; spec US1-8): ara adım dükkanın ilçe sayfası — ilçe
     // yoksa ya da ilçe sayfası dizinde değilse (sayım özeti yok/ilçe tanınmıyor) "Ustalar".
-    const districtEntry = landing ? districtOf(landing, detail.district) : undefined;
+    const inAnkara = !detail.city || detail.city.trim().toLocaleLowerCase("tr") === "ankara";
+    const districtEntry = landing && inAnkara ? districtOf(landing, detail.district) : undefined;
     const middle: Crumb = districtEntry && isIndexable(false, districtEntry.count)
         ? {name: landingTitle("ilce", districtEntry.name), path: landingPath("ilce", districtEntry.slug)}
         : {name: "Ustalar", path: "/providers"};
@@ -147,7 +147,7 @@ export default async function ProviderDetailPage({
         middle,
         {name: detail.name, path: `/providers/${detail.id}`},
     ];
-    const districtLink = districtHref(landing, detail.district);
+    const districtLink = districtHref(landing, detail.district, detail.city);
 
     const range = [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5];
     const buckets = range.map(s => ({
@@ -176,7 +176,7 @@ export default async function ProviderDetailPage({
                         {/* 005: ilçenin açılış sayfasına iç bağlantı (sayım özeti yoksa filtreli liste). */}
                         {districtLink && detail.district && (
                             <Link href={districtLink} className="link-accent caption">
-                                {detail.district} oto sanayi ustaları
+                                {districtEntry?.name ?? detail.district} oto sanayi ustaları
                             </Link>
                         )}
                         {/* tel: bağlantısı E.164 kalır (aranabilir biçim); görünen metin gruplanmış (002). */}
