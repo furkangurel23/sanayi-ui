@@ -32,15 +32,33 @@
  *  - followFocus: false — ok tuşu SEÇMEZ, yalnızca odağı taşır. Neden: seçim burada
  *    bir sayfa gezintisi (router.push + `key` ile remount); her ok basışında gezinti
  *    hem pahalı olur hem de remount odağı kaybettirir. Ayrıntı hook'un yorumunda.
+ *
+ * 004 — AD ARAMASI (kartın ilk satırı, <form role="search">):
+ *  - Neden <form>? Enter ve "Ara" düğmesi tarayıcının yerel gönderimini kullanır (mobilde klavyenin
+ *    "Ara" tuşu da) — onKeyDown ile Enter yakalamaya gerek kalmaz. preventDefault ile sayfa yenilenmez,
+ *    değer applyPatch ile URL'e yazılır (q + page=1).
+ *  - Kural lib/searchText.ts'ten (backend ile birebir): tamamen boş gönderim aramayı kaldırır;
+ *    kelimesiz metin ("a", "%") gezinti YAPMAZ, yalnız ipucu gösterir — gezinti FilterBar'ı remount
+ *    edip ipucunu silerdi. Aynı arama tekrar gönderilirse de gezinti yok.
+ *  - ODAK: `q` key'e girdiği için her arama gönderimi FilterBar'ı REMOUNT eder; odaktaki input DOM'dan
+ *    kalkar ve odak <body>'ye düşerdi. Çözüm: gezintiden hemen önce modül düzeyi bir bayrak kurulur;
+ *    YENİ bileşenin mount effect'i bayrağı görünce arama kutusuna odaklanır ve bayrağı siler.
+ *    Bayrak yalnız arama gönderiminde kurulur -> geri/ileri ya da diğer filtrelerde odak çalınmaz.
+ *    (autoFocus kullanılmaz: her ziyarette klavyeyi açar/odağı çalardı.)
+ *  - İpucunun canlı bölgesi (aria-live="polite", sr-only) HER ZAMAN DOM'dadır, yalnız metni değişir:
+ *    canlı bölge sonradan eklenirse ekran okuyucular ilk mesajı kaçırabilir. Görünür ipucu ayrıca çizilir.
  */
 
 import {useRouter} from "next/navigation";
 import type {IdName} from "@/lib/types";
-import {useState} from "react";
+import {type FormEvent, useEffect, useId, useRef, useState} from "react";
+import {MAX_CHARS, searchTerms} from "@/lib/searchText";
 import {ArrowDown, ArrowUp, Close} from "@/components/icons";
 import {useRovingRadio} from "@/lib/useRovingRadio";
 
 export type FilterInitial = {
+    /** Ad araması (004): server'da parseSearch'ten geçmiş kırpılmış metin; geçersiz/yoksa "". */
+    q: string;
     brandId: string;
     categoryId: string;
     city: string;
@@ -65,6 +83,13 @@ const SCORE_PRESETS = [
     {id: "neg", label: "Eksili", min: "", max: "0"},
 ] as const;
 
+/*
+ * Arama gönderimi sonrası remount'ta odağı arama kutusuna geri vermek için bayrak (dosya başı "ODAK").
+ * Modül düzeyi değişken: eski bileşen kaldırılıp yenisi kurulurken ikisi arasında yaşayan tek yer
+ * (state/ref bileşenle birlikte ölür). Tarayıcıda tek sekme = tek modül örneği; SSR'da yalnız okunur.
+ */
+let focusSearchAfterNav = false;
+
 const SORT_FIELDS = [
     {value: "avgScore", label: "Puan"},
     {value: "ratingCount", label: "Oy"},
@@ -79,6 +104,18 @@ export default function FilterBar({brands, categories, initial}: Props) {
     const [city, setCity] = useState(initial.city);
     const [district, setDistrict] = useState(initial.district);
 
+    // Ad araması (004): kutu "uncontrolled" (defaultValue) — değer yalnız gönderimde okunur.
+    const searchId = useId();
+    const searchRef = useRef<HTMLInputElement>(null);
+    const [searchHint, setSearchHint] = useState("");
+
+    // Remount sonrası odak (dosya başı "ODAK"): yalnız arama gönderiminin kurduğu bayrakla.
+    useEffect(() => {
+        if (!focusSearchAfterNav) return;
+        focusSearchAfterNav = false;
+        searchRef.current?.focus();
+    }, []);
+
     /** Mevcut query'yi koruyarak verilen anahtarları günceller ve yönlendirir. */
     const applyPatch = (patch: Record<string, string>) => {
         const params = new URLSearchParams(window.location.search);
@@ -88,6 +125,35 @@ export default function FilterBar({brands, categories, initial}: Props) {
         }
         params.set("page", "1"); // filtre değişince ilk sayfaya dön
         router.push(`/providers?${params.toString()}`);
+    };
+
+    const submitSearch = (e: FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        const value = (searchRef.current?.value ?? "").trim().slice(0, MAX_CHARS);
+        if (value === "") {
+            // Tamamen boş: aramayı kaldır (zaten yoksa gezinme).
+            setSearchHint("");
+            if (initial.q) {
+                focusSearchAfterNav = true;
+                applyPatch({q: ""});
+            }
+            return;
+        }
+        if (searchTerms(value).length === 0) {
+            // Kelimesiz ("a", "%"): URL'e dokunma, yalnız ipucu (uygulanmış arama aynen kalır).
+            setSearchHint("En az 2 harfli bir kelime yazın.");
+            return;
+        }
+        setSearchHint("");
+        if (value === initial.q) return; // aynı arama: gezinti yok
+        focusSearchAfterNav = true;
+        applyPatch({q: value});
+    };
+
+    const clearSearch = () => {
+        setSearchHint("");
+        focusSearchAfterNav = true;
+        applyPatch({q: ""}); // diğer filtreler korunur, sayfa 1
     };
 
     const applySort = (field: string, dir: "asc" | "desc") => {
@@ -118,12 +184,44 @@ export default function FilterBar({brands, categories, initial}: Props) {
     });
 
     const hasActiveFilter = Boolean(
-        initial.brandId || initial.categoryId || initial.city || initial.district ||
+        initial.q || initial.brandId || initial.categoryId || initial.city || initial.district ||
         initial.minScore || initial.maxScore
     );
 
     return (
         <div className="toolbar">
+            {/* Ad araması (004): Enter / "Ara" ile uygulanır; kendi temizleme düğmesi diğer filtreleri korur */}
+            <form className="toolbar-field toolbar-search" role="search" aria-label="Dükkan ara" onSubmit={submitSearch}>
+                <label className="toolbar-label" htmlFor={searchId}>Dükkan adı</label>
+                <div className="toolbar-search-row">
+                    <input
+                        ref={searchRef}
+                        id={searchId}
+                        type="search"
+                        name="q"
+                        className="input"
+                        placeholder="Ör. Hondacı Kadir Usta"
+                        defaultValue={initial.q}
+                        maxLength={MAX_CHARS}
+                        autoComplete="off"
+                        enterKeyHint="search"
+                        aria-describedby={searchHint ? `${searchId}-hint` : undefined}
+                        aria-invalid={searchHint ? true : undefined}
+                        onChange={() => searchHint && setSearchHint("")}
+                    />
+                    {initial.q && (
+                        <button type="button" className="btn btn-ghost" aria-label="Aramayı temizle" onClick={clearSearch}>
+                            <Close size="sm"/>
+                        </button>
+                    )}
+                    <button type="submit" className="btn btn-primary">Ara</button>
+                </div>
+                {/* Canlı bölge HER ZAMAN DOM'da (sr-only): sonradan eklenen bölgeyi ekran okuyucu kaçırabilir.
+                    Görünür ipucu ayrı ve yalnız mesaj varken çizilir (boş satır boşluğu bırakmasın). */}
+                <span className="sr-only" aria-live="polite">{searchHint}</span>
+                {searchHint && <p id={`${searchId}-hint`} className="field-hint" aria-hidden="true">{searchHint}</p>}
+            </form>
+
             <div className="toolbar-row">
                 {/* Marka */}
                 <label className="toolbar-field">

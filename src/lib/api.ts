@@ -116,13 +116,15 @@ export async function getBrandsAllSorted(): Promise<IdName[]> {
     return page.content.map(b => ({id: b.id, name: b.name}));
 }
 
-// Backend: /api/providers (categoryId, city, district, brandId, minScore, maxScore)
+// Backend: /api/providers (categoryId, city, district, brandId, minScore, maxScore, q)
 // Pageable ile "sort=field,dir" çoklu gönderilebilir.
+// q (004): dükkan ADINDA kelime bazlı arama; çağıran yalnız parseSearch'ten geçmiş değeri verir.
 export async function getProviders(opts: {
     page?: number; size?: number;
     brandId?: number; categoryId?: number;
     city?: string; district?: string;
     minScore?: number; maxScore?: number;
+    q?: string;
     // Çoklu sıralama desteği
     sorts?: Array<{ field: string; dir: "asc" | "desc" }>;
 } = {}): Promise<Page<ProviderListItem>> {
@@ -138,6 +140,7 @@ export async function getProviders(opts: {
         district: opts.district,
         minScore: opts.minScore,
         maxScore: opts.maxScore,
+        q: opts.q,
     });
 
     const sorts = opts.sorts?.length
@@ -153,7 +156,15 @@ export async function getProviders(opts: {
     }
 
     const url = `${BASE}/providers?${params.toString()}`;
-    const res = await fetch(url, {next: {revalidate: 60, tags: ["providers"]}}); // liste daha sık güncellensin
+    // Önbellek (UI anayasası I):
+    //  - Aramasız liste: ISR 60 sn + "providers" etiketi (düzenleme/onay Server Action'ları etiketi tazeler).
+    //  - ARAMALI liste (004): `no-store`. Neden? Serbest metin SINIRSIZ önbellek anahtarı üretir (her farklı
+    //    arama ayrı ISR kaydı) ve ad değişikliği aramaya hemen yansımalı (spec FR-010). Backend sorgusu
+    //    ucuz (20 bin dükkanda ~5-15 ms). Anayasadaki "kullanıcıya/konuma özel sorgu" istisnasına BENZER
+    //    gerekçe — plan.md Complexity Tracking.
+    const res = await fetch(url, opts.q
+        ? {cache: "no-store"}
+        : {next: {revalidate: 60, tags: ["providers"]}}); // liste daha sık güncellensin
     if (!res.ok) {
         throw new Error(`GET /providers failed: ${res.status} ${res.statusText}`);
     }

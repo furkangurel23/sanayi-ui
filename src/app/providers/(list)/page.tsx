@@ -19,6 +19,12 @@
  * 002 görünümü: başlık ortak PageHeader (üst etiket + başlık + sonuç sayısı),
  * sonuç yoksa ortak EmptyState (Search ikonu), sayfalama Pagination mode="url"
  * (varsayılan — URL'e yazar). Satır içi stil yok.
+ *
+ * 004 — AD ARAMASI (?q=): `parseSearch` (lib/searchText.ts) kuralı uygular: kelimesiz değer
+ * (?q=a, ?q=%) backend'e GİTMEZ ve kutu boş görünür; geçerliyse kırpılmış ham metin hem backend'e
+ * hem FilterBar'a iner. `q`, `filterInitial`'ın parçası olduğu için FilterBar'ın `key`'ine de girer
+ * -> geri/ileri tuşunda kutu doğru metne remount olur. Arama uygulanmışken sonuç yoksa aramaya özel
+ * boş durum ("Aramayı temizle" + "Dükkan öner").
  */
 import {getBrandsAllSorted, getCategoriesAllSorted, getProviders} from "@/lib/api";
 import ProviderCard from "@/components/ProviderCard";
@@ -27,8 +33,10 @@ import Pagination from "@/components/Pagination";
 import MapSection from "@/components/MapSection";
 import PageHeader from "@/components/PageHeader";
 import EmptyState from "@/components/EmptyState";
+import Link from "next/link";
 import {Search} from "@/components/icons";
 import {parseEnum, parsePage, parsePositiveId, parseScore, parseSize} from "@/lib/params";
+import {parseSearch} from "@/lib/searchText";
 
 /*
  * Sıralanabilir alanlar — BEYAZ LİSTE. FilterBar'daki SORT_FIELDS seçenekleri
@@ -59,6 +67,7 @@ export default async function ProvidersPage({
     const district = typeof sp.district === "string" ? sp.district : undefined;
     const minScore = parseScore(sp.minScore);
     const maxScore = parseScore(sp.maxScore);
+    const q = parseSearch(sp.q);
 
     let sortField: (typeof SORT_FIELDS)[number] = "avgScore";
     let sortDir: "asc" | "desc" = "desc";
@@ -93,7 +102,7 @@ export default async function ProvidersPage({
         getBrandsAllSorted().catch(() => []),
         getCategoriesAllSorted().catch(() => []),
         getProviders({
-            page, size, brandId, categoryId, city, district, minScore, maxScore, sorts,
+            page, size, brandId, categoryId, city, district, minScore, maxScore, sorts, q,
         }),
     ]);
 
@@ -104,6 +113,7 @@ export default async function ProvidersPage({
      * yeni initial'lardan başlar (geri/ileri tuşu senkronu, useEffect'siz).
      */
     const filterInitial = {
+        q: q ?? "",
         brandId: brandId ? String(brandId) : "",
         categoryId: categoryId ? String(categoryId) : "",
         city: city ?? "",
@@ -122,7 +132,7 @@ export default async function ProvidersPage({
             <PageHeader
                 eyebrow="Keşfet"
                 title="Ustalar"
-                actions={<span className="chip">{data.totalElements} sonuç</span>}
+                actions={<span className="chip" role="status">{data.totalElements} sonuç</span>}
             />
 
             <FilterBar key={filterKey} brands={brands} categories={categories} initial={filterInitial}/>
@@ -130,7 +140,19 @@ export default async function ProvidersPage({
             <MapSection key={`map-${mapInitialOpen ?? "auto"}`} items={data.content} height={280}
                         initialOpen={mapInitialOpen}/>
 
-            {data.content.length === 0 ? (
+            {data.content.length === 0 && q ? (
+                <EmptyState
+                    icon={<Search/>}
+                    title={`“${q}” ile eşleşen dükkan bulunamadı.`}
+                    description="Yazımı ya da diğer filtreleri kontrol et. Dükkan listede yoksa bize önerebilirsin."
+                    action={
+                        <>
+                            <Link href={clearSearchHref(sp)} className="btn btn-outline">Aramayı temizle</Link>
+                            <Link href="/providers/suggest" className="btn btn-primary">Dükkan öner</Link>
+                        </>
+                    }
+                />
+            ) : data.content.length === 0 ? (
                 <EmptyState
                     icon={<Search/>}
                     title="Bu filtrelerle usta bulunamadı."
@@ -145,4 +167,19 @@ export default async function ProvidersPage({
             <Pagination mode="url" page={(data.number ?? 0) + 1} totalPages={data.totalPages ?? 1}/>
         </main>
     );
+}
+
+/*
+ * Boş durumdaki "Aramayı temizle" bağlantısı: aynı URL'den yalnız `q` ve `page` atılır (yeni sonuç
+ * kümesinde 1. sayfadan başlanır). Çok değerli parametreler (ör. birden fazla `sort`) aynen korunur.
+ * Saf fonksiyon: server'da render sırasında çalışır, window'a ihtiyaç yok.
+ */
+function clearSearchHref(sp: Record<string, string | string[] | undefined>): string {
+    const params = new URLSearchParams();
+    for (const [k, v] of Object.entries(sp)) {
+        if (k === "q" || k === "page" || v === undefined) continue;
+        for (const one of Array.isArray(v) ? v : [v]) params.append(k, one);
+    }
+    const qs = params.toString();
+    return qs ? `/providers?${qs}` : "/providers";
 }

@@ -625,6 +625,12 @@ h2, h3, .headline {
 .toolbar-label { font-size: var(--type-caption); font-weight: var(--type-headline-wt); color: var(--fg-muted); }
 .toolbar-inputs { display: flex; gap: var(--space-2); }
 .toolbar-inputs > * { flex: 1; min-width: 0; }
+/* 004: ad araması satırı — kutu esner, düğmeler doğal genişliğinde; dar ekranda da tek satır */
+.toolbar-search-row { display: flex; gap: var(--space-2); align-items: center; }
+.toolbar-search-row > .input { flex: 1; min-width: 0; }
+/* Tarayıcının type="search" içi "×"i yalnız metni siler, URL'deki aramayı KALDIRMAZ (yanıltıcı ikinci
+   çarpı). Aramayı kaldıran tek düğme yanımızdaki "Aramayı temizle" olsun. */
+.toolbar-search-row > .input::-webkit-search-cancel-button { appearance: none; }
 .toolbar-clear { justify-self: start; }
 @media (min-width: 760px) { .toolbar-clear { justify-self: end; } }
 
