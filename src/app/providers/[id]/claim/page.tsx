@@ -11,6 +11,7 @@ import {notFound} from "next/navigation";
 import {getProviderDetail} from "@/lib/api";
 import {parsePositiveId} from "@/lib/params";
 import ClaimPageClient from "./ClaimPageClient";
+import {claimsEnabled} from "@/lib/features";
 import {pageMetadata} from "@/lib/seo/site";
 
 export async function generateMetadata({params}: { params: Promise<{ id: string }> }): Promise<Metadata> {
@@ -26,6 +27,8 @@ export async function generateMetadata({params}: { params: Promise<{ id: string 
 }
 
 export default async function ClaimPage({params}: { params: Promise<{ id: string }> }) {
+    // 006: asıl 404 proxy.ts'te (Suspense dışı); bu satır ikinci emniyet.
+    if (!claimsEnabled()) notFound();
     const id = parsePositiveId((await params).id);
     if (id === undefined) notFound();
     const detail = await getProviderDetail(id);

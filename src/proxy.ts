@@ -13,11 +13,14 @@
  *  - Sondaki "/" Next'in kendi 308'iyle düşer (trailingSlash varsayılanı); ara segmentlerin
  *    (`/ankara`, `/ankara/marka` …) sayfası yok -> 404.
  *
+ * 006 ek: sahiplenme kapalıyken `/providers/{id}/claim` burada 404'e çevrilir (aşağıda).
+ *
  * NEDEN layout'ta değil? Yönlendirme sayfa işlenmeden önce, tek yerde ve tüm segmentler için yapılmalı;
  * layout'ta `redirect()` her dinamik segment için ayrı ayrı yazılır ve akış başladıktan sonra 308 veremez.
  */
 import {NextResponse, type NextRequest} from "next/server";
 import {slugify} from "@/lib/seo/slug";
+import {claimsEnabled} from "@/lib/features";
 
 function safeDecode(segment: string): string {
     try {
@@ -29,6 +32,12 @@ function safeDecode(segment: string): string {
 
 export function proxy(request: NextRequest) {
     const {pathname} = request.nextUrl;
+    // 006: sahiplenme kapalıyken başvuru sayfası GERÇEK 404 olsun. Sayfanın kendi notFound()'u
+    // providers/[id]/loading.tsx Suspense sınırının İÇİNDE kalır (yanıt 200 ile akmaya başlar → "yumuşak
+    // 404"); bu yüzden karar istek sayfaya ulaşmadan burada verilir: var olmayan bir yola yeniden yazma = 404.
+    if (!claimsEnabled() && /^\/providers\/[^/]+\/claim\/?$/.test(pathname)) {
+        return NextResponse.rewrite(new URL("/_sahiplenme-kapali", request.url));
+    }
     // Matcher büyük/küçük harfe duyarlı olduğu için geniş tutulur; "/Ankara/…", "/ANKARA/…" da yakalansın
     // diye ilk segment burada harf duyarsız denetlenir. Diğer tüm yollar dokunulmadan geçer.
     if (!/^\/ankara(\/|$)/i.test(pathname)) return NextResponse.next();

@@ -25,6 +25,7 @@ import {useEffect, useRef, useState} from "react";
 import type {ProviderListItem} from "@/lib/types";
 import {directionsUrls} from "@/lib/directions";
 import {NAVIGATION_PATH} from "@/components/icons";
+import {tileAttribution, tileUrl} from "@/lib/mapTiles";
 
 // Runtime'a girmeyen type-only importlar. runtime'a girmez.
 type LeafletMap = import("leaflet").Map;
@@ -153,8 +154,8 @@ export default function ProvidersMap({items, height = 260}: Props) {
                 scrollWheelZoom: false,
             });
 
-            L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            L.tileLayer(tileUrl(), {
+                attribution: tileAttribution(), // 006: karo kaynağı tek yerden (lib/mapTiles.ts)
             }).addTo(map);
 
             const markerLayer = L.layerGroup().addTo(map);

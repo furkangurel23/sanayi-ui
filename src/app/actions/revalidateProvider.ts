@@ -16,16 +16,16 @@
  * Tüm hatalar YUTULUR: çağıranın kaydı zaten başarılıydı; önbellek tazelenemezse en geç
  * 5 dk sonra kendiliğinden tazelenir — kullanıcıya hata göstermeye değmez.
  *
- * Not: sunucu tarafında çalışır; `NEXT_PUBLIC_API_URL` burada da okunur (aynı API).
+ * Not: sunucu tarafında çalışır → `apiBase()` (006: canlıda iç ağ adresi API_INTERNAL_URL).
  */
 import {revalidateTag} from "next/cache";
+import {apiBase} from "@/lib/apiBase";
 
-const BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080/api";
 
 export async function revalidateProviderViews(providerId: number, token: string | null): Promise<void> {
     try {
         if (!token || !Number.isInteger(providerId) || providerId < 1) return;
-        const res = await fetch(`${BASE}/owner/providers/${providerId}`, {
+        const res = await fetch(`${apiBase()}/owner/providers/${providerId}`, {
             headers: {Authorization: `Bearer ${token}`},
             cache: "no-store",
         });

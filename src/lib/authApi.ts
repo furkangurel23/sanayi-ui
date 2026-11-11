@@ -15,12 +15,14 @@
  *    err.code ile davranış dallandırılır (bkz. lib/apiError.ts).
  */
 
+import {publicApiBase} from "@/lib/apiBase";
 import {ApiError, toApiError} from "@/lib/apiError";
 import {ensureFreshToken} from "@/lib/auth";
 import type {CurrentUser} from "@/lib/types";
 
 // ?? = nullish coalescing: sol taraf null/undefined ise sağdaki default kullanılır.
-const BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080/api";
+// 006: yalnız tarayıcıda çalışır → GENEL adres (lib/apiBase.ts).
+const BASE = publicApiBase();
 
 // Backend DTO'larının TS karşılıkları (Kotlin data class -> TS type):
 export type LoginResponse = { token: string; refreshToken?: string | null };

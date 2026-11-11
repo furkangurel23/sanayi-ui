@@ -66,6 +66,7 @@ import type {ProviderListItem} from "@/lib/types";
 import {MAP_OPEN_QUERY} from "@/lib/breakpoints";
 import EmptyState from "@/components/EmptyState";
 import {Pin} from "@/components/icons";
+import {tileOrigin} from "@/lib/mapTiles";
 
 const ProvidersMap = dynamic(() => import("@/components/ProvidersMap"), {
     ssr: false,
@@ -119,7 +120,9 @@ export default function MapSection({items, height = 280, initialOpen, title = "H
     // Kapalıyken çağrılmaz; auto modda (open === null) SUNUCUDA çağrılır — masaüstünde LCP
     // kazancı korunur, telefonda yalnız bir bağlantı ipucu kalır (karo İNDİRMEZ). Yeni
     // üçüncü taraf YOK: aynı karo sunucusu (FR-018), sadece bağlantı daha önce kurulur.
-    if (open !== false) preconnect("https://tile.openstreetmap.org");
+    // 006: köken karo ayarından (lib/mapTiles.ts); ayrıştırılamazsa ipucu atlanır.
+    const tiles = tileOrigin();
+    if (open !== false && tiles) preconnect(tiles);
 
     const toggle = () => {
         // Etkin durumu tersle. (Hidrasyon ile gerçek değerin gelmesi arasındaki çok kısa anda

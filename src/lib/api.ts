@@ -15,8 +15,11 @@ import {normalizePage} from "@/lib/page";
 import {toApiError} from "@/lib/apiError";
 import {clampRadiusKm} from "@/lib/params";
 import {cache} from "react";
+import {apiBase} from "@/lib/apiBase";
 
-const BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080/api";
+// 006: sunucuda iç adres (API_INTERNAL_URL, çalışma anı), tarayıcıda genel adres — lib/apiBase.ts.
+// Her çağrıda okunur (getter): sunucu ortam değişkeni modül yüklenirken dondurulmasın.
+const BASE_URL = () => apiBase();
 
 /*
 *
@@ -82,7 +85,7 @@ export async function getBrands(opts: {
     const params = toQuery({page: page0, size});
     params.append("sort", `${sort},${dir}`);
 
-    const url = `${BASE}/brands?${params.toString()}`;
+    const url = `${BASE_URL()}/brands?${params.toString()}`;
     const res = await fetch(url, {next: {revalidate: 300, tags: ["brands", "providers"]}});
     if (!res.ok) {
         throw new Error(`GET /brands failed: ${res.status} ${res.statusText}`);
@@ -96,7 +99,7 @@ export async function getCategoriesAllSorted(): Promise<IdName[]> {
     const params = toQuery({page: 0, size: 200});
     params.append("sort", "name,asc");
     params.append("withProviders", "false");
-    const url = `${BASE}/categories?${params.toString()}`;
+    const url = `${BASE_URL()}/categories?${params.toString()}`;
     const res = await fetch(url, {next: {revalidate: 300, tags: ["categories"]}});
     if (!res.ok) {
         throw new Error(`GET /categories failed: ${res.status} ${res.statusText}`);
@@ -109,7 +112,7 @@ export async function getBrandsAllSorted(): Promise<IdName[]> {
     const params = toQuery({page: 0, size: 200});
     params.append("sort", "name,asc");
     params.append("withProviders", "false");
-    const url = `${BASE}/brands?${params.toString()}`;
+    const url = `${BASE_URL()}/brands?${params.toString()}`;
     const res = await fetch(url, {next: {revalidate: 300, tags: ["brands"]}});
     if (!res.ok) {
         throw new Error(`GET /brands failed: ${res.status} ${res.statusText}`);
@@ -157,7 +160,7 @@ export async function getProviders(opts: {
         params.append("sort", `${s.field},${s.dir}`);
     }
 
-    const url = `${BASE}/providers?${params.toString()}`;
+    const url = `${BASE_URL()}/providers?${params.toString()}`;
     // Önbellek (UI anayasası I):
     //  - Aramasız liste: ISR 60 sn + "providers" etiketi (düzenleme/onay Server Action'ları etiketi tazeler).
     //  - ARAMALI liste (004): `no-store`. Neden? Serbest metin SINIRSIZ önbellek anahtarı üretir (her farklı
@@ -190,7 +193,7 @@ export async function getProviders(opts: {
 *
 * */
 export const getFacets = cache(async (): Promise<ProviderFacets> => {
-    const res = await fetch(`${BASE}/providers/facets`, {
+    const res = await fetch(`${BASE_URL()}/providers/facets`, {
         next: {revalidate: 3600, tags: ["providers", "brands", "categories"]},
     });
     if (!res.ok) {
@@ -206,7 +209,7 @@ export const getFacets = cache(async (): Promise<ProviderFacets> => {
 *
 * */
 export async function getSitemapEntries(): Promise<SitemapEntry[]> {
-    const res = await fetch(`${BASE}/providers/sitemap`, {
+    const res = await fetch(`${BASE_URL()}/providers/sitemap`, {
         next: {revalidate: 86400, tags: ["providers"]},
     });
     if (!res.ok) {
@@ -231,7 +234,7 @@ export async function getSitemapEntries(): Promise<SitemapEntry[]> {
 *
 * */
 export const getProviderDetail = cache(async (id: number): Promise<ProviderDetailDto | null> => {
-    const url = `${BASE}/providers/${id}`;
+    const url = `${BASE_URL()}/providers/${id}`;
     const res = await fetch(url, {cache: "no-store"});
     if (res.status === 404) return null;
     if (!res.ok) {
@@ -257,7 +260,7 @@ export async function getProviderRatings(opts: {
     params.set("size", String(size));
     params.append("sort", `${field},${dir}`);
 
-    const url = `${BASE}/providers/${opts.id}/ratings?` + params.toString();
+    const url = `${BASE_URL()}/providers/${opts.id}/ratings?` + params.toString();
     const res = await fetch(url, {cache: "no-store"});
     if (!res.ok) {
         throw new Error(`GET /providers/${opts.id}/ratings failed: ${res.status} ${res.statusText}`);
@@ -286,7 +289,7 @@ export async function getProvidersNear(opts: {
     // no-store: sorgu kullanıcının KONUMUNA özel. ISR (revalidate) her farklı lat/lon için
     // ayrı bir önbellek kaydı üretirdi (sınırsız büyür, neredeyse hiç tekrar kullanılmaz).
     // Bu yüzden anayasa I'deki "liste = ISR" kuralına bilinçli istisna (plan: Complexity Tracking).
-    const res = await fetch(`${BASE}/providers/near?` + params.toString(), {cache: "no-store"});
+    const res = await fetch(`${BASE_URL()}/providers/near?` + params.toString(), {cache: "no-store"});
     if (!res.ok) {
         throw new Error(`GET /providers/near failed: ${res.status} ${res.statusText}`);
     }
@@ -302,7 +305,7 @@ export async function postRating(opts: {
     /** Üye kullanıcı JWT'si; verilirse backend userId'yi token'dan alır */
     token?: string | null;
 }){
-    const res = await fetch(`${BASE}/ratings/rate`, {
+    const res = await fetch(`${BASE_URL()}/ratings/rate`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",

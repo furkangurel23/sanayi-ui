@@ -14,13 +14,15 @@
  *  (CONNECT/SUBSCRIBE/SEND/MESSAGE çerçeveleri). @stomp/stompjs bunu yönetir.
  */
 
+import {publicApiBase} from "@/lib/apiBase";
 import {Client} from "@stomp/stompjs";
 import {authHeaderFresh, ensureFreshToken, getToken} from "@/lib/auth";
 import {toApiError} from "@/lib/apiError";
 import type {ChatMessage, Page, SpringPage} from "@/lib/types";
 import {normalizePage} from "@/lib/page";
 
-const BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080/api";
+// 006: yalnız tarayıcıda çalışır → GENEL adres (lib/apiBase.ts).
+const BASE = publicApiBase();
 // WS adresi: http(s) -> ws(s) çevirisi + /api yerine /ws.
 // Örn: http://localhost:8080/api -> ws://localhost:8080/ws
 const WS_URL = process.env.NEXT_PUBLIC_WS_URL ?? BASE.replace(/^http/, "ws").replace(/\/api$/, "/ws");

@@ -13,6 +13,7 @@
 
 "use client";
 
+import {publicApiBase} from "@/lib/apiBase";
 import type {
     ChangeSet, Claim, ClaimStatus, ClaimSubmitRequest, OwnedProvider, Page, ProviderEditRequest, ProviderEditView, SimilarProvider, SpringPage,
     Suggestion, SuggestionCreateRequest, SuggestionStatus,
@@ -20,7 +21,8 @@ import type {
 import {normalizePage} from "@/lib/page";
 import {ApiError, toApiError} from "@/lib/apiError";
 
-const BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080/api";
+// 006: yalnız tarayıcıda çalışır → GENEL adres (lib/apiBase.ts).
+const BASE = publicApiBase();
 
 /** Ortak istek yardımcısı: JSON gövde (varsa) + Bearer; 204'te `undefined` döner. */
 export async function authedJson<T>(method: string, url: string, token: string, body?: unknown): Promise<T> {

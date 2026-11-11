@@ -1,0 +1,8 @@
+# 006: derleme bağlamına girmesin (büyük, gereksiz ya da GİZLİ).
+node_modules
+.next
+.git
+.env*
+specs
+docs
+*.tsbuildinfo

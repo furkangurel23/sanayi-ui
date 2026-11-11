@@ -32,6 +32,7 @@ import {useEffect, useId, useRef, useState} from "react";
 import {ANKARA_CENTER, findDistrict, inAnkara} from "@/lib/districts";
 import {GEO_FAILURE_TEXT, GeolocationFailure, getCurrentLocation} from "@/lib/geolocation";
 import {Navigation, Pin} from "@/components/icons";
+import {tileAttribution, tileUrl} from "@/lib/mapTiles";
 
 type LeafletMap = import("leaflet").Map;
 type LeafletLayerGroup = import("leaflet").LayerGroup;
@@ -102,8 +103,8 @@ export default function LocationPicker({
                 scrollWheelZoom: "center",   // yakınlaştırmada merkez (iğne) sabit kalır
                 touchZoom: "center",
             });
-            L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            L.tileLayer(tileUrl(), {
+                attribution: tileAttribution(), // 006: karo kaynağı tek yerden (lib/mapTiles.ts)
             }).addTo(map);
             layerRef.current = L.layerGroup().addTo(map);
             mapRef.current = map;

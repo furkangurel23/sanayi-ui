@@ -1,5 +1,7 @@
 "use client";
 
+import {publicApiBase} from "@/lib/apiBase";
+
 /*
  * JWT tabanlı hafif auth durumu (state) yönetimi.
  *
@@ -121,7 +123,7 @@ export async function ensureFreshToken(): Promise<string | null> {
     }
     // Zaten bir yenileme sürüyorsa ona bağlan (tek uçuş).
     if (!refreshInFlight) {
-        const base = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080/api";
+        const base = publicApiBase(); // 006: tarayıcı → genel adres
         refreshInFlight = fetch(`${base}/auth/refresh`, {
             method: "POST",
             headers: {"Content-Type": "application/json"},

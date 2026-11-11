@@ -28,7 +28,36 @@ const nextConfig: NextConfig = {
     turbopack: {
         root: __dirname,
     },
+    /*
+     * 006 — STANDALONE ÇIKTI: `next build` çalışmak için gereken her şeyi (yalnız kullanılan node_modules
+     * dosyaları dahil) `.next/standalone`'a toplar; üretim imajı `node server.js` ile tüm node_modules'ü
+     * taşımadan çalışır (küçük imaj). outputFileTracingRoot: dosya izleme kökü bu proje — ev dizinindeki
+     * başıboş lockfile yüzünden standalone ağacı iç içe (…/standalone/Desktop/projects/…) kurulmasın.
+     */
+    output: "standalone",
+    outputFileTracingRoot: __dirname,
 };
+
+/*
+ * 006 — SIKI ÜRETİM DERLEMESİ (spec FR-008a): yalnız üretim Dockerfile'ı `STRICT_ENV=true` verir (CI ve yerel
+ * derleme etkilenmez). Tarayıcıya gömülen adresler ve reCAPTCHA site anahtarı eksik/yerelse derleme DURUR:
+ * aksi hâlde canlı sitede API çağrıları localhost'a gider ya da anonim oy verilemezdi (anahtar yok).
+ */
+function assertStrictPublicEnv(): void {
+    const problems: string[] = [];
+    const isPublic = (raw: string | undefined, scheme: string) => {
+        try {
+            const u = new URL(raw ?? "");
+            return u.protocol === scheme && !LOCAL_HOSTS.has(u.hostname);
+        } catch {
+            return false;
+        }
+    };
+    if (!isPublic(process.env.NEXT_PUBLIC_API_URL, "https:")) problems.push(`NEXT_PUBLIC_API_URL https ve genel olmalı (şu an: "${process.env.NEXT_PUBLIC_API_URL ?? ""}")`);
+    if (!isPublic(process.env.NEXT_PUBLIC_WS_URL, "wss:")) problems.push(`NEXT_PUBLIC_WS_URL wss ve genel olmalı (şu an: "${process.env.NEXT_PUBLIC_WS_URL ?? ""}")`);
+    if (!process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY?.trim()) problems.push("NEXT_PUBLIC_RECAPTCHA_SITE_KEY boş (anonim oy verilemezdi)");
+    if (problems.length) throw new Error("Üretim derlemesi durduruldu (STRICT_ENV=true):\n - " + problems.join("\n - "));
+}
 
 /*
  * ARAMA MOTORU ORTAM AYARLARI (005-seo-foundation, spec FR-016) — bkz. src/lib/seo/site.ts.
@@ -73,6 +102,7 @@ export default function config(phase: string): NextConfig {
     const indexable = process.env.SITE_INDEXABLE === "true";
     assertSiteUrlShape(process.env.SITE_URL);
     if (phase === PHASE_PRODUCTION_BUILD && indexable) assertIndexableSiteUrl(process.env.SITE_URL);
+    if (phase === PHASE_PRODUCTION_BUILD && process.env.STRICT_ENV === "true") assertStrictPublicEnv();
 
     // Kapalı modda her yanıta "dizine alma, bağlantı izleme" başlığı (HTML dışı yanıtlar dahil).
     const headers = indexable
@@ -83,6 +113,8 @@ export default function config(phase: string): NextConfig {
         SITE_URL: process.env.SITE_URL ?? "",
         SITE_INDEXABLE: process.env.SITE_INDEXABLE ?? "",
         GOOGLE_SITE_VERIFICATION: process.env.GOOGLE_SITE_VERIFICATION ?? "",
+        // NOT (006): API_INTERNAL_URL BİLEREK burada YOK — burada olsaydı derlemede gömülürdü; sunucu
+        // tarafı onu çalışma anında okur (lib/apiBase.ts).
     }, async headers() {
         return [{source: "/(.*)", headers}];
     }};

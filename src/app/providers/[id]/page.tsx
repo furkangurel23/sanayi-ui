@@ -58,6 +58,7 @@ import ScoreBadge, {formatScore} from "@/components/ScoreBadge";
 import EmptyState from "@/components/EmptyState";
 import OpeningHoursView from "@/components/OpeningHoursView";
 import ClaimLink from "@/components/ClaimLink";
+import {claimsEnabled} from "@/lib/features";
 import {Chat, Pin} from "@/components/icons";
 import Breadcrumbs from "@/components/seo/Breadcrumbs";
 import JsonLd from "@/components/seo/JsonLd";
@@ -204,7 +205,8 @@ export default async function ProviderDetailPage({
                                  address={detail.address} district={detail.district} city={detail.city}/>
 
                 <div className="detail-secondary">
-                    <ClaimLink providerId={detail.id}/>
+                    {/* 006: sahiplenme kapalıyken (canlıda KVKK onayına kadar) bağlantı yok. */}
+                    {claimsEnabled() && <ClaimLink providerId={detail.id}/>}
                 </div>
 
                 {(detail.brands.length > 0 || detail.categories.length > 0) && (

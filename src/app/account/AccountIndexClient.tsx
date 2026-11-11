@@ -5,6 +5,7 @@
  * olduğu dükkanlar), Önerilerim, Taleplerim + sayılar.
  * Kartlar `card-hover` + "stretched" bağlantı değil düz <Link> kart (tek tıklama hedefi).
  */
+import {claimsEnabled} from "@/lib/features";
 import Link from "next/link";
 import type {ReactNode} from "react";
 import AccountShell from "@/components/AccountShell";
@@ -31,7 +32,10 @@ function Counts() {
     const owned = useAuthedData("account:owned", ownerProviders);
     const suggestions = useAuthedData("account:suggestions", t => mySuggestions(t, 1, 1));
     const n = owned.data?.length;
-    const claims = useAuthedData("account:claims", t => myClaims(t, 1, 1));
+    // 006: sahiplenme kapalıyken talep sayısı istenmez (uç 404 döner) — hook yine HER ZAMAN çağrılır
+    // (React kuralı), anahtar null = istek yok.
+    const claimsOn = claimsEnabled();
+    const claims = useAuthedData(claimsOn ? "account:claims" : null, t => myClaims(t, 1, 1));
     const ns = suggestions.data?.totalElements;
     const nc = claims.data?.totalElements;
     return (
@@ -48,18 +52,20 @@ function Counts() {
                     <ChevronRight className="account-link-arrow"/>
                 </Link>
             </li>
-            <li>
-                <Link href="/account/claims" className="card card-hover account-link">
-                    <span className="account-link-icon" aria-hidden><FileIcon/></span>
-                    <span className="account-link-body">
-                        <span className="card-title">Taleplerim</span>
-                        <span className="card-sub">
-                            {countText(nc, Boolean(claims.error), "Sahiplenme talebi yok", k => `${k} talep`)}
+            {claimsOn && (
+                <li>
+                    <Link href="/account/claims" className="card card-hover account-link">
+                        <span className="account-link-icon" aria-hidden><FileIcon/></span>
+                        <span className="account-link-body">
+                            <span className="card-title">Taleplerim</span>
+                            <span className="card-sub">
+                                {countText(nc, Boolean(claims.error), "Sahiplenme talebi yok", k => `${k} talep`)}
+                            </span>
                         </span>
-                    </span>
-                    <ChevronRight className="account-link-arrow"/>
-                </Link>
-            </li>
+                        <ChevronRight className="account-link-arrow"/>
+                    </Link>
+                </li>
+            )}
             <li>
                 <Link href="/account/providers" className="card card-hover account-link">
                     <span className="account-link-icon" aria-hidden><Shield/></span>

@@ -11,6 +11,7 @@
 
 "use client";
 
+import {publicApiBase} from "@/lib/apiBase";
 import type {
     AdminProviderItem, AdminRatingItem, AdminUserItem, ChangeSet, ModerationLogItem, Page, ProviderEditRequest,
     ProviderEditView, ProviderFieldsRequest, QueueCounts, SpringPage, AdminSuggestionItem, SuggestionDecision,
@@ -20,7 +21,8 @@ import {authedJson, pageQuery} from "@/lib/accountApi";
 import {normalizePage} from "@/lib/page";
 import {toApiError} from "@/lib/apiError";
 
-const BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080/api";
+// 006: yalnız tarayıcıda çalışır → GENEL adres (lib/apiBase.ts).
+const BASE = publicApiBase();
 
 type QueryValue = string | number | boolean | null | undefined;
 

@@ -14,8 +14,10 @@
  */
 import React from "react";
 import {preconnect} from "react-dom";
+import {tileOrigin} from "@/lib/mapTiles";
 
 export default function ProvidersListLayout({children}: { children: React.ReactNode }) {
-    preconnect("https://tile.openstreetmap.org");
+    const tiles = tileOrigin(); // 006: karo kaynağı ayarlanabilir (lib/mapTiles.ts)
+    if (tiles) preconnect(tiles);
     return children;
 }
