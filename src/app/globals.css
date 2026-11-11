@@ -19,6 +19,13 @@
    1) BELİRTEÇLER
    ============================================================ */
 :root {
+    /* — MARKA LOGOSU (Sanayi Defteri, S1: spiralli defter + piston) —
+       Temadan BAĞIMSIZ sabit marka renkleri (açık ve koyu temada aynı logo); LogoMark.tsx kullanır.
+       Favicon/uygulama simgeleri src/app/icon.svg'dedir (aynı değerler, ham SVG dosyası). */
+    --logo-bg: #2563EB;
+    --logo-paper: #FFFFFF;
+    --logo-ring: #93C5FD;
+
     /* — TİPOGRAFİ ölçeği (Geist, 001'den; yeni font yok) —
        clamp(min, akışkan, max): 375 px'te min'e, 1440 px'te max'a oturur.
        Her kademenin satır yüksekliği (-lh), harf aralığı (-ls) ve ağırlığı (-wt)
@@ -376,15 +383,12 @@ h2, h3, .headline {
     font-weight: var(--type-headline-wt);
     letter-spacing: var(--type-headline-ls);
 }
-.logo-mark {
-    width: var(--icon-lg); height: var(--icon-lg);
-    border-radius: var(--radius-sm);
-    background: var(--fg);
-    color: var(--bg);
-    display: inline-flex; align-items: center; justify-content: center;
-    font-size: var(--type-caption);
-    font-weight: var(--type-display-wt);
-}
+/* Logo simgesi artık SVG (LogoMark: spiralli defter + piston, sabit marka renkleri) — boyut width/height
+   özniteliğinden gelir; burada yalnız taşma/küçülme davranışı. */
+.logo-mark { display: block; flex-shrink: 0; }
+.logo-mark .lm-bg { fill: var(--logo-bg); }
+.logo-mark .lm-paper { fill: var(--logo-paper); }
+.logo-mark .lm-ring { fill: var(--logo-ring); }
 .main-nav { display: flex; align-items: center; gap: var(--space-1); }
 .nav-link {
     position: relative;

@@ -7,7 +7,7 @@
  *    (ör. providers/[id]/layout.tsx olmayan usta için). Her ikisinde de HTTP durum
  *    kodu 404'tür — arama motorları sayfayı "yok" olarak bilir.
  *  - Kök layout (Header + footer) bu sayfayı da sarar; burada yalnız içerik var.
- *  - metadata.title layout'taki "%s | Sanayi" şablonuna oturur -> "Bulunamadı | Sanayi".
+ *  - metadata.title layout'taki "%s | Sanayi Defteri" şablonuna oturur -> "Bulunamadı | Sanayi Defteri".
  *  - 002: büyüteç emojisi yerine ortak EmptyState + Search ikonu; yeni stil yok.
  *  - T041: sayfanın h1'i doğrudan EmptyState başlığı (titleAs="h1") — eskiden ayrıca
  *    görünmez (sr-only) bir h1 kopyası vardı; tek başlık = tek doğruluk kaynağı.

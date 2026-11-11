@@ -8,7 +8,9 @@
  *    (global-error.tsx ile ortak); latin + latin-ext alt kümesi -> Türkçe ğ/ş/ı/İ
  *    harfleri de Geist ile çizilir (yalnız "latin"de bu harfler yoktu, yedek fonta düşüyordu).
  *  - metadata.title.template: alt sayfalar sadece kendi adını verir,
- *    "%s | Sanayi" şablonuna otomatik oturur (SEO).
+ *    "%s | Sanayi Defteri" şablonuna otomatik oturur (SEO).
+ *  - Marka (2026-11-11): ad "Sanayi Defteri", logo S1 (spiralli defter + piston): LogoMark bileşeni +
+ *    src/app/icon.svg / favicon.ico / apple-icon.png / manifest.ts (Next dosya kuralları, otomatik <link>).
  *  - <html data-theme="dark"> SUNUCUDA yazılır: JavaScript kapalı olsa bile sayfa
  *    varsayılan (koyu) temayla gelir.
  *  - themeInit inline script'i (src/app/theme.ts): React yüklenmeden ÖNCE çalışır;
@@ -27,6 +29,7 @@ import "./globals.css";
 import React from "react";
 import {DATA_ATTRIBUTIONS} from "@/lib/sources";
 import Header from "@/components/Header";
+import LogoMark from "@/components/LogoMark";
 import {THEME_COLOR, themeInit} from "./theme";
 import {geist} from "./fonts";
 
@@ -34,7 +37,7 @@ import {geist} from "./fonts";
 // ama onu kullanan .mono sınıfı hiçbir yerde kullanılmıyordu -> boşuna indirilen font dosyası.
 
 export const metadata: Metadata = {
-    title: {default: "Sanayi — Ankara usta & servis platformu", template: "%s | Sanayi"},
+    title: {default: "Sanayi Defteri — Ankara usta & servis platformu", template: "%s | Sanayi Defteri"},
     description: "Ankara'daki sanayi ustalarını marka ve kategoriye göre keşfet, yorumları oku, puanla, marka sohbet odalarına katıl.",
 };
 
@@ -59,8 +62,8 @@ export default function RootLayout({children}: { children: React.ReactNode }) {
         <footer className="site-footer">
             <div className="container footer-inner">
                 <span className="footer-brand">
-                    <span className="logo-mark" aria-hidden>S</span>
-                    <span>Sanayi — Ankara usta &amp; servis platformu</span>
+                    <LogoMark size={20}/>
+                    <span>Sanayi Defteri — Ankara usta &amp; servis platformu</span>
                 </span>
                 <span>Puanla · Yorumla · Sohbet et</span>
                 {/* 002 / SC-007: açık veri lisanslarının istediği atıf (OSM ODbL, Overture CDLA,

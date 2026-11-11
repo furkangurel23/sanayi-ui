@@ -7,8 +7,8 @@
  * segmentlerin kendi metadata'sı (ör. /admin/providers/[id] "Dükkan düzenle · Admin") bunu ezer.
  *
  * DİKKAT (Next metadata kuralı): layout'ta DÜZ string `title` verilirse kök layout'un
- * `template`'i ("%s | Sanayi") bu segmentin ALTINDAKİ sayfalara artık uygulanmaz — zincir
- * burada kopar (ör. /admin/providers/[id] başlığı "| Sanayi"siz kalıyordu). Bu yüzden nesne
+ * `template`'i ("%s | Sanayi Defteri") bu segmentin ALTINDAKİ sayfalara artık uygulanmaz — zincir
+ * burada kopar (ör. /admin/providers/[id] başlığı "| Sanayi Defteri"siz kalıyordu). Bu yüzden nesne
  * biçimi: `default` bu sayfanın başlığı (kökün şablonuyla birleşir), `template` alt
  * segmentlere aynı soneki yeniden verir.
  */
@@ -16,7 +16,7 @@ import type {Metadata} from "next";
 import type {ReactNode} from "react";
 
 export const metadata: Metadata = {
-    title: {default: "Dükkanlar · Admin", template: "%s | Sanayi"},
+    title: {default: "Dükkanlar · Admin", template: "%s | Sanayi Defteri"},
     robots: {index: false},
 };
 

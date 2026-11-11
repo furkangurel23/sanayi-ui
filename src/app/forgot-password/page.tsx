@@ -1,7 +1,7 @@
 /*
  * ŞİFREMİ UNUTTUM SAYFASI — Server Component (yalnızca kabuk).
  *
- * Neden ayrı dosya? `metadata` (sekme başlığı: "Şifremi Unuttum | Sanayi") yalnızca SERVER
+ * Neden ayrı dosya? `metadata` (sekme başlığı: "Şifremi Unuttum | Sanayi Defteri") yalnızca SERVER
  * Component'ten export edilebilir; formun kendisi state/olay kullandığı için client.
  * Kalıp verify-email / reset-password ile aynı: server page -> client form bileşeni.
  */

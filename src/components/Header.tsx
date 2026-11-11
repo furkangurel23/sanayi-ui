@@ -25,6 +25,7 @@
  */
 
 import Link from "next/link";
+import LogoMark from "@/components/LogoMark";
 import {usePathname, useRouter} from "next/navigation";
 import {useEffect, useRef, useState} from "react";
 import {useAuth} from "@/lib/useAuth";
@@ -79,8 +80,8 @@ export default function Header() {
         <header className="site-header">
             <div className="container">
                 <Link href="/" className="logo" onClick={() => setOpen(false)}>
-                    <span className="logo-mark" aria-hidden>S</span>
-                    Sanayi
+                    <LogoMark/>
+                    Sanayi Defteri
                 </Link>
 
                 <nav id="main-nav" className="main-nav" data-open={open} aria-label="Ana menü">

@@ -40,7 +40,7 @@ export default function GlobalError({error, retry}: { error: unknown; retry: () 
     return (
         <html lang="tr" data-theme="dark" suppressHydrationWarning>
         <head>
-            <title>Bir şeyler ters gitti | Sanayi</title>
+            <title>Bir şeyler ters gitti | Sanayi Defteri</title>
             <meta name="theme-color" content={THEME_COLOR.dark} suppressHydrationWarning/>
             <script dangerouslySetInnerHTML={{__html: themeInit}}/>
         </head>
