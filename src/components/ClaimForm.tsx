@@ -4,9 +4,12 @@
  * "BU DÜKKAN BENİM" — SAHİPLENME TALEBİ FORMU (003 / T113).
  *
  * Akış:
- *  1) ÖN KONTROL (yükleme öncesi): `GET /api/claims/mine` + `GET /api/owner/providers` — bu
- *     dükkan için incelemede talebiniz varsa ya da zaten sahibiyseniz 30 MB'a kadar dosya
- *     boşuna yüklenmez; mesaj hemen gösterilir.
+ *  1) ÖN KONTROL: `GET /api/claims/mine?status=PENDING` + `GET /api/owner/providers` — bu
+ *     dükkan için incelemede talebiniz varsa ya da zaten sahibiyseniz kullanıcı formu hiç
+ *     doldurmasın: kontrol SAYFA AÇILIŞINDA yapılır (useAuthedData) ve form yerine durum kartı
+ *     çizilir ("Dükkanı düzenle" / "Taleplerim"). Gönderimde AYNI kontrol bir kez daha yapılır
+ *     (sayfa açıkken başka sekmede talep gönderilmiş olabilir) -> 30 MB'a kadar dosya boşuna
+ *     yüklenmez. Kesin karar yine backend'in 409'udur.
  *  2) İstemci kontrolleri (`lib/limits.ts` — backend sınırlarının aynası): 1–3 belge, her biri
  *     ≤10 MB, uzantı JPG/PNG/PDF; ad-soyad, telefon, açıklama (≤500, sayaçlı) zorunlu; aydınlatma
  *     metni onay kutusu VARSAYILAN İŞARETSİZ ve işaretlenmeden gönderilmez. Kesin denetim backend'de
@@ -23,6 +26,7 @@ import {type FormEvent, useEffect, useId, useRef, useState} from "react";
 import Link from "next/link";
 import type {Claim} from "@/lib/types";
 import {ensureFreshToken} from "@/lib/auth";
+import {useAuthedData} from "@/lib/useAuthedData";
 import {ApiError, errorMessage} from "@/lib/apiError";
 import {myClaims, ownerProviders, submitClaim} from "@/lib/accountApi";
 import {
@@ -30,7 +34,7 @@ import {
 } from "@/lib/limits";
 import {CLAIM_PRIVACY_VERSION} from "@/lib/legal";
 import {CLAIM_PRIVACY_SUMMARY} from "@/content/claim-privacy-2026-11-10";
-import {CheckCircle, File as FileIcon, Upload} from "@/components/icons";
+import {CheckCircle, Clock, File as FileIcon, Upload} from "@/components/icons";
 
 const ALLOWED_EXT = CLAIM_FILE_ACCEPT.split(",");
 const MB = 1024 * 1024;
@@ -95,6 +99,16 @@ export default function ClaimForm({providerId, providerName}: Props) {
     const fileInput = useRef<HTMLInputElement>(null);
     const alertRef = useRef<HTMLDivElement>(null);
     const [alertSeq, setAlertSeq] = useState(0);
+
+    // Açılış ön kontrolü (bkz. dosya başı, adım 1). Hata (ör. ağ) formu ENGELLEMEZ: kontrol
+    // gönderimde tekrarlanır, backend de 409 döner. `owner`/`pending` gelene kadar form görünür.
+    const precheck = useAuthedData(`claim-precheck:${providerId}`, async token => {
+        const [mine, owned] = await Promise.all([myClaims(token, 1, 200, "PENDING"), ownerProviders(token)]);
+        return {
+            owner: owned.some(o => o.providerId === providerId),
+            pending: mine.content.some(c => c.provider.id === providerId && c.status === "PENDING"),
+        };
+    });
 
     // Yeni uyarı DOM'a girdikten sonra odağı ona taşı (klavye/ekran okuyucu hemen duyar).
     useEffect(() => {
@@ -242,11 +256,41 @@ export default function ClaimForm({providerId, providerName}: Props) {
         );
     }
 
+    // Sahip ya da bekleyen talep varsa form yerine durum kartı — dosya seçmeye bile gerek yok.
+    if (precheck.data?.owner || precheck.data?.pending) {
+        const owner = precheck.data.owner;
+        return (
+            <div className="card form-card stack" role="status">
+                <span className="status-icon" data-tone={owner ? "pos" : "neutral"}>
+                    {owner ? <CheckCircle size="lg"/> : <Clock size="lg"/>}
+                </span>
+                <h2 className="headline">
+                    {owner ? "Bu dükkanın sahibi zaten sizsiniz" : "Bu dükkan için incelemede bir talebiniz var"}
+                </h2>
+                <p className="muted">
+                    {owner
+                        ? "Dükkan bilgilerini ve çalışma saatlerini düzenleme sayfasından güncelleyebilirsiniz."
+                        : "Yönetici karar verince e-posta alacaksınız. Durumunu Taleplerim sayfasından izleyebilirsiniz."}
+                </p>
+                <div className="form-actions">
+                    {owner
+                        ? <Link href={`/account/providers/${providerId}/edit`} className="btn btn-primary">Dükkanı düzenle</Link>
+                        : <Link href="/account/claims" className="btn btn-primary">Taleplerim</Link>}
+                    <Link href={`/providers/${providerId}`} className="btn btn-outline">Dükkan sayfasına dön</Link>
+                </div>
+            </div>
+        );
+    }
+
     const uploading = progress !== null;
 
     return (
         <form className="card form-card stack" onSubmit={submit} noValidate>
             {alert && <div ref={alertRef} tabIndex={-1} className="alert alert-error" role="alert">{alert}</div>}
+
+            {/* Formdaki her alan zorunlu: tek tek yıldız yerine baştan söylenir (gönderince
+                sürprize dönmesin); ekran okuyucular için alanlarda ayrıca aria-required var. */}
+            <p className="caption muted">Tüm alanlar zorunludur.</p>
 
             <fieldset className="field form-fieldset">
                 <legend className="field-label">Sahipliği gösteren belgeler</legend>
@@ -281,7 +325,7 @@ export default function ClaimForm({providerId, providerName}: Props) {
 
             <div className="field">
                 <label htmlFor={`${id}-fullName`} className="field-label">Ad soyad</label>
-                <input id={`${id}-fullName`} className="input" value={fullName} maxLength={100} autoComplete="name"
+                <input id={`${id}-fullName`} className="input" aria-required="true" value={fullName} maxLength={100} autoComplete="name"
                        onChange={e => {
                            setFullName(e.target.value);
                            clearError("fullName");
@@ -291,7 +335,7 @@ export default function ClaimForm({providerId, providerName}: Props) {
 
             <div className="field">
                 <label htmlFor={`${id}-phone`} className="field-label">Telefon</label>
-                <input id={`${id}-phone`} className="input" type="tel" inputMode="tel" value={phone} autoComplete="tel"
+                <input id={`${id}-phone`} className="input" aria-required="true" type="tel" inputMode="tel" value={phone} autoComplete="tel"
                        placeholder="0532 555 12 34"
                        onChange={e => {
                            setPhone(e.target.value);
@@ -302,14 +346,14 @@ export default function ClaimForm({providerId, providerName}: Props) {
 
             <div className="field">
                 <label htmlFor={`${id}-description`} className="field-label">Açıklama</label>
-                <textarea id={`${id}-description`} className="textarea" rows={4} value={description}
+                <textarea id={`${id}-description`} className="textarea" aria-required="true" rows={4} value={description}
                           maxLength={MAX_NOTE_LENGTH}
                           placeholder="Ör. Dükkanı 15 yıldır işletiyorum; vergi levhası ektedir."
                           onChange={e => {
                               setDescription(e.target.value);
                               clearError("description");
                           }} {...a11y("description")}/>
-                <span className="field-hint">{description.length}/{MAX_NOTE_LENGTH}</span>
+                <span className="field-hint">Dükkanla ilişkinizi kısaca anlatın · {description.length}/{MAX_NOTE_LENGTH}</span>
                 {errors.description && <span id={errId("description")} className="field-error">{errors.description}</span>}
             </div>
 
