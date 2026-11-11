@@ -41,10 +41,12 @@
  *    kelimesiz metin ("a", "%") gezinti YAPMAZ, yalnız ipucu gösterir — gezinti FilterBar'ı remount
  *    edip ipucunu silerdi. Aynı arama tekrar gönderilirse de gezinti yok.
  *  - ODAK: `q` key'e girdiği için her arama gönderimi FilterBar'ı REMOUNT eder; odaktaki input DOM'dan
- *    kalkar ve odak <body>'ye düşerdi. Çözüm: gezintiden hemen önce modül düzeyi bir bayrak kurulur;
- *    YENİ bileşenin mount effect'i bayrağı görünce arama kutusuna odaklanır ve bayrağı siler.
- *    Bayrak yalnız arama gönderiminde kurulur -> geri/ileri ya da diğer filtrelerde odak çalınmaz.
- *    (autoFocus kullanılmaz: her ziyarette klavyeyi açar/odağı çalardı.)
+ *    kalkar ve odak <body>'ye düşerdi. Çözüm: arama gezintisi başlarken modül düzeyi değişkene HEDEF
+ *    sorgu dizgisi yazılır; YENİ bileşenin mount effect'i adres çubuğu tam o hedefteyse arama kutusuna
+ *    odaklanır ve değişkeni her durumda siler. Hedef karşılaştırması şunu önler: arama gezintisi yanıt
+ *    gelmeden başka bir filtreyle geçilirse ya da iptal olursa, SONRAKİ ilgisiz bir mount odağı (mobilde
+ *    klavyeyi) çalmaz. Diğer filtre/sıralama/Temizle yolları değişkeni zaten sıfırlar; geri/ileri hiç
+ *    kurmaz. (autoFocus kullanılmaz: her ziyarette klavyeyi açar/odağı çalardı.)
  *  - İpucunun canlı bölgesi (aria-live="polite", sr-only) HER ZAMAN DOM'dadır, yalnız metni değişir:
  *    canlı bölge sonradan eklenirse ekran okuyucular ilk mesajı kaçırabilir. Görünür ipucu ayrıca çizilir.
  */
@@ -84,11 +86,25 @@ const SCORE_PRESETS = [
 ] as const;
 
 /*
- * Arama gönderimi sonrası remount'ta odağı arama kutusuna geri vermek için bayrak (dosya başı "ODAK").
- * Modül düzeyi değişken: eski bileşen kaldırılıp yenisi kurulurken ikisi arasında yaşayan tek yer
- * (state/ref bileşenle birlikte ölür). Tarayıcıda tek sekme = tek modül örneği; SSR'da yalnız okunur.
+ * Arama gönderimi sonrası remount'ta odağı arama kutusuna geri vermek için HEDEF sorgu dizgisi
+ * (dosya başı "ODAK"); null = odaklanma. Modül düzeyi değişken: eski bileşen kaldırılıp yenisi kurulurken
+ * ikisi arasında yaşayan tek yer (state/ref bileşenle birlikte ölür). Yalnız tarayıcıda (olay işleyicileri
+ * ve effect'ler) okunur/yazılır; sunucuda modül yüklense de hiç dokunulmaz.
  */
-let focusSearchAfterNav = false;
+let focusSearchFor: string | null = null;
+
+/** Odak hedefini kur/sıfırla. Bileşen gövdesi modül değişkenine doğrudan atama YAPMAZ (React derleyicisinin
+ *  "render saflığı" kuralı) — yalnız olay işleyicilerinden çağrılan bu küçük fonksiyonlar dokunur. */
+function setFocusTarget(target: string | null) {
+    focusSearchFor = target;
+}
+
+/** Hedefi okuyup TÜKETİR (her durumda null'a çeker); mount effect'inde bir kez kullanılır. */
+function takeFocusTarget(): string | null {
+    const target = focusSearchFor;
+    focusSearchFor = null;
+    return target;
+}
 
 const SORT_FIELDS = [
     {value: "avgScore", label: "Puan"},
@@ -109,22 +125,36 @@ export default function FilterBar({brands, categories, initial}: Props) {
     const searchRef = useRef<HTMLInputElement>(null);
     const [searchHint, setSearchHint] = useState("");
 
-    // Remount sonrası odak (dosya başı "ODAK"): yalnız arama gönderiminin kurduğu bayrakla.
+    // Remount sonrası odak (dosya başı "ODAK"): yalnız adres çubuğu arama gezintisinin hedefindeyse.
+    // (StrictMode'un geliştirmedeki çift effect'i zararsız: ilki değişkeni tüketir, DOM düğümü aynıdır.)
     useEffect(() => {
-        if (!focusSearchAfterNav) return;
-        focusSearchAfterNav = false;
-        searchRef.current?.focus();
+        const target = takeFocusTarget();
+        if (target !== null && window.location.search.slice(1) === target) searchRef.current?.focus();
     }, []);
 
-    /** Mevcut query'yi koruyarak verilen anahtarları günceller ve yönlendirir. */
-    const applyPatch = (patch: Record<string, string>) => {
+    /**
+     * Mevcut query'yi koruyarak verilen anahtarları günceller ve yönlendirir. Gidilen sorgu dizgisini
+     * döndürür (arama yolu odak hedefi olarak kullanır). Her çağrı bekleyen odak hedefini SIFIRLAR:
+     * araya giren her filtre gezintisi eski arama odağını geçersiz kılar (arama yolu sonra yeniden kurar).
+     */
+    const applyPatch = (patch: Record<string, string>): string => {
+        setFocusTarget(null);
         const params = new URLSearchParams(window.location.search);
         for (const [k, v] of Object.entries(patch)) {
             if (v && v.trim() !== "") params.set(k, v);
             else params.delete(k);
         }
         params.set("page", "1"); // filtre değişince ilk sayfaya dön
-        router.push(`/providers?${params.toString()}`);
+        const qs = params.toString();
+        router.push(`/providers?${qs}`);
+        return qs;
+    };
+
+    /** Kelimesiz girdi ipucu. Önce boşaltılıp bir sonraki karede yeniden yazılır: aynı metin tekrar
+     *  gönderildiğinde de canlı bölge değişir ve ekran okuyucu ipucunu yeniden okur. */
+    const announceHint = (text: string) => {
+        setSearchHint("");
+        requestAnimationFrame(() => setSearchHint(text));
     };
 
     const submitSearch = (e: FormEvent<HTMLFormElement>) => {
@@ -133,30 +163,26 @@ export default function FilterBar({brands, categories, initial}: Props) {
         if (value === "") {
             // Tamamen boş: aramayı kaldır (zaten yoksa gezinme).
             setSearchHint("");
-            if (initial.q) {
-                focusSearchAfterNav = true;
-                applyPatch({q: ""});
-            }
+            if (initial.q) setFocusTarget(applyPatch({q: ""}));
             return;
         }
         if (searchTerms(value).length === 0) {
             // Kelimesiz ("a", "%"): URL'e dokunma, yalnız ipucu (uygulanmış arama aynen kalır).
-            setSearchHint("En az 2 harfli bir kelime yazın.");
+            announceHint("En az 2 harfli bir kelime yazın.");
             return;
         }
         setSearchHint("");
         if (value === initial.q) return; // aynı arama: gezinti yok
-        focusSearchAfterNav = true;
-        applyPatch({q: value});
+        setFocusTarget(applyPatch({q: value}));
     };
 
     const clearSearch = () => {
         setSearchHint("");
-        focusSearchAfterNav = true;
-        applyPatch({q: ""}); // diğer filtreler korunur, sayfa 1
+        setFocusTarget(applyPatch({q: ""})); // diğer filtreler korunur, sayfa 1
     };
 
     const applySort = (field: string, dir: "asc" | "desc") => {
+        setFocusTarget(null); // araya giren gezinti bekleyen arama odağını geçersiz kılar
         const params = new URLSearchParams(window.location.search);
         // Spring formatı: sort=alan,yon (+ stabil ikincil sıralamalar)
         params.delete("sort");
@@ -191,7 +217,7 @@ export default function FilterBar({brands, categories, initial}: Props) {
     return (
         <div className="toolbar">
             {/* Ad araması (004): Enter / "Ara" ile uygulanır; kendi temizleme düğmesi diğer filtreleri korur */}
-            <form className="toolbar-field toolbar-search" role="search" aria-label="Dükkan ara" onSubmit={submitSearch}>
+            <form className="toolbar-field" role="search" aria-label="Dükkan ara" onSubmit={submitSearch}>
                 <label className="toolbar-label" htmlFor={searchId}>Dükkan adı</label>
                 <div className="toolbar-search-row">
                     <input
@@ -326,7 +352,10 @@ export default function FilterBar({brands, categories, initial}: Props) {
                     <button
                         type="button"
                         className="btn btn-ghost btn-sm toolbar-clear"
-                        onClick={() => router.push("/providers")}
+                        onClick={() => {
+                            setFocusTarget(null);
+                            router.push("/providers");
+                        }}
                     >
                         <Close size="sm"/> Temizle
                     </button>

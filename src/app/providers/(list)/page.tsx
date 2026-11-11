@@ -140,7 +140,9 @@ export default async function ProvidersPage({
             <MapSection key={`map-${mapInitialOpen ?? "auto"}`} items={data.content} height={280}
                         initialOpen={mapInitialOpen}/>
 
-            {data.content.length === 0 && q ? (
+            {q && data.totalElements === 0 ? (
+                /* Arama gerçekten eşleşmedi (toplam 0). Eşleşme varken aralık dışı sayfa (ör. eski bir
+                   ?q=oto&page=9 bağlantısı) bu mesajı göstermez — aşağıdaki genel boş duruma düşer. */
                 <EmptyState
                     icon={<Search/>}
                     title={`“${q}” ile eşleşen dükkan bulunamadı.`}
