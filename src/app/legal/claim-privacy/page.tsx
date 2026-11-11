@@ -8,8 +8,10 @@ import type {Metadata} from "next";
 import PageHeader from "@/components/PageHeader";
 import {CLAIM_PRIVACY_DRAFT_NOTICE, CLAIM_PRIVACY_SECTIONS, CLAIM_PRIVACY_TITLE} from "@/content/claim-privacy-2026-11-10";
 import {CLAIM_PRIVACY_VERSION} from "@/lib/legal";
+import {pageMetadata} from "@/lib/seo/site";
 
-export const metadata: Metadata = {title: "Sahiplenme aydınlatma metni"};
+// 005 SEO: "noindex, follow" (rota tablosu) — openGraph/robots YALNIZ pageMetadata ile (sığ birleşme tuzağı).
+export const metadata: Metadata = pageMetadata({title: "Sahiplenme aydınlatma metni", description: "Dükkan sahiplenme başvurusunda işlenen kişisel veriler hakkında aydınlatma metni.", path: "/legal/claim-privacy", index: false});
 
 export default function ClaimPrivacyPage() {
     return (

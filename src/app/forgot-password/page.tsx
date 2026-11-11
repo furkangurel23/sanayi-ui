@@ -7,8 +7,10 @@
  */
 import type {Metadata} from "next";
 import ForgotPasswordForm from "./ForgotPasswordForm";
+import {pageMetadata} from "@/lib/seo/site";
 
-export const metadata: Metadata = {title: "Şifremi Unuttum"};
+// 005 SEO: "noindex, follow" (rota tablosu) — openGraph/robots YALNIZ pageMetadata ile (sığ birleşme tuzağı).
+export const metadata: Metadata = pageMetadata({title: "Şifremi Unuttum", description: "Şifre sıfırlama bağlantısı iste.", path: "/forgot-password", index: false});
 
 export default function ForgotPasswordPage() {
     return <ForgotPasswordForm/>;

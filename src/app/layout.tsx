@@ -31,14 +31,37 @@ import {DATA_ATTRIBUTIONS} from "@/lib/sources";
 import Header from "@/components/Header";
 import LogoMark from "@/components/LogoMark";
 import {THEME_COLOR, themeInit} from "./theme";
+import {googleVerification, indexable, OG_IMAGE, SITE_NAME, siteUrl} from "@/lib/seo/site";
 import {geist} from "./fonts";
 
 // Tek font: Geist (sans, fonts.ts). Eskiden ikinci bir mono font (Geist_Mono) da yükleniyordu
 // ama onu kullanan .mono sınıfı hiçbir yerde kullanılmıyordu -> boşuna indirilen font dosyası.
 
+/*
+ * 005-seo-foundation — KÖK METADATA:
+ *  - metadataBase: sayfaların göreli kanonik/OG adresleri ("/providers/12") buna göre MUTLAK olur
+ *    (SITE_URL; yerelde http://localhost:3000).
+ *  - Varsayılan openGraph/twitter: kendi metadata'sı olmayan sayfalar da paylaşımda başlık + görsel taşır.
+ *    DİKKAT: Next metadata'yı SIĞ birleştirir — bir sayfa kendi `openGraph`'ını verirse bu varsayılanın
+ *    TAMAMI kaybolur. Bu yüzden sayfalar openGraph/robots'u YALNIZ `pageMetadata` (lib/seo/site.ts) ile verir.
+ *  - verification.google: Search Console doğrulama kodu (GOOGLE_SITE_VERIFICATION; boşsa etiket yok).
+ *  - Dizine KAPALI ortamda (SITE_INDEXABLE ≠ "true") varsayılan robots "noindex, nofollow"; ayrıca her
+ *    yanıta X-Robots-Tag başlığı eklenir (next.config.ts). pageMetadata'lı sayfalar da index:false üretir.
+ */
+const DEFAULT_TITLE = "Sanayi Defteri — Ankara usta & servis platformu";
+const DEFAULT_DESCRIPTION = "Ankara'daki sanayi ustalarını marka ve kategoriye göre keşfet, yorumları oku, puanla, marka sohbet odalarına katıl.";
+
 export const metadata: Metadata = {
-    title: {default: "Sanayi Defteri — Ankara usta & servis platformu", template: "%s | Sanayi Defteri"},
-    description: "Ankara'daki sanayi ustalarını marka ve kategoriye göre keşfet, yorumları oku, puanla, marka sohbet odalarına katıl.",
+    metadataBase: new URL(siteUrl()),
+    title: {default: DEFAULT_TITLE, template: "%s | Sanayi Defteri"},
+    description: DEFAULT_DESCRIPTION,
+    openGraph: {
+        siteName: SITE_NAME, locale: "tr_TR", type: "website",
+        title: DEFAULT_TITLE, description: DEFAULT_DESCRIPTION, images: [OG_IMAGE],
+    },
+    twitter: {card: "summary_large_image", title: DEFAULT_TITLE, description: DEFAULT_DESCRIPTION, images: [OG_IMAGE.url]},
+    ...(googleVerification() ? {verification: {google: googleVerification()}} : {}),
+    ...(indexable() ? {} : {robots: {index: false, follow: false}}),
 };
 
 // Tema tercihi ilk boyamadan önce uygulanır (FOUC önleme) — script metni theme.ts'te.

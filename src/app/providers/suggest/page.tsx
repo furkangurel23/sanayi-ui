@@ -9,8 +9,10 @@
 import type {Metadata} from "next";
 import {getBrandsAllSorted, getCategoriesAllSorted} from "@/lib/api";
 import SuggestPageClient from "./SuggestPageClient";
+import {pageMetadata} from "@/lib/seo/site";
 
-export const metadata: Metadata = {title: "Dükkan öner", robots: {index: false}};
+// 005 SEO: "noindex, follow" (rota tablosu) — openGraph/robots YALNIZ pageMetadata ile (sığ birleşme tuzağı).
+export const metadata: Metadata = pageMetadata({title: "Dükkan öner", description: "Listede olmayan bir sanayi dükkanını öner.", path: "/providers/suggest", index: false});
 
 export default async function SuggestPage() {
     const [categories, brands] = await Promise.all([getCategoriesAllSorted(), getBrandsAllSorted()]);

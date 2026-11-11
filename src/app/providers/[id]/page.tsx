@@ -33,6 +33,11 @@
  * 003 (T095): "Çalışma saatleri" bölümü (OpeningHoursView — sunucu; "şu an açık" küçük client
  * adacığı). Bilgi yoksa "Çalışma saati bilgisi yok" yazar.
  * 003 (T114): başlık kartının altında "Bu dükkan benim" ikincil bağlantısı (ClaimLink).
+ *
+ * 005 (SEO): generateMetadata artık `pageMetadata` ile başlık ("{ad} – {ilçe|sanayi sitesi} – {marka}"),
+ * açıklama, kanonik (`/providers/{id}` — sorgulu yazımlar da sorgusuzu gösterir), paylaşım bilgisi ve
+ * robots üretir (lib/seo). Sayfa işletme + gezinti yolu yapılandırılmış verisi (JSON-LD) basar ve
+ * görünür gezinti yolunu gösterir. Yorum metinleri/kullanıcı adları bu metinlere GİRMEZ.
  */
 import {formatPhoneTR} from "@/lib/phone";
 import {sourceLabel} from "@/lib/sources";
@@ -54,6 +59,11 @@ import EmptyState from "@/components/EmptyState";
 import OpeningHoursView from "@/components/OpeningHoursView";
 import ClaimLink from "@/components/ClaimLink";
 import {Chat, Pin} from "@/components/icons";
+import Breadcrumbs from "@/components/seo/Breadcrumbs";
+import JsonLd from "@/components/seo/JsonLd";
+import {pageMetadata} from "@/lib/seo/site";
+import {shopDescription, shopTitle} from "@/lib/seo/text";
+import {breadcrumbJsonLd, businessJsonLd, type Crumb} from "@/lib/seo/jsonLd";
 
 /** Detay haritasının yüksekliği (px) — iskelet ve harita aynı değeri --map-h ile okur. */
 const MAP_HEIGHT = 220;
@@ -66,7 +76,8 @@ export async function generateMetadata({params}: { params: Promise<{ id: string 
     try {
         // cache()'li çağrı: layout ile aynı isteği paylaşır (ikinci backend çağrısı yok).
         const detail = await getProviderDetail(id);
-        return {title: detail?.name ?? "Usta Detayı"};
+        if (!detail) return {title: "Usta Detayı"};
+        return pageMetadata({title: shopTitle(detail), description: shopDescription(detail), path: `/providers/${id}`});
     } catch {
         return {title: "Usta Detayı"};
     }
@@ -120,6 +131,13 @@ export default async function ProviderDetailPage({
         }]
         : [];
 
+    // Gezinti yolu (görünür + JSON-LD aynı öğeler). Açılış sayfaları eklenince ara adım ilçe sayfası olur.
+    const crumbs: Crumb[] = [
+        {name: "Ana sayfa", path: "/"},
+        {name: "Ustalar", path: "/providers"},
+        {name: detail.name, path: `/providers/${detail.id}`},
+    ];
+
     const range = [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5];
     const buckets = range.map(s => ({
         score: s,
@@ -133,6 +151,8 @@ export default async function ProviderDetailPage({
 
     return (
         <main className="container container-narrow page">
+            <JsonLd data={[businessJsonLd(detail, `/providers/${detail.id}`), breadcrumbJsonLd(crumbs)]}/>
+            <Breadcrumbs items={crumbs}/>
             {/* Başlık alanı */}
             <section className="card detail-head" aria-labelledby="provider-title">
                 <div className="detail-head-top">

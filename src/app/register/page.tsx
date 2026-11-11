@@ -7,8 +7,10 @@
  */
 import type {Metadata} from "next";
 import RegisterForm from "./RegisterForm";
+import {pageMetadata} from "@/lib/seo/site";
 
-export const metadata: Metadata = {title: "Kayıt Ol"};
+// 005 SEO: "noindex, follow" (rota tablosu) — openGraph/robots YALNIZ pageMetadata ile (sığ birleşme tuzağı).
+export const metadata: Metadata = pageMetadata({title: "Kayıt Ol", description: "Sanayi Defteri'ne üye ol: sınırsız yorum, dükkan önerisi ve marka sohbetleri.", path: "/register", index: false});
 
 export default function RegisterPage() {
     return <RegisterForm/>;

@@ -38,6 +38,8 @@ import {Search} from "@/components/icons";
 import {parseEnum, parsePage, parsePositiveId, parseScore, parseSize} from "@/lib/params";
 import {parseSearch} from "@/lib/searchText";
 import {parseDistrict} from "@/lib/districts";
+import type {Metadata} from "next";
+import {pageMetadata} from "@/lib/seo/site";
 
 /*
  * Sıralanabilir alanlar — BEYAZ LİSTE. FilterBar'daki SORT_FIELDS seçenekleri
@@ -49,17 +51,14 @@ import {parseDistrict} from "@/lib/districts";
 const SORT_FIELDS = ["avgScore", "ratingCount", "name", "id"] as const;
 const SORT_DIRS = ["asc", "desc"] as const;
 
-export const metadata = {
-    title: "Ustalar",
-};
+type SearchParams = Record<string, string | string[] | undefined>;
 
-export default async function ProvidersPage({
-                                                searchParams,
-                                            }: {
-    searchParams: Promise<Record<string, string | string[] | undefined>>;
-}) {
-    const sp = await searchParams;
-
+/*
+ * URL parametreleri -> doğrulanmış filtreler (UI anayasası III). Sayfa VE generateMetadata aynı
+ * fonksiyonu kullanır: kanonik adres yalnız doğrulanmış değerlerden kurulur (geçersiz/bilinmeyen
+ * parametre kanoniğe sızmaz).
+ */
+function readListParams(sp: SearchParams) {
     const page = parsePage(sp.page);
     const size = parseSize(sp.size, 20, 50);
     const brandId = parsePositiveId(sp.brandId);
@@ -92,6 +91,45 @@ export default async function ProvidersPage({
         sortField = parseEnum(sp.sortField, SORT_FIELDS, "avgScore");
         sortDir = parseEnum(sp.sortDir, SORT_DIRS, "desc");
     }
+
+    return {page, size, brandId, categoryId, city, district, minScore, maxScore, q, sortField, sortDir};
+}
+
+/*
+ * 005 SEO (spec FR-013): sorgu parametresiz /providers dizine açık; filtreli/sayfalı/sıralı her yazım
+ * "noindex, follow" ve KENDİNE kanonik. Kanonik sorgu dizesi sabit anahtar sırasıyla, yalnız doğrulanmış
+ * ve varsayılandan farklı değerlerle kurulur (q, categoryId, brandId, district, minScore, maxScore,
+ * sort, page, size). Şehir (artık arayüzde yok, doğrulanmıyor) ve harita tercihi (showMap) katılmaz.
+ * Filtreli listeler açılış sayfalarının (/ankara/…) ince kopyası olurdu — dizine girmeleri gerekmiyor.
+ */
+export async function generateMetadata({searchParams}: { searchParams: Promise<SearchParams> }): Promise<Metadata> {
+    const f = readListParams(await searchParams);
+    const qs = new URLSearchParams();
+    if (f.q) qs.set("q", f.q);
+    if (f.categoryId) qs.set("categoryId", String(f.categoryId));
+    if (f.brandId) qs.set("brandId", String(f.brandId));
+    if (f.district) qs.set("district", f.district);
+    if (f.minScore !== undefined) qs.set("minScore", String(f.minScore));
+    if (f.maxScore !== undefined) qs.set("maxScore", String(f.maxScore));
+    if (f.sortField !== "avgScore" || f.sortDir !== "desc") qs.set("sort", `${f.sortField},${f.sortDir}`);
+    if (f.page > 1) qs.set("page", String(f.page));
+    if (f.size !== 20) qs.set("size", String(f.size));
+    const query = qs.toString();
+    return pageMetadata({
+        title: "Ustalar",
+        description: "Ankara'daki sanayi ustaları ve servisler: kategori, marka ve ilçeye göre filtrele; puan ve yorumları karşılaştır.",
+        path: query ? `/providers?${query}` : "/providers",
+        index: !query,
+    });
+}
+
+export default async function ProvidersPage({
+                                                searchParams,
+                                            }: {
+    searchParams: Promise<SearchParams>;
+}) {
+    const sp = await searchParams;
+    const {page, size, brandId, categoryId, city, district, minScore, maxScore, q, sortField, sortDir} = readListParams(sp);
 
     const sorts: Array<{ field: string; dir: "asc" | "desc" }> = [{field: sortField, dir: sortDir}];
     if (sortField !== "ratingCount") sorts.push({field: "ratingCount", dir: "desc"});

@@ -11,11 +11,18 @@ import {notFound} from "next/navigation";
 import {getProviderDetail} from "@/lib/api";
 import {parsePositiveId} from "@/lib/params";
 import ClaimPageClient from "./ClaimPageClient";
+import {pageMetadata} from "@/lib/seo/site";
 
 export async function generateMetadata({params}: { params: Promise<{ id: string }> }): Promise<Metadata> {
     const id = parsePositiveId((await params).id);
     const detail = id === undefined ? null : await getProviderDetail(id).catch(() => null);
-    return {title: detail ? `${detail.name} · Bu dükkan benim` : "Bu dükkan benim", robots: {index: false}};
+    // 005 SEO: "noindex, follow" (rota tablosu) — openGraph/robots YALNIZ pageMetadata ile (sığ birleşme tuzağı).
+    return pageMetadata({
+        title: detail ? `${detail.name} · Bu dükkan benim` : "Bu dükkan benim",
+        description: "Dükkan sahipliği başvurusu.",
+        path: `/providers/${id ?? ""}/claim`,
+        index: false,
+    });
 }
 
 export default async function ClaimPage({params}: { params: Promise<{ id: string }> }) {

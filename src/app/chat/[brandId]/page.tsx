@@ -11,12 +11,15 @@
 import {notFound} from "next/navigation";
 import {getBrandsAllSorted} from "@/lib/api";
 import ChatRoom from "@/components/ChatRoom";
+import {pageMetadata} from "@/lib/seo/site";
 
 export async function generateMetadata({params}: { params: Promise<{ brandId: string }> }) {
     const {brandId} = await params;
     const brands = await getBrandsAllSorted().catch(() => []);
     const brand = brands.find(b => b.id === Number(brandId));
-    return {title: brand ? `${brand.name} Odası` : "Sohbet"};
+    // 005 SEO: "noindex, follow" (rota tablosu) — openGraph/robots YALNIZ pageMetadata ile (sığ birleşme tuzağı).
+    const title = brand ? `${brand.name} Odası` : "Sohbet";
+    return pageMetadata({title, description: `${brand?.name ?? "Marka"} sohbet odası — Sanayi Defteri.`, path: `/chat/${brandId}`, index: false});
 }
 
 export default async function ChatRoomPage({params}: { params: Promise<{ brandId: string }> }) {

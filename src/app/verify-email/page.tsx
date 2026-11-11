@@ -7,10 +7,10 @@
  * daha az tuzak. Kural: "URL'i server oku, client'a prop indir."
  */
 import VerifyEmailClient from "./VerifyEmailClient";
+import {pageMetadata} from "@/lib/seo/site";
 
-export const metadata = {
-    title: "E-posta Doğrulama",
-};
+// 005 SEO: "noindex, follow" (rota tablosu) — openGraph/robots YALNIZ pageMetadata ile (sığ birleşme tuzağı).
+export const metadata = pageMetadata({title: "E-posta Doğrulama", description: "E-posta adresini doğrula.", path: "/verify-email", index: false});
 
 export default async function VerifyEmailPage({
                                                   searchParams,

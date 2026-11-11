@@ -4,10 +4,10 @@
  * gerek kalmaz — bkz. verify-email/page.tsx'teki açıklama).
  */
 import ResetPasswordClient from "./ResetPasswordClient";
+import {pageMetadata} from "@/lib/seo/site";
 
-export const metadata = {
-    title: "Şifre Sıfırlama",
-};
+// 005 SEO: "noindex, follow" (rota tablosu) — openGraph/robots YALNIZ pageMetadata ile (sığ birleşme tuzağı).
+export const metadata = pageMetadata({title: "Şifre Sıfırlama", description: "Yeni şifreni belirle.", path: "/reset-password", index: false});
 
 export default async function ResetPasswordPage({
                                                     searchParams,

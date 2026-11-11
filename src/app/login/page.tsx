@@ -12,8 +12,10 @@
 import type {Metadata} from "next";
 import LoginForm from "./LoginForm";
 import {safeNext} from "@/lib/params";
+import {pageMetadata} from "@/lib/seo/site";
 
-export const metadata: Metadata = {title: "Giriş"};
+// 005 SEO: "noindex, follow" (rota tablosu) — openGraph/robots YALNIZ pageMetadata ile (sığ birleşme tuzağı).
+export const metadata: Metadata = pageMetadata({title: "Giriş", description: "Sanayi Defteri hesabına giriş yap.", path: "/login", index: false});
 
 export default async function LoginPage({searchParams}: {
     searchParams: Promise<Record<string, string | string[] | undefined>>;

@@ -13,10 +13,10 @@ import PageHeader from "@/components/PageHeader";
 import EmptyState from "@/components/EmptyState";
 import {Chat, ChevronRight} from "@/components/icons";
 import {getBrandsAllSorted} from "@/lib/api";
+import {pageMetadata} from "@/lib/seo/site";
 
-export const metadata = {
-    title: "Sohbet Odaları",
-};
+// 005 SEO: "noindex, follow" (rota tablosu) — openGraph/robots YALNIZ pageMetadata ile (sığ birleşme tuzağı).
+export const metadata = pageMetadata({title: "Sohbet Odaları", description: "Her araba markası için bir sohbet odası: ustalar ve araç sahipleri konuşuyor.", path: "/chat", index: false});
 
 export default async function ChatRoomsPage() {
     const brands = await getBrandsAllSorted().catch(() => []);

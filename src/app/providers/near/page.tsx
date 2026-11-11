@@ -27,6 +27,7 @@ import PageHeader from "@/components/PageHeader";
 import EmptyState from "@/components/EmptyState";
 import {Pin} from "@/components/icons";
 import {parsePage, parseRadiusKm, parseSize} from "@/lib/params";
+import {pageMetadata} from "@/lib/seo/site";
 
 /** Koordinatı okur: tek string, sonlu sayı ve [-limit, limit] aralığında değilse null. */
 function parseCoord(v: string | string[] | undefined, limit: number): number | null {
@@ -35,9 +36,8 @@ function parseCoord(v: string | string[] | undefined, limit: number): number | n
     return Number.isFinite(n) && Math.abs(n) <= limit ? n : null;
 }
 
-export const metadata = {
-    title: "Yakınımdaki Ustalar",
-};
+// 005 SEO: "noindex, follow" (rota tablosu) — openGraph/robots YALNIZ pageMetadata ile (sığ birleşme tuzağı).
+export const metadata = pageMetadata({title: "Yakınımdaki Ustalar", description: "Konumuna en yakın sanayi ustaları ve servisler.", path: "/providers/near", index: false});
 
 export default async function ProvidersNearPage({
                                                     searchParams,

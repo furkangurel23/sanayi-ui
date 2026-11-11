@@ -310,6 +310,13 @@ h2, h3, .headline {
 .stack { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-4); }
 .row { display: flex; align-items: center; gap: var(--space-3); }
 .cluster { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2); }
+
+/* Gezinti yolu (005 SEO, components/seo/Breadcrumbs.tsx): tek satırda sarar, ayırıcı ikon soluk. */
+.breadcrumbs ol { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-1); list-style: none; margin: 0; padding: 0; }
+.breadcrumbs li { display: inline-flex; align-items: center; gap: var(--space-1); color: var(--fg-muted); }
+.breadcrumbs a { color: var(--fg-muted); text-decoration: none; }
+.breadcrumbs a:hover { color: var(--fg); text-decoration: underline; }
+.breadcrumbs [aria-current="page"] { color: var(--fg); }
 .row-between { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; }
 .grid-2, .grid-3 { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-4); }
 @media (min-width: 680px) {
