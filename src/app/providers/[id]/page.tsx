@@ -42,7 +42,7 @@
 import {formatPhoneTR} from "@/lib/phone";
 import {sourceLabel} from "@/lib/sources";
 import type {Page as PageType, ProviderDetailDto, ProviderListItem, RatingDto} from "@/lib/types";
-import {getProviderDetail, getProviderRatings} from "@/lib/api";
+import {getFacets, getProviderDetail, getProviderRatings} from "@/lib/api";
 import Link from "next/link";
 import {notFound} from "next/navigation";
 import {parsePage, parsePositiveId, parseSize} from "@/lib/params";
@@ -64,6 +64,8 @@ import JsonLd from "@/components/seo/JsonLd";
 import {pageMetadata} from "@/lib/seo/site";
 import {shopDescription, shopTitle} from "@/lib/seo/text";
 import {breadcrumbJsonLd, businessJsonLd, type Crumb} from "@/lib/seo/jsonLd";
+import {buildLandingIndex, districtHref, districtOf, isIndexable, landingPath, shopChipHref} from "@/lib/seo/landing";
+import {landingTitle} from "@/lib/seo/text";
 
 /** Detay haritasının yüksekliği (px) — iskelet ve harita aynı değeri --map-h ile okur. */
 const MAP_HEIGHT = 220;
@@ -104,12 +106,15 @@ export default async function ProviderDetailPage({
     const showMapParam = typeof sp.showMap === "string" ? sp.showMap : undefined;
     const mapInitialOpen = showMapParam === "1" ? true : showMapParam === "0" ? false : undefined;
 
-    const [found, ratingsPage]: [ProviderDetailDto | null, PageType<RatingDto> | null] = await Promise.all([
+    const [found, ratingsPage, facets] = await Promise.all([
         getProviderDetail(id),
         getProviderRatings({
             id, page: rPage, size: rSize, sortField: "createdAt", sortDir: "desc",
-        }).catch(() => null), // yorumlar gelmezse sayfa yine açılır
+        }).catch((): PageType<RatingDto> | null => null), // yorumlar gelmezse sayfa yine açılır
+        // 005: etiket/ilçe bağlantıları açılış sayfalarına; sayım özeti alınamazsa ESKİ liste filtreleri.
+        getFacets().catch(() => null),
     ]);
+    const landing = facets ? buildLandingIndex(facets) : null;
     // Layout null'ı zaten 404'e çevirdi (aynı cache()'li sonuç) — bu satır yalnızca
     // TypeScript'e "buradan sonra detail kesin var" demek için (narrowing).
     if (!found) notFound();
@@ -131,12 +136,18 @@ export default async function ProviderDetailPage({
         }]
         : [];
 
-    // Gezinti yolu (görünür + JSON-LD aynı öğeler). Açılış sayfaları eklenince ara adım ilçe sayfası olur.
+    // Gezinti yolu (görünür + JSON-LD aynı öğeler; spec US1-8): ara adım dükkanın ilçe sayfası — ilçe
+    // yoksa ya da ilçe sayfası dizinde değilse (sayım özeti yok/ilçe tanınmıyor) "Ustalar".
+    const districtEntry = landing ? districtOf(landing, detail.district) : undefined;
+    const middle: Crumb = districtEntry && isIndexable(false, districtEntry.count)
+        ? {name: landingTitle("ilce", districtEntry.name), path: landingPath("ilce", districtEntry.slug)}
+        : {name: "Ustalar", path: "/providers"};
     const crumbs: Crumb[] = [
         {name: "Ana sayfa", path: "/"},
-        {name: "Ustalar", path: "/providers"},
+        middle,
         {name: detail.name, path: `/providers/${detail.id}`},
     ];
+    const districtLink = districtHref(landing, detail.district);
 
     const range = [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5];
     const buckets = range.map(s => ({
@@ -162,6 +173,12 @@ export default async function ProviderDetailPage({
                             <Pin size="sm"/>
                             <span>{addressLine || "Adres bilgisi yok"}</span>
                         </div>
+                        {/* 005: ilçenin açılış sayfasına iç bağlantı (sayım özeti yoksa filtreli liste). */}
+                        {districtLink && detail.district && (
+                            <Link href={districtLink} className="link-accent caption">
+                                {detail.district} oto sanayi ustaları
+                            </Link>
+                        )}
                         {/* tel: bağlantısı E.164 kalır (aranabilir biçim); görünen metin gruplanmış (002). */}
                         {detail.phone && (
                             <a className="link-accent" href={`tel:${detail.phone}`}>
@@ -192,12 +209,14 @@ export default async function ProviderDetailPage({
 
                 {(detail.brands.length > 0 || detail.categories.length > 0) && (
                     <div className="cluster">
+                        {/* 005: etiketler açılış sayfalarına — dükkanın ilçesindeki kırılım dizindeyse (≥3) oraya,
+                            değilse "Ankara {Marka} ustaları"na; hedef yoksa eski filtreli liste (lib/seo/landing). */}
                         {detail.brands.map(b => (
-                            <Link key={`b${b.id}`} href={`/providers?brandId=${b.id}`}
+                            <Link key={`b${b.id}`} href={shopChipHref(landing, "marka", b.id, detail.district)}
                                   className="chip chip-accent">{b.name}</Link>
                         ))}
                         {detail.categories.map(c => (
-                            <Link key={`c${c.id}`} href={`/providers?categoryId=${c.id}`}
+                            <Link key={`c${c.id}`} href={shopChipHref(landing, "kategori", c.id, detail.district)}
                                   className="chip">{c.name}</Link>
                         ))}
                     </div>

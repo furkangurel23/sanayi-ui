@@ -9,8 +9,9 @@
  * 002: başlık ortak PageHeader kalıbıyla (üst etiket + başlık + açıklama), marka yoksa
  * ortak EmptyState; satır içi stil kalmadı.
  */
-import {getBrands} from "@/lib/api";
-import type {BrandDto, Page as PageType} from "@/lib/types";
+import {getBrands, getFacets} from "@/lib/api";
+import {buildLandingIndex, landingPath} from "@/lib/seo/landing";
+import type {BrandDto, Page as PageType, ProviderFacets} from "@/lib/types";
 import BrandCard from "@/components/BrandCard";
 import Pagination from "@/components/Pagination";
 import PageHeader from "@/components/PageHeader";
@@ -59,7 +60,11 @@ export default async function BrandsPage({
 }) {
     const {page, size, sort, dir} = readBrandParams(await searchParams);
 
-    const data: PageType<BrandDto> = await getBrands({page, size, sort, dir});
+    const [data, facets]: [PageType<BrandDto>, ProviderFacets | null] = await Promise.all([
+        getBrands({page, size, sort, dir}),
+        getFacets().catch(() => null), // 005: marka açılış bağlantıları; hata -> bağlantı yok
+    ]);
+    const landing = facets ? buildLandingIndex(facets) : null;
 
     return (
         <main className="container page">
@@ -73,7 +78,11 @@ export default async function BrandsPage({
                 <EmptyState icon={<Search/>} title="Marka bulunamadı."/>
             ) : (
                 <div className="grid-2 grid-start">
-                    {data.content.map((b) => <BrandCard key={b.id} brand={b}/>)}
+                    {data.content.map((b) => {
+                        // Dükkanı olan markaya "Ankara {Marka} ustaları" bağlantısı (açılış sayfası varsa).
+                        const target = landing?.brandById.get(b.id);
+                        return <BrandCard key={b.id} brand={b} landingHref={target ? landingPath("marka", target.slug) : undefined}/>;
+                    })}
                 </div>
             )}
 

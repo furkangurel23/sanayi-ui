@@ -26,7 +26,9 @@
  * -> geri/ileri tuşunda kutu doğru metne remount olur. Arama uygulanmışken sonuç yoksa aramaya özel
  * boş durum ("Aramayı temizle" + "Dükkan öner").
  */
-import {getBrandsAllSorted, getCategoriesAllSorted, getProviders} from "@/lib/api";
+import {getBrandsAllSorted, getCategoriesAllSorted, getFacets, getProviders} from "@/lib/api";
+import {buildLandingIndex} from "@/lib/seo/landing";
+import ExploreLinks from "@/components/seo/ExploreLinks";
 import ProviderCard from "@/components/ProviderCard";
 import FilterBar from "@/components/FilterBar";
 import Pagination from "@/components/Pagination";
@@ -139,12 +141,13 @@ export default async function ProvidersPage({
     // (eskiden meta bitince dükkan isteği başlıyordu: meta + dükkan süresi toplanıyordu).
     // Meta istekleri hata verirse boş listeye düşer; dükkan isteği hata verirse sayfa
     // error.tsx'e (RouteError) gider — dükkansız bir liste sayfası anlamsız.
-    const [brands, categories, data] = await Promise.all([
+    const [brands, categories, data, facets] = await Promise.all([
         getBrandsAllSorted().catch(() => []),
         getCategoriesAllSorted().catch(() => []),
         getProviders({
             page, size, brandId, categoryId, city, district, minScore, maxScore, sorts, q,
         }),
+        getFacets().catch(() => null), // 005: "Ankara'da keşfet" bağlantıları; hata -> bölüm gizlenir
     ]);
 
     /*
@@ -208,6 +211,9 @@ export default async function ProvidersPage({
             )}
 
             <Pagination mode="url" page={(data.number ?? 0) + 1} totalPages={data.totalPages ?? 1}/>
+
+            {/* 005: açılış sayfalarına kısa bağlantı bölümü (marka/kategori ilk 6). */}
+            <ExploreLinks index={facets ? buildLandingIndex(facets) : null} limit={6}/>
         </main>
     );
 }

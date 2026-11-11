@@ -20,6 +20,9 @@
  * ekranda eylemlerin alt satıra inmesine izin verir (375 px taşma düzeltmesi — T026).
  * T041: "Sohbet" ve "Ustalar" aynı varyant (btn-outline btn-sm); eylemler alt satıra
  * inince sola hizalanır (globals.css .brand-card-actions esneme notu).
+ *
+ * 005 (SEO): isteğe bağlı `landingHref` -> başlık altında "Ankara {Marka} ustaları" bağlantısı (açılış
+ * sayfası). Yalnız dükkanı olan markalar için verilir (Markalar sayfası sayım özetinden karar verir).
  */
 
 import Link from "next/link";
@@ -28,7 +31,7 @@ import BrandLogo from "@/components/BrandLogo";
 import BrandProvidersToggle from "@/components/BrandProvidersToggle";
 import {Chat} from "@/components/icons";
 
-export default function BrandCard({brand}: { brand: BrandDto }) {
+export default function BrandCard({brand, landingHref}: { brand: BrandDto; landingHref?: string }) {
     // 002: sayı backend'in providerCount alanından (görünür dükkanlar); eski backend'de liste boyu.
     const providerCount = brand.providerCount ?? brand.providers?.length ?? 0;
 
@@ -41,6 +44,9 @@ export default function BrandCard({brand}: { brand: BrandDto }) {
                         {/* h2: sayfa h1'inden sonra ilk kademe (axe heading-order); görünüm .card-title'dan */}
                         <h2 className="card-title truncate">{brand.name}</h2>
                         <p className="card-sub">{providerCount} usta / servis</p>
+                        {landingHref && (
+                            <Link href={landingHref} className="link-accent caption">Ankara {brand.name} ustaları</Link>
+                        )}
                     </div>
                 </div>
             }

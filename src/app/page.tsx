@@ -18,21 +18,42 @@
  *  - "Nasıl çalışır" bölümü: üç kart, her birinde belirteç renkli ikon karosu.
  *  - aria-labelledby: her <section> başlığıyla adlandırılır -> ekran okuyucunun
  *    "bölgeler" listesinde anlamlı adlarla görünür.
+
+ *
+ * 005 (SEO): başlık/açıklama/kanonik/paylaşım `pageMetadata` ile (başlık mutlak: kök şablon "| Sanayi
+ * Defteri" ekini iki kez yazmasın); site + kuruluş yapılandırılmış verisi (WebSite + Organization) YALNIZ
+ * burada; "Ankara'da keşfet" bölümü açılış sayfalarına bağlanır (sayım özeti hatasında bölüm gizlenir).
  */
 import Link from "next/link";
 import BrandLogo from "@/components/BrandLogo";
 import {getBrandsAllSorted, getCategoriesAllSorted} from "@/lib/api";
 import {Chat, ChevronRight, Pin, Star} from "@/components/icons";
+import {getFacets} from "@/lib/api";
+import {buildLandingIndex} from "@/lib/seo/landing";
+import {pageMetadata} from "@/lib/seo/site";
+import {siteJsonLd} from "@/lib/seo/jsonLd";
+import JsonLd from "@/components/seo/JsonLd";
+import ExploreLinks from "@/components/seo/ExploreLinks";
+
+export const metadata = pageMetadata({
+    title: "Sanayi Defteri — Ankara usta & servis platformu",
+    absoluteTitle: true,
+    description: "Ankara'daki sanayi ustalarını marka, kategori ve ilçeye göre keşfet; gerçek kullanıcı puanlarını ve yorumlarını gör, deneyimini paylaş.",
+    path: "/",
+});
 
 export default async function Home() {
     // Meta listeler ISR ile cache'lenir; hata olursa boş listeyle devam et
-    const [brands, categories] = await Promise.all([
+    const [brands, categories, facets] = await Promise.all([
         getBrandsAllSorted().catch(() => []),
         getCategoriesAllSorted().catch(() => []),
+        getFacets().catch(() => null), // 005: hata -> "Ankara'da keşfet" bölümü gizlenir
     ]);
+    const landing = facets ? buildLandingIndex(facets) : null;
 
     return (
         <main>
+            <JsonLd data={siteJsonLd()}/>
             <section className="hero" aria-labelledby="hero-title">
                 <div className="container hero-inner">
                     <span className="eyebrow">Ankara</span>
@@ -95,6 +116,8 @@ export default async function Home() {
                         </div>
                     </section>
                 )}
+
+                <ExploreLinks index={landing}/>
 
                 <section className="section" aria-labelledby="how-title">
                     <h2 id="how-title" className="headline">Nasıl çalışır</h2>
