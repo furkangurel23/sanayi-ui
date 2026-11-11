@@ -51,6 +51,8 @@ test("açılış başlık ve açıklamaları", () => {
     assert.equal(landingTitle("ilce", "Etimesgut"), "Etimesgut oto sanayi ustaları");
     assert.match(landingDescription("marka", "Honda", 12), /12 servis ve yedek parça dükkanı/);
     assert.match(landingDescription("ilce", "Yenimahalle", 300, undefined, ["Ostim", "İvedik"]), /Sanayi siteleri: Ostim, İvedik/);
+    const y = landingDescription("ilce", "Yenimahalle", 1052, undefined, ["Ostim", "İvedik", "Gimat"]);
+    assert.ok(!y.includes("…") && y.endsWith("."), y); // sığmayan cümle düşer, kelime ortasında kesilmez
     for (const k of ["marka", "kategori", "ilce"]) {
         assert.ok(landingDescription(k, "Hibrit ve Elektrikli Araç", 99999, "Şereflikoçhisar", ["Ostim", "İvedik", "Gimat"]).length <= DESCRIPTION_MAX);
     }

@@ -74,18 +74,26 @@ export function landingTitle(kind: LandingKind, subject: string, district?: stri
 
 /**
  * Açılış sayfası açıklaması (dükkan sayısını içerir). Türkçe bulunma eki (-'da/-'te) ünlü uyumu
- * istediği için yer adları ek almadan yazılır ("Ankara · Etimesgut").
+ * istediği için yer adları ek almadan yazılır ("Ankara · Etimesgut"). Açıklama sayfada da GÖRÜNÜR
+ * (alt başlık) -> kelime ortasında kesilmez: cümleler sırayla eklenir, 160'a sığmayan cümle düşer.
  */
 export function landingDescription(kind: LandingKind, subject: string, count: number, district?: string, sites: readonly string[] = []): string {
     const where = district ? `Ankara · ${district}` : "Ankara";
-    let text: string;
+    const cta = "Puanları, yorumları, adres ve telefonlarıyla karşılaştırın.";
+    let sentences: string[];
     if (kind === "marka") {
-        text = `${where}: ${subject} araçlara bakan ${count} servis ve yedek parça dükkanı. Puanları, yorumları, adres ve telefonlarıyla karşılaştırın.`;
+        sentences = [`${where}: ${subject} araçlara bakan ${count} servis ve yedek parça dükkanı.`, cta];
     } else if (kind === "kategori") {
-        text = `${where}: ${subject} hizmeti veren ${count} usta ve dükkan. Puanları, yorumları, adres ve telefonlarıyla karşılaştırın.`;
+        sentences = [`${where}: ${subject} hizmeti veren ${count} usta ve dükkan.`, cta];
     } else {
-        const s = sites.length ? ` Sanayi siteleri: ${sites.join(", ")}.` : "";
-        text = `${subject} (Ankara) oto sanayisinde ${count} usta ve servis.${s} Kategori ve markaya göre göz atın, puan ve yorumları karşılaştırın.`;
+        sentences = [`${subject} (Ankara) oto sanayisinde ${count} usta ve servis.`];
+        if (sites.length) sentences.push(`Sanayi siteleri: ${sites.join(", ")}.`);
+        sentences.push("Kategori ve markaya göre göz atın, puan ve yorumları karşılaştırın.");
     }
-    return clamp(text, DESCRIPTION_MAX);
+    let text = sentences[0];
+    for (const next of sentences.slice(1)) {
+        if (text.length + 1 + next.length > DESCRIPTION_MAX) break;
+        text += " " + next;
+    }
+    return clamp(text, DESCRIPTION_MAX); // ilk cümle tek başına sığmazsa son çare
 }
