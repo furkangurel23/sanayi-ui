@@ -37,6 +37,7 @@ import Link from "next/link";
 import {Search} from "@/components/icons";
 import {parseEnum, parsePage, parsePositiveId, parseScore, parseSize} from "@/lib/params";
 import {parseSearch} from "@/lib/searchText";
+import {parseDistrict} from "@/lib/districts";
 
 /*
  * Sıralanabilir alanlar — BEYAZ LİSTE. FilterBar'daki SORT_FIELDS seçenekleri
@@ -64,7 +65,9 @@ export default async function ProvidersPage({
     const brandId = parsePositiveId(sp.brandId);
     const categoryId = parsePositiveId(sp.categoryId);
     const city = typeof sp.city === "string" ? sp.city : undefined;
-    const district = typeof sp.district === "string" ? sp.district : undefined;
+    // İlçe artık seçim listesi (FilterBar): URL'deki değer 25 ilçeden biri değilse yok sayılır ve
+    // kanonik yazıma çevrilir ("etimesgut" -> "Etimesgut") ki seçim kutusu doğru seçeneği göstersin.
+    const district = parseDistrict(sp.district);
     const minScore = parseScore(sp.minScore);
     const maxScore = parseScore(sp.maxScore);
     const q = parseSearch(sp.q);

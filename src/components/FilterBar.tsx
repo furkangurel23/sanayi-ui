@@ -15,7 +15,10 @@
  *
  * UX kararları (modern filtre deseni):
  *  - Select/segment değişince filtre ANINDA uygulanır ("Uygula" butonu yok —
- *    tıklama sayısı azalır). Metin alanları Enter veya odak kaybında uygulanır.
+ *    tıklama sayısı azalır). Tek metin alanı ad araması: Enter / "Ara" ile uygulanır.
+ *  - 2026-11-11 düzeni: arama -> Kategori -> Marka -> İlçe (seçim listesi) -> Puan/Sıralama.
+ *    Şehir kutusu kalktı (platform yalnız Ankara); eski `?city=` bağlantıları yine çalışır ve
+ *    "Temizle"yi görünür kılar.
  *  - Puan filtresi min/max sayı kutusu yerine SEGMENTED hızlı seçimler:
  *    Tümü / 3+ / 1+ / Eksili — kullanıcıların %95'inin gerçek ihtiyacı bu.
  *  - Aktif filtre varsa "Temizle" görünür; yokken UI sade kalır.
@@ -55,6 +58,7 @@ import {useRouter} from "next/navigation";
 import type {IdName} from "@/lib/types";
 import {type FormEvent, useEffect, useId, useRef, useState} from "react";
 import {MAX_CHARS, searchTerms} from "@/lib/searchText";
+import {DISTRICT_NAMES} from "@/lib/districts";
 import {ArrowDown, ArrowUp, Close} from "@/components/icons";
 import {useRovingRadio} from "@/lib/useRovingRadio";
 
@@ -115,10 +119,9 @@ const SORT_FIELDS = [
 export default function FilterBar({brands, categories, initial}: Props) {
     const router = useRouter();
 
-    // Metin alanları "controlled" kalır (yazarken URL'i bombalamamak için);
-    // select/segment'ler ise değişir değişmez URL'e gider.
-    const [city, setCity] = useState(initial.city);
-    const [district, setDistrict] = useState(initial.district);
+    // Kategori / marka / ilçe seçimleri ve segment'ler değişir değişmez URL'e gider (state yok).
+    // 2026-11-11: serbest metin "Şehir" ve "İlçe" kutuları kalktı — platform yalnız Ankara (backend şehir
+    // varsayılanı "ankara"), ilçe artık 25 ilçelik seçim listesi (yazım hatası/eşleşmeyen ilçe olmaz).
 
     // Ad araması (004): kutu "uncontrolled" (defaultValue) — değer yalnız gönderimde okunur.
     const searchId = useId();
@@ -216,6 +219,10 @@ export default function FilterBar({brands, categories, initial}: Props) {
 
     return (
         <div className="toolbar">
+            <p className="toolbar-note">
+                Tüm alanlar isteğe bağlı — boş bıraktıkların filtrelenmez, hepsi boşsa bütün ustalar listelenir.
+            </p>
+
             {/* Ad araması (004): Enter / "Ara" ile uygulanır; kendi temizleme düğmesi diğer filtreleri korur */}
             <form className="toolbar-field" role="search" aria-label="Dükkan ara" onSubmit={submitSearch}>
                 <label className="toolbar-label" htmlFor={searchId}>Dükkan adı</label>
@@ -248,21 +255,12 @@ export default function FilterBar({brands, categories, initial}: Props) {
                 {searchHint && <p id={`${searchId}-hint`} className="field-hint" aria-hidden="true">{searchHint}</p>}
             </form>
 
+            {/*
+              * Sıra (kullanıcı kararı 2026-11-11): önce NE iş (kategori), sonra HANGİ araç (marka), sonra NEREDE
+              * (ilçe). Hiçbiri zorunlu değil — bunu ilk bakışta anlatan iki ipucu: kartın başındaki not ve her
+              * seçimin boş seçeneğinin "Tüm …" diye yazılması ("Tümü" tek başına alanın ne olduğunu söylemiyordu).
+              */}
             <div className="toolbar-row">
-                {/* Marka */}
-                <label className="toolbar-field">
-                    <span className="toolbar-label">Marka</span>
-                    <select
-                        className="select"
-                        defaultValue={initial.brandId}
-                        onChange={e => applyPatch({brandId: e.target.value})}
-                    >
-                        <option value="">Tümü</option>
-                        {brands.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-                    </select>
-                </label>
-
-                {/* Kategori */}
                 <label className="toolbar-field">
                     <span className="toolbar-label">Kategori</span>
                     <select
@@ -270,29 +268,34 @@ export default function FilterBar({brands, categories, initial}: Props) {
                         defaultValue={initial.categoryId}
                         onChange={e => applyPatch({categoryId: e.target.value})}
                     >
-                        <option value="">Tümü</option>
+                        <option value="">Tüm kategoriler</option>
                         {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                     </select>
                 </label>
 
-                {/* Konum: Enter veya odak kaybında uygulanır */}
-                <div className="toolbar-field">
-                    <span className="toolbar-label">Konum</span>
-                    <div className="toolbar-inputs">
-                        <input
-                            className="input" placeholder="Şehir" value={city}
-                            onChange={e => setCity(e.target.value)}
-                            onBlur={() => city !== initial.city && applyPatch({city})}
-                            onKeyDown={e => e.key === "Enter" && applyPatch({city})}
-                        />
-                        <input
-                            className="input" placeholder="İlçe" value={district}
-                            onChange={e => setDistrict(e.target.value)}
-                            onBlur={() => district !== initial.district && applyPatch({district})}
-                            onKeyDown={e => e.key === "Enter" && applyPatch({district})}
-                        />
-                    </div>
-                </div>
+                <label className="toolbar-field">
+                    <span className="toolbar-label">Marka</span>
+                    <select
+                        className="select"
+                        defaultValue={initial.brandId}
+                        onChange={e => applyPatch({brandId: e.target.value})}
+                    >
+                        <option value="">Tüm markalar</option>
+                        {brands.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                    </select>
+                </label>
+
+                <label className="toolbar-field">
+                    <span className="toolbar-label">İlçe</span>
+                    <select
+                        className="select"
+                        defaultValue={initial.district}
+                        onChange={e => applyPatch({district: e.target.value})}
+                    >
+                        <option value="">Tüm ilçeler</option>
+                        {DISTRICT_NAMES.map(d => <option key={d} value={d}>{d}</option>)}
+                    </select>
+                </label>
             </div>
 
             <div className="toolbar-row toolbar-row-bottom">

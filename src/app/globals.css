@@ -623,6 +623,8 @@ h2, h3, .headline {
 }
 .toolbar-field { display: grid; gap: var(--space-2); min-width: 0; }
 .toolbar-label { font-size: var(--type-caption); font-weight: var(--type-headline-wt); color: var(--fg-muted); }
+/* Kartın başındaki "hepsi isteğe bağlı" notu: alanların zorunlu olmadığı ilk bakışta anlaşılsın. */
+.toolbar-note { margin: 0; font-size: var(--type-caption); color: var(--fg-faint); }
 .toolbar-inputs { display: flex; gap: var(--space-2); }
 .toolbar-inputs > * { flex: 1; min-width: 0; }
 /* 004: ad araması satırı — kutu esner, düğmeler doğal genişliğinde; dar ekranda da tek satır */
