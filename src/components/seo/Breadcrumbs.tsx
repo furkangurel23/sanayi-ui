@@ -14,11 +14,13 @@ import type {Crumb} from "@/lib/seo/jsonLd";
 export default function Breadcrumbs({items}: { items: readonly Crumb[] }) {
     return (
         <nav aria-label="Gezinti yolu" className="breadcrumbs caption">
-            <ol>
+            {/* `.cluster` (sitenin eski, her sayfada yüklü yatay dizilim sınıfı) + `.breadcrumbs` ince ayarı:
+                tarayıcı yeni stil dosyasını henüz almamış olsa bile öğeler alt alta düşmez, tek satırda kalır. */}
+            <ol className="cluster">
                 {items.map((c, i) => {
                     const last = i === items.length - 1;
                     return (
-                        <li key={c.path}>
+                        <li key={c.path} className="cluster">
                             {last
                                 ? <span aria-current="page">{c.name}</span>
                                 : <Link href={c.path}>{c.name}</Link>}
